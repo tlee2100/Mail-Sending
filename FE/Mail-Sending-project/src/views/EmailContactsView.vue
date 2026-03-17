@@ -66,7 +66,7 @@ const filterStatus = ref('')
   gap: 10px;
   margin-bottom: 16px;
   padding: 14px 18px;
-  background: #f3f4f6;
+  background: var(--color-control-bg-muted);
   border-radius: 12px;
 }
 .search-wrap {
@@ -86,16 +86,18 @@ const filterStatus = ref('')
   width: 100%;
   padding: 10px 12px 10px 36px;
   border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border-subtle);
   font-size: 14px;
   box-sizing: border-box;
+  background: var(--color-control-bg);
+  color: var(--color-text-main);
 }
 .filter-select {
   padding: 10px 32px 10px 12px;
   border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border-subtle);
   font-size: 14px;
-  background: white;
+  background: var(--color-control-bg);
   min-width: 120px;
 }
 .card--table {

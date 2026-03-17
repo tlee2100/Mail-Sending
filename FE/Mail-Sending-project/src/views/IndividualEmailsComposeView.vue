@@ -125,15 +125,17 @@ const wordCount = computed(() => {
 .editor-select {
   padding: 6px 10px;
   border-radius: 6px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border-subtle);
   font-size: 13px;
+  background: var(--color-control-bg);
+  color: var(--color-text-main);
 }
 .toolbar-btn {
   width: 32px;
   height: 32px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border-subtle);
   border-radius: 6px;
-  background: #fff;
+  background: var(--color-control-bg);
   cursor: pointer;
   font-size: 14px;
 }
@@ -179,13 +181,13 @@ const wordCount = computed(() => {
 }
 .merge-tags li {
   padding: 6px 0;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 .merge-tags li:last-child {
   border-bottom: none;
 }
 .merge-tags code {
-  background: #f3f4f6;
+  background: var(--color-control-bg-muted);
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 12px;
