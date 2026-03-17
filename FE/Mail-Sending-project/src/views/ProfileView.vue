@@ -69,9 +69,9 @@ const email = ref('admin@email.com')
   font-weight: 500;
 }
 .badge--grey {
-  background: #f3f4f6;
-  border: 1px solid #e5e7eb;
-  color: #374151;
+  background: var(--color-control-bg-muted);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-main);
 }
 .card--profile {
   padding: 24px;

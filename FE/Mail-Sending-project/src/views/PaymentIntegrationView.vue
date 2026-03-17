@@ -267,7 +267,7 @@ const orderIdTag = '{{orderId}}'
 }
 .steps-note {
   padding: 14px 18px;
-  background: #f3f4f6;
+  background: var(--color-control-bg-muted);
   border-radius: 8px;
   font-size: 13px;
   color: #4b5563;

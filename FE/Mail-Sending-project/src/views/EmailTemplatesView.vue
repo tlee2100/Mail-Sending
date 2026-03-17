@@ -128,16 +128,18 @@ const sortBy = ref('newest')
   width: 100%;
   padding: 10px 12px 10px 36px;
   border-radius: 10px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border-subtle);
   font-size: 14px;
   box-sizing: border-box;
+  background: var(--color-control-bg);
+  color: var(--color-text-main);
 }
 .sort-select {
   padding: 10px 36px 10px 14px;
   border-radius: 10px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border-subtle);
   font-size: 14px;
-  background: white;
+  background: var(--color-control-bg);
   min-width: 160px;
 }
 .card--empty-state {

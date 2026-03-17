@@ -1,11 +1,3 @@
-<script setup lang="ts">
-import { useRoute } from 'vue-router'
-import { computed } from 'vue'
-
-const route = useRoute()
-const breadcrumb = computed(() => (route.meta.breadcrumb as string) || 'Dashboard')
-</script>
-
 <template>
   <div class="layout">
     <aside class="sidebar">
@@ -71,7 +63,7 @@ const breadcrumb = computed(() => (route.meta.breadcrumb as string) || 'Dashboar
         </div>
       </nav>
 
-      <button class="sidebar__logout">
+      <button class="sidebar__logout" @click="handleLogout">
         <span class="nav__icon">⏻</span>
         <span>Logout</span>
       </button>
@@ -83,6 +75,10 @@ const breadcrumb = computed(() => (route.meta.breadcrumb as string) || 'Dashboar
           <span class="muted">{{ breadcrumb }}</span>
         </div>
         <div class="topbar__right">
+          <button class="theme-toggle" type="button" @click="toggleTheme">
+            <span v-if="isDark">🌙 Dark</span>
+            <span v-else>☀️ Light</span>
+          </button>
           <span class="topbar__welcome">Welcome back</span>
           <div class="topbar__avatar">A</div>
           <span class="topbar__name">Admin</span>
@@ -96,19 +92,90 @@ const breadcrumb = computed(() => (route.meta.breadcrumb as string) || 'Dashboar
   </div>
 </template>
 
+<script setup lang="ts">
+import { useRoute, useRouter } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { auth } from '../stores/auth'
+
+const route = useRoute()
+const router = useRouter()
+const breadcrumb = computed(() => (route.meta.breadcrumb as string) || 'Dashboard')
+
+const isDark = ref(false)
+
+const THEME_KEY = 'ui.theme.v1'
+
+function applyTheme(dark: boolean) {
+  const body = document.body
+  if (dark) body.classList.add('dark-mode')
+  else body.classList.remove('dark-mode')
+}
+
+function loadInitialTheme() {
+  try {
+    const saved = localStorage.getItem(THEME_KEY)
+    if (saved === 'dark') {
+      isDark.value = true
+      applyTheme(true)
+      return
+    }
+  } catch {
+    // ignore
+  }
+  isDark.value = false
+  applyTheme(false)
+}
+
+function toggleTheme() {
+  isDark.value = !isDark.value
+  applyTheme(isDark.value)
+  try {
+    localStorage.setItem(THEME_KEY, isDark.value ? 'dark' : 'light')
+  } catch {
+    // ignore
+  }
+}
+
+onMounted(() => {
+  loadInitialTheme()
+})
+
+async function handleLogout() {
+  await auth.logout()
+  router.push({ name: 'login' })
+}
+</script>
+
+<style scoped>
+.theme-toggle {
+  margin-right: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border-subtle);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.theme-toggle:hover {
+  background: rgba(148, 163, 184, 0.12);
+}
+</style>
+
 <style scoped>
 .layout {
   display: grid;
   grid-template-columns: 260px 1fr;
   height: 100vh;
-  background: #f4f5fb;
-  color: #0f172a;
+  background: var(--color-bg-surface);
+  color: var(--color-text-main);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
 }
 
 .sidebar {
-  background: #020617;
-  color: #e5e7eb;
+  background: var(--color-bg-sidebar);
+  color: var(--color-text-on-dark);
   display: flex;
   flex-direction: column;
   padding: 20px 18px;
@@ -142,7 +209,7 @@ const breadcrumb = computed(() => (route.meta.breadcrumb as string) || 'Dashboar
 
 .brand__subtitle {
   font-size: 11px;
-  color: #9ca3af;
+  color: var(--color-text-soft);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
@@ -161,7 +228,7 @@ const breadcrumb = computed(() => (route.meta.breadcrumb as string) || 'Dashboar
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #6b7280;
+  color: var(--color-text-muted);
   padding: 8px 4px;
 }
 
@@ -188,8 +255,8 @@ const breadcrumb = computed(() => (route.meta.breadcrumb as string) || 'Dashboar
 }
 
 .nav__item--active {
-  background: linear-gradient(135deg, #4f46e5, #6366f1);
-  box-shadow: 0 10px 25px rgba(79, 70, 229, 0.55);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-soft));
+  box-shadow: var(--shadow-primary);
 }
 
 .nav__item--active .nav__icon {
@@ -216,8 +283,8 @@ const breadcrumb = computed(() => (route.meta.breadcrumb as string) || 'Dashboar
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(248, 113, 113, 0.1);
-  color: #fecaca;
+  background: var(--color-badge-error-bg);
+  color: var(--color-badge-error-text);
   cursor: pointer;
   font-size: 13px;
 }
@@ -238,8 +305,8 @@ const breadcrumb = computed(() => (route.meta.breadcrumb as string) || 'Dashboar
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
+  background: var(--color-bg-surface-elevated);
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 
 .topbar__right {
@@ -250,29 +317,29 @@ const breadcrumb = computed(() => (route.meta.breadcrumb as string) || 'Dashboar
 
 .topbar__welcome {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--color-text-muted);
 }
 
 .topbar__avatar {
   width: 32px;
   height: 32px;
   border-radius: 999px;
-  background: #4f46e5;
+  background: var(--color-primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #e5e7eb;
+  color: var(--color-text-on-primary);
   font-weight: 600;
   font-size: 14px;
 }
 
 .topbar__name {
   font-size: 13px;
-  color: #374151;
+  color: var(--color-text-main);
 }
 
 .muted {
-  color: #6b7280;
+  color: var(--color-text-muted);
   font-size: 13px;
 }
 
