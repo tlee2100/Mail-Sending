@@ -2,13 +2,22 @@
   <div class="auth">
     <div class="auth__card">
       <div class="auth__logo">CM</div>
-      <h1 class="auth__title">ChadMailer Login</h1>
+      <h1 class="auth__title">Create Your ChadMailer Account</h1>
       <p class="auth__subtitle">
-        Đăng nhập để truy cập Dashboard. Tài khoản ví dụ:
-        <strong>frontend.demo@email.com / Demo@123456</strong>
+        Start with your team workspace and connect your first campaign flow.
       </p>
 
       <form class="auth__form" @submit.prevent="handleSubmit">
+        <div class="input-wrap">
+          <label for="name">Full Name</label>
+          <input
+            id="name"
+            v-model="name"
+            type="text"
+            placeholder="Your full name"
+            autocomplete="name"
+          />
+        </div>
         <div class="input-wrap">
           <label for="email">Email</label>
           <input
@@ -20,13 +29,13 @@
           />
         </div>
         <div class="input-wrap">
-          <label for="password">Mật khẩu</label>
+          <label for="password">Password</label>
           <input
             id="password"
             v-model="password"
             type="password"
-            placeholder="••••••••"
-            autocomplete="current-password"
+            placeholder="At least 6 characters"
+            autocomplete="new-password"
           />
         </div>
 
@@ -37,48 +46,50 @@
           type="submit"
           :disabled="isSubmitting"
         >
-          <span v-if="isSubmitting">Đang đăng nhập...</span>
-          <span v-else>Đăng nhập</span>
+          <span v-if="isSubmitting">Creating account...</span>
+          <span v-else>Create Account</span>
         </button>
       </form>
 
       <p class="auth__switch">
-        Chưa có tài khoản?
-        <RouterLink to="/register">Tạo tài khoản</RouterLink>
+        Already have an account?
+        <RouterLink to="/login">Sign in</RouterLink>
       </p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
-import { RouterLink, useRoute, useRouter } from "vue-router";
+import { computed, ref } from "vue";
+import { RouterLink, useRouter } from "vue-router";
 import { auth } from "../stores/auth";
 
 const router = useRouter();
-const route = useRoute();
 
-const email = ref("frontend.demo@email.com");
-const password = ref("Demo@123456");
-const localError = ref<string | null>(null);
+const name = ref("");
+const email = ref("");
+const password = ref("");
 const isSubmitting = ref(false);
+const localError = ref<string | null>(null);
 
 const errorMessage = computed(() => localError.value || auth.state.error);
 
 async function handleSubmit() {
   localError.value = null;
-  if (!email.value.trim() || !password.value.trim()) {
-    localError.value = "Vui lòng nhập đầy đủ email và mật khẩu";
+  if (!name.value.trim() || !email.value.trim() || !password.value.trim()) {
+    localError.value = "Please complete all fields";
     return;
   }
 
   isSubmitting.value = true;
   try {
-    await auth.login({ email: email.value, password: password.value });
-    const redirect = (route.query.redirect as string) || "/";
-    router.push(redirect);
-  } catch (e) {
-    // error đã được set trong auth.state.error
+    await auth.register({
+      name: name.value,
+      email: email.value,
+      password: password.value,
+      role: "admin",
+    });
+    router.push("/");
   } finally {
     isSubmitting.value = false;
   }
@@ -91,22 +102,21 @@ async function handleSubmit() {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 16px;
   background: radial-gradient(
     circle at top left,
     var(--color-primary) 0,
-    var(--color-bg-app) 40%,
+    var(--color-bg-app) 45%,
     var(--color-bg-app) 100%
   );
-  padding: 16px;
-  box-sizing: border-box;
 }
 
 .auth__card {
   width: 100%;
-  max-width: 420px;
-  background: var(--color-bg-sidebar);
+  max-width: 440px;
   border-radius: 18px;
-  padding: 26px 24px 24px;
+  padding: 28px 24px;
+  background: var(--color-bg-sidebar);
   box-shadow: var(--shadow-elevated);
   color: var(--color-text-on-dark);
   border: 1px solid var(--color-border-subtle);
@@ -124,41 +134,36 @@ async function handleSubmit() {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
   font-size: 18px;
+  font-weight: 700;
   margin-bottom: 14px;
 }
 
 .auth__title {
-  margin: 0 0 6px;
-  font-size: 20px;
+  margin: 0;
+  font-size: 22px;
   font-weight: 600;
 }
 
 .auth__subtitle {
-  margin: 0 0 18px;
+  margin: 8px 0 16px;
   font-size: 13px;
   color: var(--color-text-soft);
-}
-
-.auth__form {
-  margin-top: 4px;
-}
-
-.auth__error {
-  margin: 4px 0 10px;
-  font-size: 13px;
-  color: var(--color-badge-error-text);
 }
 
 .auth__submit {
   width: 100%;
   justify-content: center;
-  margin-top: 4px;
+}
+
+.auth__error {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--color-badge-error-text);
 }
 
 .auth__switch {
-  margin: 12px 0 0;
+  margin: 14px 0 0;
   font-size: 13px;
   color: var(--color-text-soft);
 }

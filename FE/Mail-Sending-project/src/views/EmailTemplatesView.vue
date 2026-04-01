@@ -1,10 +1,23 @@
 <template>
   <section class="content__header header-with-action">
     <div>
-      <h1 class="page-title"><span class="title-icon">📄</span> Saved Email Templates</h1>
-      <p class="page-subtitle">Create, manage and reuse your email templates for instant campaigns.</p>
+      <h1 class="page-title">
+        <span class="title-icon">📄</span> Saved Email Templates
+      </h1>
+      <p class="page-subtitle">
+        Create, manage and reuse your email templates for instant campaigns.
+      </p>
     </div>
     <button type="button" class="btn btn--primary">+ Create Template</button>
+  </section>
+
+  <section class="content__section quick-links">
+    <RouterLink to="/templates/1/designer" class="btn btn--secondary"
+      >Open Designer</RouterLink
+    >
+    <RouterLink to="/templates/1/designer/versions" class="btn btn--secondary"
+      >Open Versions</RouterLink
+    >
   </section>
 
   <section class="grid grid--stats-three">
@@ -29,7 +42,12 @@
     <div class="filter-bar">
       <div class="search-wrap">
         <span class="search-icon">🔍</span>
-        <input v-model="searchQuery" type="text" placeholder="Search templates..." class="search-input" />
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="Search templates..."
+          class="search-input"
+        />
       </div>
       <select v-model="sortBy" class="sort-select">
         <option value="newest">Newest First</option>
@@ -38,20 +56,89 @@
       </select>
     </div>
 
-    <div class="card card--empty-state">
-      <div class="empty-icon">📄</div>
-      <h3 class="empty-title">No Email Templates Found</h3>
-      <p class="empty-desc">Create your first email template to get started with professional email campaigns.</p>
-      <button type="button" class="btn btn--primary">+ Create Your First Template</button>
+    <div class="grid grid--samples">
+      <RouterLink
+        v-for="item in sampleTemplates"
+        :key="item.id"
+        :to="`/templates/${item.id}/designer?sample=${item.sample}`"
+        class="card sample-card"
+      >
+        <div class="sample-card__top">
+          <h3 class="sample-card__title">{{ item.name }}</h3>
+          <span class="sample-card__badge">{{ item.category }}</span>
+        </div>
+        <p class="sample-card__desc">{{ item.description }}</p>
+        <span class="sample-card__cta">Open in Designer</span>
+      </RouterLink>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref } from "vue";
+import { RouterLink } from "vue-router";
 
-const searchQuery = ref('')
-const sortBy = ref('newest')
+const searchQuery = ref("");
+const sortBy = ref("newest");
+
+const sampleTemplates = [
+  {
+    id: "1",
+    name: "Welcome Onboarding",
+    category: "Onboarding",
+    description: "Welcome new users and guide first steps.",
+    sample: "welcome",
+  },
+  {
+    id: "2",
+    name: "Seasonal Promo",
+    category: "Sales",
+    description: "Limited-time campaign with discount CTA.",
+    sample: "promo",
+  },
+  {
+    id: "3",
+    name: "Billing Reminder",
+    category: "Finance",
+    description: "Reminder for upcoming payment deadline.",
+    sample: "invoice",
+  },
+  {
+    id: "4",
+    name: "Weekly Newsletter",
+    category: "Content",
+    description: "Curated weekly updates and highlights.",
+    sample: "newsletter",
+  },
+  {
+    id: "5",
+    name: "Product Launch",
+    category: "Product",
+    description: "Announce new feature or product release.",
+    sample: "launch",
+  },
+  {
+    id: "6",
+    name: "Event Invitation",
+    category: "Event",
+    description: "Invite contacts to webinar or event.",
+    sample: "event",
+  },
+  {
+    id: "7",
+    name: "Re-engagement",
+    category: "Retention",
+    description: "Bring inactive users back with an offer.",
+    sample: "reengagement",
+  },
+  {
+    id: "8",
+    name: "Feedback Request",
+    category: "Research",
+    description: "Collect product feedback with one CTA.",
+    sample: "feedback",
+  },
+];
 </script>
 
 <style scoped>
@@ -142,27 +229,64 @@ const sortBy = ref('newest')
   background: var(--color-control-bg);
   min-width: 160px;
 }
-.card--empty-state {
-  padding: 48px 24px;
-  text-align: center;
-  border: 1px dashed #d1d5db;
-  background: #fafafa;
+
+.grid--samples {
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
 }
-.empty-icon {
-  font-size: 64px;
-  opacity: 0.4;
-  margin-bottom: 16px;
+
+.sample-card {
+  border: 1px solid var(--color-border-subtle);
+  text-decoration: none;
+  color: var(--color-text-main);
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease;
 }
-.empty-title {
-  font-size: 18px;
+
+.sample-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-primary);
+}
+
+.sample-card__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.sample-card__title {
+  margin: 0;
+  font-size: 15px;
   font-weight: 600;
-  margin: 0 0 8px;
-  color: #111827;
 }
-.empty-desc {
-  font-size: 14px;
-  color: #6b7280;
-  margin: 0 0 20px;
+
+.sample-card__badge {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 999px;
+  background: var(--color-control-bg-muted);
+  color: var(--color-text-muted);
+  font-size: 11px;
+  padding: 4px 8px;
+}
+
+.sample-card__desc {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.sample-card__cta {
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.quick-links {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 @media (max-width: 768px) {
   .grid--stats-three {

@@ -2,10 +2,17 @@
   <section class="content__header header-with-actions">
     <div>
       <h1 class="page-title">👥 Email Contacts</h1>
-      <p class="page-subtitle">Manage your email contacts and organize them with tags.</p>
+      <p class="page-subtitle">
+        Manage your email contacts and organize them with tags.
+      </p>
     </div>
     <div class="header-buttons">
-      <button type="button" class="btn btn--secondary">↑ Import</button>
+      <RouterLink to="/contacts/import-export" class="btn btn--secondary"
+        >↑ Import / Export</RouterLink
+      >
+      <RouterLink to="/contacts/fields" class="btn btn--secondary"
+        >🧩 Fields</RouterLink
+      >
       <button type="button" class="btn btn--primary">+ Add Contact</button>
     </div>
   </section>
@@ -14,7 +21,12 @@
     <div class="filter-bar">
       <div class="search-wrap">
         <span class="search-icon">🔍</span>
-        <input v-model="searchQuery" type="text" placeholder="Search contacts..." class="search-input" />
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="Search contacts..."
+          class="search-input"
+        />
       </div>
       <select v-model="filterTag" class="filter-select">
         <option value="">All Tags</option>
@@ -29,23 +41,29 @@
     <div class="card card--table">
       <div class="card__header">
         <h3 class="card__title">👥 Contacts (0)</h3>
-        <button type="button" class="btn btn--secondary btn--sm">Bulk Actions ▾</button>
+        <button type="button" class="btn btn--secondary btn--sm">
+          Bulk Actions ▾
+        </button>
       </div>
       <div class="empty-state-inline">
         <div class="empty-icon">👥</div>
         <h4 class="empty-title">No Contacts Found</h4>
         <p class="empty-desc">Add your first contact to get started</p>
+        <RouterLink to="/contacts/ct_001/fields" class="btn btn--secondary"
+          >Open Contact Field Values</RouterLink
+        >
       </div>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref } from "vue";
+import { RouterLink } from "vue-router";
 
-const searchQuery = ref('')
-const filterTag = ref('')
-const filterStatus = ref('')
+const searchQuery = ref("");
+const filterTag = ref("");
+const filterStatus = ref("");
 </script>
 
 <style scoped>
@@ -59,6 +77,7 @@ const filterStatus = ref('')
 .header-buttons {
   display: flex;
   gap: 10px;
+  flex-wrap: wrap;
 }
 .filter-bar {
   display: flex;

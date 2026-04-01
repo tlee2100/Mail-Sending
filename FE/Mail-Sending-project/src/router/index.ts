@@ -1,117 +1,213 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import { auth } from '../stores/auth'
-import AppLayout from '../layouts/AppLayout.vue'
+import { createRouter, createWebHistory } from "vue-router";
+import { auth } from "../stores/auth";
+import AppLayout from "../layouts/AppLayout.vue";
 
 const routes = [
   {
-    path: '/login',
-    name: 'login',
-    meta: { public: true, title: 'Login' },
-    component: () => import('../views/AuthLoginView.vue'),
+    path: "/login",
+    name: "login",
+    meta: { public: true, title: "Login" },
+    component: () => import("../views/AuthLoginView.vue"),
   },
   {
-    path: '/',
+    path: "/register",
+    name: "register",
+    meta: { public: true, title: "Register" },
+    component: () => import("../views/AuthRegisterView.vue"),
+  },
+  {
+    path: "/",
     component: AppLayout,
     children: [
       {
-        path: '',
-        name: 'dashboard',
-        meta: { title: 'Dashboard', breadcrumb: 'Dashboard' },
-        component: () => import('../views/DashboardView.vue'),
+        path: "",
+        name: "dashboard",
+        meta: { title: "Dashboard", breadcrumb: "Dashboard" },
+        component: () => import("../views/DashboardView.vue"),
       },
       {
-        path: 'instant-campaign',
-        name: 'instant-campaign',
-        meta: { title: 'Instant Campaign', breadcrumb: 'Dashboard > Instant Campaign' },
-        component: () => import('../views/InstantCampaignView.vue'),
+        path: "instant-campaign",
+        name: "instant-campaign",
+        meta: {
+          title: "Instant Campaign",
+          breadcrumb: "Dashboard > Instant Campaign",
+        },
+        component: () => import("../views/InstantCampaignView.vue"),
       },
       {
-        path: 'individual-emails',
-        name: 'individual-emails',
-        meta: { title: 'Individual Emails', breadcrumb: 'Dashboard > Individual Emails' },
-        component: () => import('../views/IndividualEmailsView.vue'),
+        path: "individual-emails",
+        name: "individual-emails",
+        meta: {
+          title: "Individual Emails",
+          breadcrumb: "Dashboard > Individual Emails",
+        },
+        component: () => import("../views/IndividualEmailsView.vue"),
       },
       {
-        path: 'individual-emails/compose',
-        name: 'individual-emails-compose',
-        meta: { title: 'Compose Email', breadcrumb: 'Dashboard > Individual Emails > Compose' },
-        component: () => import('../views/IndividualEmailsComposeView.vue'),
+        path: "individual-emails/compose",
+        name: "individual-emails-compose",
+        meta: {
+          title: "Compose Email",
+          breadcrumb: "Dashboard > Individual Emails > Compose",
+        },
+        component: () => import("../views/IndividualEmailsComposeView.vue"),
       },
       {
-        path: 'email-templates',
-        name: 'email-templates',
-        meta: { title: 'Email Templates', breadcrumb: 'Dashboard > Email Templates' },
-        component: () => import('../views/EmailTemplatesView.vue'),
+        path: "email-templates",
+        name: "email-templates",
+        meta: {
+          title: "Email Templates",
+          breadcrumb: "Dashboard > Email Templates",
+        },
+        component: () => import("../views/EmailTemplatesView.vue"),
       },
       {
-        path: 'email-contacts',
-        name: 'email-contacts',
-        meta: { title: 'Email Contacts', breadcrumb: 'Dashboard > Email Contacts' },
-        component: () => import('../views/EmailContactsView.vue'),
+        path: "email-contacts",
+        name: "email-contacts",
+        meta: {
+          title: "Email Contacts",
+          breadcrumb: "Dashboard > Email Contacts",
+        },
+        component: () => import("../views/EmailContactsView.vue"),
       },
       {
-        path: 'contact-tags',
-        name: 'contact-tags',
-        meta: { title: 'Contact Tags', breadcrumb: 'Dashboard > Contact Tags' },
-        component: () => import('../views/ContactTagsView.vue'),
+        path: "contacts/import-export",
+        name: "contacts-import-export",
+        meta: {
+          title: "Contacts Import Export",
+          breadcrumb: "Dashboard > Email Contacts > Import Export",
+        },
+        component: () => import("../views/ContactsImportExportView.vue"),
       },
       {
-        path: 'email-accounts',
-        name: 'email-accounts',
-        meta: { title: 'Email Accounts', breadcrumb: 'Dashboard > Email Accounts' },
-        component: () => import('../views/EmailAccountsView.vue'),
+        path: "contacts/fields",
+        name: "contacts-fields",
+        meta: {
+          title: "Contact Fields",
+          breadcrumb: "Dashboard > Email Contacts > Fields",
+        },
+        component: () => import("../views/ContactFieldsView.vue"),
       },
       {
-        path: 'payment',
-        name: 'payment',
-        meta: { title: 'Payment Integration', breadcrumb: 'Dashboard > Payment' },
-        component: () => import('../views/PaymentIntegrationView.vue'),
+        path: "contacts/:id/fields",
+        name: "contact-detail-fields",
+        meta: {
+          title: "Contact Detail Fields",
+          breadcrumb: "Dashboard > Email Contacts > Contact Fields",
+        },
+        component: () => import("../views/ContactDetailFieldsView.vue"),
       },
       {
-        path: 'profile',
-        name: 'profile',
-        meta: { title: 'Profile', breadcrumb: 'Dashboard > Profile' },
-        component: () => import('../views/ProfileView.vue'),
+        path: "contact-tags",
+        name: "contact-tags",
+        meta: { title: "Contact Tags", breadcrumb: "Dashboard > Contact Tags" },
+        component: () => import("../views/ContactTagsView.vue"),
       },
       {
-        path: 'security',
-        name: 'security',
-        meta: { title: 'Security', breadcrumb: 'Dashboard > Security' },
-        component: () => import('../views/SecurityView.vue'),
+        path: "email-accounts",
+        name: "email-accounts",
+        meta: {
+          title: "Email Accounts",
+          breadcrumb: "Dashboard > Email Accounts",
+        },
+        component: () => import("../views/EmailAccountsView.vue"),
+      },
+      {
+        path: "payment",
+        name: "payment",
+        meta: {
+          title: "Payment Integration",
+          breadcrumb: "Dashboard > Payment",
+        },
+        component: () => import("../views/PaymentIntegrationView.vue"),
+      },
+      {
+        path: "campaigns",
+        name: "campaigns",
+        meta: { title: "Campaigns", breadcrumb: "Dashboard > Campaigns" },
+        component: () => import("../views/CampaignsView.vue"),
+      },
+      {
+        path: "campaigns/:id",
+        name: "campaign-detail",
+        meta: {
+          title: "Campaign Detail",
+          breadcrumb: "Dashboard > Campaigns > Detail",
+        },
+        component: () => import("../views/CampaignDetailView.vue"),
+      },
+      {
+        path: "campaigns/:id/recipients",
+        name: "campaign-recipients",
+        meta: {
+          title: "Campaign Recipients",
+          breadcrumb: "Dashboard > Campaigns > Recipients",
+        },
+        component: () => import("../views/CampaignRecipientsView.vue"),
+      },
+      {
+        path: "templates/:id/designer",
+        name: "template-designer",
+        meta: {
+          title: "Template Designer",
+          breadcrumb: "Dashboard > Email Templates > Designer",
+        },
+        component: () => import("../views/TemplateDesignerView.vue"),
+      },
+      {
+        path: "templates/:id/designer/versions",
+        name: "template-designer-versions",
+        meta: {
+          title: "Template Designer Versions",
+          breadcrumb: "Dashboard > Email Templates > Designer Versions",
+        },
+        component: () => import("../views/TemplateDesignerVersionsView.vue"),
+      },
+      {
+        path: "profile",
+        name: "profile",
+        meta: { title: "Profile", breadcrumb: "Dashboard > Profile" },
+        component: () => import("../views/ProfileView.vue"),
+      },
+      {
+        path: "security",
+        name: "security",
+        meta: { title: "Security", breadcrumb: "Dashboard > Security" },
+        component: () => import("../views/SecurityView.vue"),
       },
     ],
   },
   {
-    path: '/:pathMatch(.*)*',
-    redirect: '/',
+    path: "/:pathMatch(.*)*",
+    redirect: "/",
   },
-]
+];
 
 const router = createRouter({
   history: createWebHistory(),
   routes,
-})
+});
 
 router.beforeEach(async (to, from, next) => {
   if (!auth.state.isReady) {
-    await auth.restore()
+    await auth.restore();
   }
 
   if (to.meta.public) {
-    if (auth.isAuthenticated.value && to.name === 'login') {
-      next({ name: 'dashboard' })
-      return
+    if (auth.isAuthenticated.value && to.name === "login") {
+      next({ name: "dashboard" });
+      return;
     }
-    next()
-    return
+    next();
+    return;
   }
 
   if (!auth.isAuthenticated.value) {
-    next({ name: 'login', query: { redirect: to.fullPath } })
-    return
+    next({ name: "login", query: { redirect: to.fullPath } });
+    return;
   }
 
-  next()
-})
+  next();
+});
 
-export default router
+export default router;

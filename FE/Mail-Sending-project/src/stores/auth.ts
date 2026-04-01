@@ -1,38 +1,108 @@
-import { computed, reactive } from 'vue'
-import { mockApi, type MockUser, type MockApiError } from '../api/mockApi'
+import { computed, reactive } from "vue";
 
 type AuthState = {
-  token: string | null
-  user: MockUser | null
-  isReady: boolean
-  isLoading: boolean
-  error: string | null
-}
+  token: string | null;
+  user: AuthUser | null;
+  isReady: boolean;
+  isLoading: boolean;
+  error: string | null;
+};
 
-const LS_TOKEN = 'auth.token.v1'
+type AuthUser = {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+};
+
+type ApiEnvelope<T> = {
+  success: boolean;
+  message: string;
+  data: T;
+  details?: unknown;
+};
+
+type AuthPayload = {
+  user: AuthUser;
+  token: string;
+};
+
+const LS_TOKEN = "auth.token.v1";
+const API_BASE = String(import.meta.env.VITE_API_BASE_URL || "/api/v1").replace(
+  /\/$/,
+  "",
+);
 
 function readToken(): string | null {
   try {
-    return localStorage.getItem(LS_TOKEN)
+    return localStorage.getItem(LS_TOKEN);
   } catch {
-    return null
+    return null;
   }
 }
 
 function writeToken(token: string | null) {
   try {
-    if (!token) localStorage.removeItem(LS_TOKEN)
-    else localStorage.setItem(LS_TOKEN, token)
+    if (!token) localStorage.removeItem(LS_TOKEN);
+    else localStorage.setItem(LS_TOKEN, token);
   } catch {
     // ignore
   }
 }
 
 function getErrorMessage(err: unknown) {
-  if (err && typeof err === 'object' && 'message' in err && typeof (err as any).message === 'string') {
-    return (err as any).message as string
+  if (
+    err &&
+    typeof err === "object" &&
+    "message" in err &&
+    typeof (err as any).message === "string"
+  ) {
+    return (err as any).message as string;
   }
-  return 'Something went wrong'
+  return "Something went wrong";
+}
+
+async function parseEnvelope<T>(res: Response): Promise<ApiEnvelope<T>> {
+  const json = (await res.json().catch(() => null)) as ApiEnvelope<T> | null;
+  if (!json) {
+    throw new Error(res.statusText || "Request failed");
+  }
+  if (!res.ok || !json.success) {
+    const detailsText =
+      typeof json.details === "string"
+        ? json.details
+        : json.details
+          ? JSON.stringify(json.details)
+          : "";
+    const message = json.message || res.statusText || "Request failed";
+    throw new Error(detailsText ? `${message}: ${detailsText}` : message);
+  }
+  return json;
+}
+
+async function authRequest<T>(
+  path: string,
+  options: {
+    method: "GET" | "POST";
+    token?: string;
+    body?: unknown;
+  },
+) {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (options.token) {
+    headers.Authorization = `Bearer ${options.token}`;
+  }
+
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: options.method,
+    headers,
+    body: options.body === undefined ? undefined : JSON.stringify(options.body),
+  });
+
+  return parseEnvelope<T>(res);
 }
 
 const state = reactive<AuthState>({
@@ -41,111 +111,111 @@ const state = reactive<AuthState>({
   isReady: false,
   isLoading: false,
   error: null,
-})
+});
 
-const isAuthenticated = computed(() => !!state.token && !!state.user)
+const isAuthenticated = computed(() => !!state.token && !!state.user);
 
 async function restore() {
-  state.isLoading = true
-  state.error = null
+  state.isLoading = true;
+  state.error = null;
   try {
-    const token = readToken()
-    state.token = token
+    const token = readToken();
+    state.token = token;
     if (!token) {
-      state.user = null
-      return
+      state.user = null;
+      return;
     }
-    state.user = await mockApi.me(token)
+    const res = await authRequest<AuthUser>("/auth/me", {
+      method: "GET",
+      token,
+    });
+    state.user = res.data;
   } catch (e) {
-    state.user = null
-    state.token = null
-    writeToken(null)
-    state.error = getErrorMessage(e)
+    state.user = null;
+    state.token = null;
+    writeToken(null);
+    state.error = getErrorMessage(e);
   } finally {
-    state.isLoading = false
-    state.isReady = true
+    state.isLoading = false;
+    state.isReady = true;
   }
 }
 
 async function login(payload: { email: string; password: string }) {
-  state.isLoading = true
-  state.error = null
+  state.isLoading = true;
+  state.error = null;
   try {
-    const res = await mockApi.login(payload)
-    state.token = res.token
-    state.user = res.user
-    writeToken(res.token)
-    return res.user
+    const res = await authRequest<AuthPayload>("/auth/login", {
+      method: "POST",
+      body: payload,
+    });
+    state.token = res.data.token;
+    state.user = res.data.user;
+    writeToken(res.data.token);
+    return res.data.user;
   } catch (e) {
-    state.error = getErrorMessage(e)
-    throw e as MockApiError
+    state.error = getErrorMessage(e);
+    throw e;
   } finally {
-    state.isLoading = false
-    state.isReady = true
+    state.isLoading = false;
+    state.isReady = true;
   }
 }
 
-async function register(payload: { name: string; email: string; password: string }) {
-  state.isLoading = true
-  state.error = null
+async function register(payload: {
+  name: string;
+  email: string;
+  password: string;
+  role?: string;
+}) {
+  state.isLoading = true;
+  state.error = null;
   try {
-    const res = await mockApi.register(payload)
-    state.token = res.token
-    state.user = res.user
-    writeToken(res.token)
-    return res.user
+    const res = await authRequest<AuthPayload>("/auth/register", {
+      method: "POST",
+      body: {
+        ...payload,
+        role: payload.role || "admin",
+      },
+    });
+    state.token = res.data.token;
+    state.user = res.data.user;
+    writeToken(res.data.token);
+    return res.data.user;
   } catch (e) {
-    state.error = getErrorMessage(e)
-    throw e as MockApiError
+    state.error = getErrorMessage(e);
+    throw e;
   } finally {
-    state.isLoading = false
-    state.isReady = true
+    state.isLoading = false;
+    state.isReady = true;
   }
 }
 
 async function logout() {
-  const token = state.token
-  state.isLoading = true
-  state.error = null
+  state.isLoading = true;
+  state.error = null;
   try {
-    if (token) await mockApi.logout(token)
+    // Backend does not expose logout endpoint in current contract.
   } finally {
-    state.token = null
-    state.user = null
-    writeToken(null)
-    state.isLoading = false
-    state.isReady = true
+    state.token = null;
+    state.user = null;
+    writeToken(null);
+    state.isLoading = false;
+    state.isReady = true;
   }
 }
 
-async function changePassword(payload: { currentPassword: string; newPassword: string }) {
-  state.isLoading = true
-  state.error = null
-  try {
-    if (!state.token) throw new Error('Unauthorized')
-    await mockApi.changePassword({ token: state.token, ...payload })
-  } catch (e) {
-    state.error = getErrorMessage(e)
-    throw e
-  } finally {
-    state.isLoading = false
-  }
+async function changePassword(payload: {
+  currentPassword: string;
+  newPassword: string;
+}) {
+  void payload;
+  throw new Error("changePassword is not implemented by backend yet");
 }
 
 async function updateProfile(payload: { name: string }) {
-  state.isLoading = true
-  state.error = null
-  try {
-    if (!state.token) throw new Error('Unauthorized')
-    const user = await mockApi.updateProfile({ token: state.token, ...payload })
-    state.user = user
-    return user
-  } catch (e) {
-    state.error = getErrorMessage(e)
-    throw e
-  } finally {
-    state.isLoading = false
-  }
+  void payload;
+  throw new Error("updateProfile is not implemented by backend yet");
 }
 
 export const auth = {
@@ -157,5 +227,4 @@ export const auth = {
   logout,
   changePassword,
   updateProfile,
-}
-
+};
