@@ -16,35 +16,99 @@
             <span class="nav__icon">📊</span>
             <span>Dashboard</span>
           </RouterLink>
-          <RouterLink to="/instant-campaign" class="nav__item" active-class="nav__item--active">
+          <RouterLink
+            to="/instant-campaign"
+            class="nav__item"
+            active-class="nav__item--active"
+          >
             <span class="nav__icon">⚡</span>
             <span>Instant Campaign</span>
           </RouterLink>
-          <RouterLink to="/individual-emails" class="nav__item" active-class="nav__item--active">
+          <RouterLink
+            to="/individual-emails"
+            class="nav__item"
+            active-class="nav__item--active"
+          >
             <span class="nav__icon">✉️</span>
             <span>Individual Emails</span>
           </RouterLink>
-          <RouterLink to="/email-templates" class="nav__item" active-class="nav__item--active">
+          <RouterLink
+            to="/email-templates"
+            class="nav__item"
+            active-class="nav__item--active"
+          >
             <span class="nav__icon">📄</span>
             <span>Email Templates</span>
           </RouterLink>
-          <RouterLink to="/email-contacts" class="nav__item" active-class="nav__item--active">
+          <RouterLink
+            to="/email-contacts"
+            class="nav__item"
+            active-class="nav__item--active"
+          >
             <span class="nav__icon">👥</span>
             <span>Email Contacts</span>
           </RouterLink>
-          <RouterLink to="/contact-tags" class="nav__item" active-class="nav__item--active">
+          <RouterLink
+            to="/contact-tags"
+            class="nav__item"
+            active-class="nav__item--active"
+          >
             <span class="nav__icon">🏷️</span>
             <span>Contact Tags</span>
+          </RouterLink>
+          <RouterLink
+            to="/campaigns"
+            class="nav__item"
+            active-class="nav__item--active"
+          >
+            <span class="nav__icon">🚀</span>
+            <span>Campaigns</span>
+          </RouterLink>
+        </div>
+
+        <div class="nav__section">
+          <div class="nav__title">Advanced</div>
+          <RouterLink
+            to="/contacts/import-export"
+            class="nav__item"
+            active-class="nav__item--active"
+          >
+            <span class="nav__icon">📥</span>
+            <span>Import / Export</span>
+          </RouterLink>
+          <RouterLink
+            to="/contacts/fields"
+            class="nav__item"
+            active-class="nav__item--active"
+          >
+            <span class="nav__icon">🧩</span>
+            <span>Contact Fields</span>
+          </RouterLink>
+          <RouterLink
+            to="/templates/1/designer"
+            class="nav__item"
+            active-class="nav__item--active"
+          >
+            <span class="nav__icon">🛠️</span>
+            <span>Template Designer</span>
           </RouterLink>
         </div>
 
         <div class="nav__section">
           <div class="nav__title">Management</div>
-          <RouterLink to="/email-accounts" class="nav__item" active-class="nav__item--active">
+          <RouterLink
+            to="/email-accounts"
+            class="nav__item"
+            active-class="nav__item--active"
+          >
             <span class="nav__icon">📨</span>
             <span>Email Accounts</span>
           </RouterLink>
-          <RouterLink to="/payment" class="nav__item" active-class="nav__item--active">
+          <RouterLink
+            to="/payment"
+            class="nav__item"
+            active-class="nav__item--active"
+          >
             <span class="nav__icon">💳</span>
             <span>Payment Integration</span>
           </RouterLink>
@@ -52,11 +116,19 @@
 
         <div class="nav__section">
           <div class="nav__title">Account</div>
-          <RouterLink to="/profile" class="nav__item" active-class="nav__item--active">
+          <RouterLink
+            to="/profile"
+            class="nav__item"
+            active-class="nav__item--active"
+          >
             <span class="nav__icon">👤</span>
             <span>Profile</span>
           </RouterLink>
-          <RouterLink to="/security" class="nav__item" active-class="nav__item--active">
+          <RouterLink
+            to="/security"
+            class="nav__item"
+            active-class="nav__item--active"
+          >
             <span class="nav__icon">🔐</span>
             <span>Security</span>
           </RouterLink>
@@ -93,56 +165,58 @@
 </template>
 
 <script setup lang="ts">
-import { useRoute, useRouter } from 'vue-router'
-import { computed, onMounted, ref } from 'vue'
-import { auth } from '../stores/auth'
+import { useRoute, useRouter } from "vue-router";
+import { computed, onMounted, ref } from "vue";
+import { auth } from "../stores/auth";
 
-const route = useRoute()
-const router = useRouter()
-const breadcrumb = computed(() => (route.meta.breadcrumb as string) || 'Dashboard')
+const route = useRoute();
+const router = useRouter();
+const breadcrumb = computed(
+  () => (route.meta.breadcrumb as string) || "Dashboard",
+);
 
-const isDark = ref(false)
+const isDark = ref(false);
 
-const THEME_KEY = 'ui.theme.v1'
+const THEME_KEY = "ui.theme.v1";
 
 function applyTheme(dark: boolean) {
-  const body = document.body
-  if (dark) body.classList.add('dark-mode')
-  else body.classList.remove('dark-mode')
+  const body = document.body;
+  if (dark) body.classList.add("dark-mode");
+  else body.classList.remove("dark-mode");
 }
 
 function loadInitialTheme() {
   try {
-    const saved = localStorage.getItem(THEME_KEY)
-    if (saved === 'dark') {
-      isDark.value = true
-      applyTheme(true)
-      return
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === "dark") {
+      isDark.value = true;
+      applyTheme(true);
+      return;
     }
   } catch {
     // ignore
   }
-  isDark.value = false
-  applyTheme(false)
+  isDark.value = false;
+  applyTheme(false);
 }
 
 function toggleTheme() {
-  isDark.value = !isDark.value
-  applyTheme(isDark.value)
+  isDark.value = !isDark.value;
+  applyTheme(isDark.value);
   try {
-    localStorage.setItem(THEME_KEY, isDark.value ? 'dark' : 'light')
+    localStorage.setItem(THEME_KEY, isDark.value ? "dark" : "light");
   } catch {
     // ignore
   }
 }
 
 onMounted(() => {
-  loadInitialTheme()
-})
+  loadInitialTheme();
+});
 
 async function handleLogout() {
-  await auth.logout()
-  router.push({ name: 'login' })
+  await auth.logout();
+  router.push({ name: "login" });
 }
 </script>
 
@@ -170,7 +244,12 @@ async function handleLogout() {
   height: 100vh;
   background: var(--color-bg-surface);
   color: var(--color-text-main);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Text",
+    sans-serif;
 }
 
 .sidebar {
@@ -244,7 +323,9 @@ async function handleLogout() {
   color: inherit;
   font-size: 13px;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
   text-decoration: none;
   margin-bottom: 2px;
   box-sizing: border-box;
@@ -255,7 +336,11 @@ async function handleLogout() {
 }
 
 .nav__item--active {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-soft));
+  background: linear-gradient(
+    135deg,
+    var(--color-primary),
+    var(--color-primary-soft)
+  );
   box-shadow: var(--shadow-primary);
 }
 
