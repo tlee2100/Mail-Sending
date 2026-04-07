@@ -2,38 +2,39 @@
   <section class="content__header header-with-action">
     <div>
       <h1 class="page-title">
-        <span class="title-icon">📄</span> Saved Email Templates
+        <span class="title-icon">Tpl</span> Saved Email Templates
       </h1>
       <p class="page-subtitle">
         Create, manage and reuse your email templates for instant campaigns.
       </p>
+      <p v-if="notice.message" class="notice" :class="`notice--${notice.tone}`">
+        {{ notice.message }}
+      </p>
     </div>
-    <button type="button" class="btn btn--primary">+ Create Template</button>
+    <button type="button" class="btn btn--primary" @click="createTemplate">
+      + Create Template
+    </button>
   </section>
 
   <section class="content__section quick-links">
-    <RouterLink to="/templates/1/designer" class="btn btn--secondary"
-      >Open Designer</RouterLink
-    >
-    <RouterLink to="/templates/1/designer/versions" class="btn btn--secondary"
-      >Open Versions</RouterLink
-    >
+    <RouterLink :to="designerTarget" class="btn btn--secondary">Open Designer</RouterLink>
+    <RouterLink :to="versionsTarget" class="btn btn--secondary">Open Versions</RouterLink>
   </section>
 
   <section class="grid grid--stats-three">
     <div class="card card--stat-tpl card--blue">
-      <span class="card__icon">📄</span>
-      <span class="card__value">0</span>
+      <span class="card__icon">Tpl</span>
+      <span class="card__value">{{ templates.length }}</span>
       <span class="card__label">Total Templates</span>
     </div>
     <div class="card card--stat-tpl card--green">
-      <span class="card__icon">✓</span>
-      <span class="card__value">None</span>
+      <span class="card__icon">Top</span>
+      <span class="card__value">{{ mostUsedTemplate }}</span>
       <span class="card__label">Most Used</span>
     </div>
     <div class="card card--stat-tpl card--cyan">
-      <span class="card__icon">📈</span>
-      <span class="card__value">None</span>
+      <span class="card__icon">New</span>
+      <span class="card__value">{{ recentTemplate }}</span>
       <span class="card__label">Recent Updates</span>
     </div>
   </section>
@@ -41,7 +42,7 @@
   <section class="content__section">
     <div class="filter-bar">
       <div class="search-wrap">
-        <span class="search-icon">🔍</span>
+        <span class="search-icon">Find</span>
         <input
           v-model="searchQuery"
           type="text"
@@ -58,7 +59,7 @@
 
     <div class="grid grid--samples">
       <RouterLink
-        v-for="item in sampleTemplates"
+        v-for="item in filteredTemplates"
         :key="item.id"
         :to="`/templates/${item.id}/designer?sample=${item.sample}`"
         class="card sample-card"
@@ -68,77 +69,70 @@
           <span class="sample-card__badge">{{ item.category }}</span>
         </div>
         <p class="sample-card__desc">{{ item.description }}</p>
-        <span class="sample-card__cta">Open in Designer</span>
+        <span class="sample-card__cta">
+          Open in Designer · {{ mockWorkspace.formatRelativeTime(item.updatedAt) }}
+        </span>
       </RouterLink>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
-import { RouterLink } from "vue-router";
+import { computed, ref } from "vue";
+import { RouterLink, useRouter } from "vue-router";
+import { useNotice } from "../composables/useNotice";
+import { mockWorkspace } from "../stores/mockWorkspace";
 
+const router = useRouter();
+const notice = useNotice();
 const searchQuery = ref("");
 const sortBy = ref("newest");
 
-const sampleTemplates = [
-  {
-    id: "1",
-    name: "Welcome Onboarding",
-    category: "Onboarding",
-    description: "Welcome new users and guide first steps.",
-    sample: "welcome",
-  },
-  {
-    id: "2",
-    name: "Seasonal Promo",
-    category: "Sales",
-    description: "Limited-time campaign with discount CTA.",
-    sample: "promo",
-  },
-  {
-    id: "3",
-    name: "Billing Reminder",
-    category: "Finance",
-    description: "Reminder for upcoming payment deadline.",
-    sample: "invoice",
-  },
-  {
-    id: "4",
-    name: "Weekly Newsletter",
-    category: "Content",
-    description: "Curated weekly updates and highlights.",
-    sample: "newsletter",
-  },
-  {
-    id: "5",
-    name: "Product Launch",
-    category: "Product",
-    description: "Announce new feature or product release.",
-    sample: "launch",
-  },
-  {
-    id: "6",
-    name: "Event Invitation",
-    category: "Event",
-    description: "Invite contacts to webinar or event.",
-    sample: "event",
-  },
-  {
-    id: "7",
-    name: "Re-engagement",
-    category: "Retention",
-    description: "Bring inactive users back with an offer.",
-    sample: "reengagement",
-  },
-  {
-    id: "8",
-    name: "Feedback Request",
-    category: "Research",
-    description: "Collect product feedback with one CTA.",
-    sample: "feedback",
-  },
-];
+const templates = computed(() => mockWorkspace.state.templates);
+const designerTarget = computed(() => {
+  const current = templates.value[0];
+  return current ? `/templates/${current.id}/designer?sample=${current.sample}` : "/templates/1/designer";
+});
+const versionsTarget = computed(() => {
+  const current = templates.value[0];
+  return current ? `/templates/${current.id}/designer/versions` : "/templates/1/designer/versions";
+});
+const mostUsedTemplate = computed(() => {
+  const current = [...templates.value].sort((a, b) => b.useCount - a.useCount)[0];
+  return current?.name || "None";
+});
+const recentTemplate = computed(() => templates.value[0]?.name || "None");
+const filteredTemplates = computed(() => {
+  const query = searchQuery.value.trim().toLowerCase();
+  const next = templates.value.filter((item) => {
+    return (
+      !query ||
+      item.name.toLowerCase().includes(query) ||
+      item.category.toLowerCase().includes(query) ||
+      item.description.toLowerCase().includes(query)
+    );
+  });
+
+  return [...next].sort((a, b) => {
+    if (sortBy.value === "name") return a.name.localeCompare(b.name);
+    if (sortBy.value === "oldest") {
+      return new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+    }
+    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+  });
+});
+
+function createTemplate() {
+  const name = window.prompt("Template name", "Launch Announcement");
+  if (!name?.trim()) return;
+  const category = window.prompt("Template category", "Product") || "General";
+  const description =
+    window.prompt("Short description", "Reusable campaign template") ||
+    "Reusable campaign template";
+  const template = mockWorkspace.addTemplate({ name, category, description });
+  notice.show(`Template "${template.name}" created.`, "success");
+  router.push(`/templates/${template.id}/designer?sample=${template.sample}`);
+}
 </script>
 
 <style scoped>
@@ -149,6 +143,7 @@ const sampleTemplates = [
   flex-wrap: wrap;
   gap: 16px;
 }
+
 .title-icon {
   display: inline-flex;
   align-items: center;
@@ -158,11 +153,15 @@ const sampleTemplates = [
   border-radius: 10px;
   background: rgba(79, 70, 229, 0.14);
   margin-right: 8px;
+  font-size: 12px;
+  font-weight: 700;
 }
+
 .grid--stats-three {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-bottom: 24px;
 }
+
 .card--stat-tpl {
   display: flex;
   flex-direction: column;
@@ -170,50 +169,62 @@ const sampleTemplates = [
   color: white;
   padding: 20px;
 }
+
 .card--stat-tpl .card__icon {
-  font-size: 24px;
+  font-size: 18px;
+  font-weight: 700;
   opacity: 0.9;
 }
+
 .card--stat-tpl .card__value {
   font-size: 28px;
   font-weight: 700;
 }
+
 .card--stat-tpl .card__label {
   font-size: 13px;
   opacity: 0.95;
   color: inherit;
 }
+
 .card--blue {
   background: #4a90e2;
 }
+
 .card--green {
   background: #50e3c2;
   color: #0f766e;
 }
+
 .card--cyan {
   background: #00bcd4;
   color: #0c4a6e;
 }
+
 .filter-bar {
   display: flex;
   gap: 12px;
   margin-bottom: 16px;
 }
+
 .search-wrap {
   flex: 1;
   position: relative;
 }
+
 .search-icon {
   position: absolute;
   left: 12px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 14px;
+  font-size: 12px;
+  font-weight: 700;
   opacity: 0.6;
 }
+
 .search-input {
   width: 100%;
-  padding: 10px 12px 10px 36px;
+  padding: 10px 12px 10px 48px;
   border-radius: 10px;
   border: 1px solid var(--color-border-subtle);
   font-size: 14px;
@@ -221,6 +232,7 @@ const sampleTemplates = [
   background: var(--color-control-bg);
   color: var(--color-text-main);
 }
+
 .sort-select {
   padding: 10px 36px 10px 14px;
   border-radius: 10px;
@@ -288,6 +300,7 @@ const sampleTemplates = [
   gap: 10px;
   flex-wrap: wrap;
 }
+
 @media (max-width: 768px) {
   .grid--stats-three {
     grid-template-columns: 1fr;

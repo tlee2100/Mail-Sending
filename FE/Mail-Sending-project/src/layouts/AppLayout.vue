@@ -152,8 +152,8 @@
             <span v-else>☀️ Light</span>
           </button>
           <span class="topbar__welcome">Welcome back</span>
-          <div class="topbar__avatar">A</div>
-          <span class="topbar__name">Admin</span>
+          <div class="topbar__avatar">{{ userInitial }}</div>
+          <span class="topbar__name">{{ displayName }}</span>
         </div>
       </header>
 
@@ -173,6 +173,10 @@ const route = useRoute();
 const router = useRouter();
 const breadcrumb = computed(
   () => (route.meta.breadcrumb as string) || "Dashboard",
+);
+const displayName = computed(() => auth.state.user?.name || "Admin");
+const userInitial = computed(() =>
+  displayName.value.trim().slice(0, 1).toUpperCase(),
 );
 
 const isDark = ref(false);
@@ -241,7 +245,7 @@ async function handleLogout() {
 .layout {
   display: grid;
   grid-template-columns: 260px 1fr;
-  height: 100vh;
+  min-height: 100vh;
   background: var(--color-bg-surface);
   color: var(--color-text-main);
   font-family:
@@ -382,6 +386,7 @@ async function handleLogout() {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  background: var(--color-bg-surface);
 }
 
 .topbar {
@@ -432,6 +437,7 @@ async function handleLogout() {
   padding: 20px 28px 28px;
   overflow-y: auto;
   flex: 1;
+  background: var(--color-bg-surface);
 }
 
 @media (max-width: 1024px) {

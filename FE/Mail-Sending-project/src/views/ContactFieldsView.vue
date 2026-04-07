@@ -5,8 +5,13 @@
       <p class="page-subtitle">
         Create, edit and remove extra attributes for contacts.
       </p>
+      <p v-if="notice.message" class="notice" :class="`notice--${notice.tone}`">
+        {{ notice.message }}
+      </p>
     </div>
-    <button type="button" class="btn btn--primary">+ Add Field</button>
+    <button type="button" class="btn btn--primary" @click="addField">
+      + Add Field
+    </button>
   </section>
 
   <section class="content__section">
@@ -26,12 +31,12 @@
             <td>{{ field.name }}</td>
             <td>{{ field.type }}</td>
             <td>{{ field.required ? "Yes" : "No" }}</td>
-            <td>{{ field.updatedAt }}</td>
+            <td>{{ mockWorkspace.formatRelativeTime(field.updatedAt) }}</td>
             <td class="actions">
-              <button type="button" class="btn btn--secondary btn--small">
+              <button type="button" class="btn btn--secondary btn--small" @click="editField(field.id)">
                 PATCH
               </button>
-              <button type="button" class="btn btn--danger btn--small">
+              <button type="button" class="btn btn--danger btn--small" @click="removeField(field.id)">
                 DELETE
               </button>
             </td>
@@ -43,29 +48,59 @@
 </template>
 
 <script setup lang="ts">
-const fields = [
-  {
-    id: "f_1",
-    name: "Company",
-    type: "text",
-    required: false,
-    updatedAt: "2h ago",
-  },
-  {
-    id: "f_2",
-    name: "Plan",
-    type: "select",
-    required: true,
-    updatedAt: "1d ago",
-  },
-  {
-    id: "f_3",
-    name: "Renewal Date",
-    type: "date",
-    required: false,
-    updatedAt: "3d ago",
-  },
-];
+import { computed } from "vue";
+import { useNotice } from "../composables/useNotice";
+import { mockWorkspace, type MockFieldType } from "../stores/mockWorkspace";
+
+const notice = useNotice();
+const fields = computed(() => mockWorkspace.state.fields);
+
+function askFieldType(current: MockFieldType = "text") {
+  const type = window.prompt("Field type: text, select, date, number", current);
+  if (
+    type === "text" ||
+    type === "select" ||
+    type === "date" ||
+    type === "number"
+  ) {
+    return type;
+  }
+  return null;
+}
+
+function addField() {
+  const name = window.prompt("Field name", "Region");
+  if (!name?.trim()) return;
+  const type = askFieldType();
+  if (!type) return;
+  const required = window.confirm("Mark this field as required?");
+  const field = mockWorkspace.addField({ name, type, required });
+  notice.show(`Field "${field.name}" created.`, "success");
+}
+
+function editField(id: string) {
+  const field = fields.value.find((item) => item.id === id);
+  if (!field) return;
+  const name = window.prompt("Field name", field.name);
+  if (!name?.trim()) return;
+  const type = askFieldType(field.type);
+  if (!type) return;
+  const required = window.confirm("Keep this field required?");
+  mockWorkspace.updateField(id, {
+    name,
+    type,
+    required,
+  });
+  notice.show(`Field "${name}" updated.`, "success");
+}
+
+function removeField(id: string) {
+  const field = fields.value.find((item) => item.id === id);
+  if (!field) return;
+  if (!window.confirm(`Delete field "${field.name}"?`)) return;
+  mockWorkspace.deleteField(id);
+  notice.show(`Field "${field.name}" removed.`, "info");
+}
 </script>
 
 <style scoped>

@@ -2,14 +2,13 @@
   <section class="content__header">
     <h1 class="page-title">Campaign Recipients</h1>
     <p class="page-subtitle">
-      Campaign ID: {{ route.params.id }} - recipient snapshots and delivery
-      state.
+      Campaign ID: {{ route.params.id }} - recipient snapshots and delivery state.
     </p>
   </section>
 
   <section class="content__section">
     <div class="card card--table">
-      <table class="table">
+      <table class="table" v-if="rows.length">
         <thead>
           <tr>
             <th>Email</th>
@@ -23,41 +22,26 @@
             <td>{{ row.email }}</td>
             <td>{{ row.name }}</td>
             <td>
-              <span class="status">{{ row.status }}</span>
+              <span class="status" :class="`status--${row.status}`">{{ row.status }}</span>
             </td>
             <td>{{ row.lastEvent }}</td>
           </tr>
         </tbody>
       </table>
+      <p v-else class="empty-text">No recipients recorded for this campaign yet.</p>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 import { useRoute } from "vue-router";
+import { mockWorkspace } from "../stores/mockWorkspace";
 
 const route = useRoute();
-
-const rows = [
-  {
-    email: "maria@acme.io",
-    name: "Maria",
-    status: "queued",
-    lastEvent: "Queued 1m ago",
-  },
-  {
-    email: "daniel@acme.io",
-    name: "Daniel",
-    status: "delivered",
-    lastEvent: "Delivered 8m ago",
-  },
-  {
-    email: "sarah@acme.io",
-    name: "Sarah",
-    status: "opened",
-    lastEvent: "Opened 2m ago",
-  },
-];
+const rows = computed(
+  () => mockWorkspace.getCampaignById(String(route.params.id))?.recipientRows || [],
+);
 </script>
 
 <style scoped>
@@ -90,5 +74,26 @@ const rows = [
   border-radius: 999px;
   border: 1px solid var(--color-border-subtle);
   background: var(--color-control-bg-muted);
+  text-transform: capitalize;
+}
+
+.status--opened {
+  background: rgba(59, 130, 246, 0.12);
+  color: #1d4ed8;
+}
+
+.status--delivered {
+  background: rgba(34, 197, 94, 0.12);
+  color: #15803d;
+}
+
+.status--paused {
+  background: rgba(245, 158, 11, 0.12);
+  color: #92400e;
+}
+
+.empty-text {
+  padding: 18px;
+  color: var(--color-text-muted);
 }
 </style>

@@ -5,8 +5,13 @@
       <p class="page-subtitle">
         Create, monitor and control campaign delivery lifecycle.
       </p>
+      <p v-if="notice.message" class="notice" :class="`notice--${notice.tone}`">
+        {{ notice.message }}
+      </p>
     </div>
-    <button type="button" class="btn btn--primary">+ New Campaign</button>
+    <button type="button" class="btn btn--primary" @click="createCampaign">
+      + New Campaign
+    </button>
   </section>
 
   <section class="content__section">
@@ -25,21 +30,23 @@
           <tr v-for="item in campaigns" :key="item.id">
             <td>{{ item.name }}</td>
             <td>
-              <span class="badge">{{ item.status }}</span>
+              <span class="badge" :class="`badge--${item.status}`">{{ item.status }}</span>
             </td>
             <td>{{ item.recipients }}</td>
-            <td>{{ item.updatedAt }}</td>
+            <td>{{ mockWorkspace.formatRelativeTime(item.updatedAt) }}</td>
             <td class="actions">
               <RouterLink
                 :to="`/campaigns/${item.id}`"
                 class="btn btn--secondary btn--small"
-                >Detail</RouterLink
               >
+                Detail
+              </RouterLink>
               <RouterLink
                 :to="`/campaigns/${item.id}/recipients`"
                 class="btn btn--secondary btn--small"
-                >Recipients</RouterLink
               >
+                Recipients
+              </RouterLink>
             </td>
           </tr>
         </tbody>
@@ -49,24 +56,20 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 import { RouterLink } from "vue-router";
+import { useNotice } from "../composables/useNotice";
+import { mockWorkspace } from "../stores/mockWorkspace";
 
-const campaigns = [
-  {
-    id: "c_101",
-    name: "Q2 Product Launch",
-    status: "draft",
-    recipients: 1250,
-    updatedAt: "35m ago",
-  },
-  {
-    id: "c_102",
-    name: "Weekly Newsletter",
-    status: "running",
-    recipients: 8400,
-    updatedAt: "5m ago",
-  },
-];
+const notice = useNotice();
+const campaigns = computed(() => mockWorkspace.state.campaigns);
+
+function createCampaign() {
+  const name = window.prompt("Campaign name", "Spring Launch");
+  if (!name?.trim()) return;
+  const campaign = mockWorkspace.addCampaign({ name: name.trim() });
+  notice.show(`Created "${campaign.name}" in draft mode.`, "success");
+}
 </script>
 
 <style scoped>
@@ -108,6 +111,22 @@ const campaigns = [
   background: var(--color-control-bg-muted);
   color: var(--color-text-main);
   font-size: 12px;
+  text-transform: capitalize;
+}
+
+.badge--running {
+  background: rgba(34, 197, 94, 0.12);
+  color: #15803d;
+}
+
+.badge--paused {
+  background: rgba(245, 158, 11, 0.14);
+  color: #92400e;
+}
+
+.badge--sent {
+  background: rgba(59, 130, 246, 0.12);
+  color: #1d4ed8;
 }
 
 .actions {

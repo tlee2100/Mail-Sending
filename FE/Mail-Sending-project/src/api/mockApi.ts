@@ -42,9 +42,9 @@ function ensureSeed() {
 
   const admin: StoredUser = {
     id: uid(),
-    name: "Admin",
-    email: "admin@demo.com",
-    password: "admin123",
+    name: "Frontend Demo",
+    email: "frontend.demo@email.com",
+    password: "Demo@123456",
   };
   writeJson(LS_USERS, [admin]);
   writeJson(LS_SESSIONS, {} as Record<string, string>);
