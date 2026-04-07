@@ -4,24 +4,21 @@
     <p class="page-subtitle">
       Bulk upload contacts from files and export your filtered audience.
     </p>
+    <p v-if="notice.message" class="notice" :class="`notice--${notice.tone}`">
+      {{ notice.message }}
+    </p>
   </section>
 
   <section class="grid grid--two">
     <article class="card panel">
       <h2 class="section-title">Import Contacts</h2>
       <p class="muted">
-        Supports .csv and .xlsx files using field name file for multipart
-        upload.
+        Supports .csv and .xlsx files using field name file for multipart upload.
       </p>
 
       <div class="input-wrap">
         <label for="file">Choose file</label>
-        <input
-          id="file"
-          type="file"
-          accept=".csv,.xlsx"
-          @change="onFileChange"
-        />
+        <input id="file" type="file" accept=".csv,.xlsx" @change="onFileChange" />
       </div>
 
       <div class="input-wrap">
@@ -32,13 +29,16 @@
         </select>
       </div>
 
-      <button type="button" class="btn btn--primary" :disabled="!selectedFile">
+      <button
+        type="button"
+        class="btn btn--primary"
+        :disabled="!selectedFile"
+        @click="importContacts"
+      >
         Upload to /contacts/import
       </button>
 
-      <p class="file-name" v-if="selectedFile">
-        Selected: {{ selectedFile.name }}
-      </p>
+      <p class="file-name" v-if="selectedFile">Selected: {{ selectedFile.name }}</p>
     </article>
 
     <article class="card panel">
@@ -56,11 +56,11 @@
       </div>
 
       <div class="filters">
-        <span class="chip">status: active</span>
-        <span class="chip">tag: newsletter</span>
+        <span class="chip">contacts: {{ mockWorkspace.state.contacts.length }}</span>
+        <span class="chip">tags: {{ mockWorkspace.state.tags.length }}</span>
       </div>
 
-      <button type="button" class="btn btn--secondary">
+      <button type="button" class="btn btn--secondary" @click="downloadExport">
         Download from /contacts/export?format={{ format }}
       </button>
     </article>
@@ -69,14 +69,31 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
+import { useNotice } from "../composables/useNotice";
+import { mockWorkspace } from "../stores/mockWorkspace";
 
-const importMode = ref("append");
+const notice = useNotice();
+const importMode = ref<"append" | "replace">("append");
 const format = ref<"csv" | "xlsx">("csv");
 const selectedFile = ref<File | null>(null);
 
 function onFileChange(event: Event) {
   const target = event.target as HTMLInputElement;
   selectedFile.value = target.files?.[0] || null;
+}
+
+function importContacts() {
+  if (!selectedFile.value) return;
+  const count = mockWorkspace.importContacts(selectedFile.value.name, importMode.value);
+  notice.show(`Imported ${count} contacts from ${selectedFile.value.name}.`, "success");
+}
+
+function downloadExport() {
+  const result = mockWorkspace.exportContacts(format.value);
+  notice.show(
+    `Prepared ${result.filename} with ${mockWorkspace.state.contacts.length} contacts.`,
+    "info",
+  );
 }
 </script>
 
