@@ -1,8 +1,9 @@
 <template>
   <section class="content__header">
     <h1 class="page-title">Campaign Recipients</h1>
-    <p class="page-subtitle">
-      Campaign ID: {{ route.params.id }} - recipient snapshots and delivery state.
+    <p class="page-subtitle">Campaign ID: {{ route.params.id }}</p>
+    <p v-if="notice.message" class="notice" :class="`notice--${notice.tone}`">
+      {{ notice.message }}
     </p>
   </section>
 
@@ -12,48 +13,60 @@
         <thead>
           <tr>
             <th>Email</th>
-            <th>Name</th>
             <th>Status</th>
-            <th>Last Event</th>
+            <th>Subject</th>
+            <th>Sent Time</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="row in rows" :key="row.email">
+          <tr v-for="row in rows" :key="row.id">
             <td>{{ row.email }}</td>
-            <td>{{ row.name }}</td>
-            <td>
-              <span class="status" :class="`status--${row.status}`">{{ row.status }}</span>
-            </td>
-            <td>{{ row.lastEvent }}</td>
+            <td>{{ row.status }}</td>
+            <td>{{ row.rendered_subject || "-" }}</td>
+            <td>{{ row.sent_time ? new Date(row.sent_time).toLocaleString() : "-" }}</td>
           </tr>
         </tbody>
       </table>
-      <p v-else class="empty-text">No recipients recorded for this campaign yet.</p>
+      <p v-else class="empty-text">No recipients found for this campaign.</p>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
-import { mockWorkspace } from "../stores/mockWorkspace";
+import { campaignsApi } from "../api/campaignsApi";
+import { ApiClientError } from "../api/http";
+import { useNotice } from "../composables/useNotice";
+import { auth } from "../stores/auth";
 
 const route = useRoute();
-const rows = computed(
-  () => mockWorkspace.getCampaignById(String(route.params.id))?.recipientRows || [],
-);
+const notice = useNotice();
+const rows = ref<Array<Record<string, any>>>([]);
+
+async function loadRecipients() {
+  if (!auth.state.token) return;
+  try {
+    const response = await campaignsApi.recipients(
+      auth.state.token,
+      String(route.params.id),
+    );
+    rows.value = response.data.items;
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to load recipients";
+    notice.show(message, "error");
+  }
+}
+
+onMounted(() => {
+  void loadRecipients();
+});
 </script>
 
 <style scoped>
-.card--table {
-  border: 1px solid var(--color-border-subtle);
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
+.card--table { border: 1px solid var(--color-border-subtle); }
+.table { width: 100%; border-collapse: collapse; }
 .table th,
 .table td {
   text-align: left;
@@ -62,38 +75,6 @@ const rows = computed(
   font-size: 13px;
   color: var(--color-text-main);
 }
-
-.table th {
-  color: var(--color-text-muted);
-  font-weight: 600;
-}
-
-.status {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 999px;
-  border: 1px solid var(--color-border-subtle);
-  background: var(--color-control-bg-muted);
-  text-transform: capitalize;
-}
-
-.status--opened {
-  background: rgba(59, 130, 246, 0.12);
-  color: #1d4ed8;
-}
-
-.status--delivered {
-  background: rgba(34, 197, 94, 0.12);
-  color: #15803d;
-}
-
-.status--paused {
-  background: rgba(245, 158, 11, 0.12);
-  color: #92400e;
-}
-
-.empty-text {
-  padding: 18px;
-  color: var(--color-text-muted);
-}
+.table th { color: var(--color-text-muted); font-weight: 600; }
+.empty-text { padding: 18px; color: var(--color-text-muted); }
 </style>

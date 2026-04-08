@@ -1,9 +1,7 @@
 <template>
   <section class="content__header">
     <h1 class="page-title">Contacts Import & Export</h1>
-    <p class="page-subtitle">
-      Bulk upload contacts from files and export your filtered audience.
-    </p>
+    <p class="page-subtitle">Backend file import/export for contacts</p>
     <p v-if="notice.message" class="notice" :class="`notice--${notice.tone}`">
       {{ notice.message }}
     </p>
@@ -12,9 +10,7 @@
   <section class="grid grid--two">
     <article class="card panel">
       <h2 class="section-title">Import Contacts</h2>
-      <p class="muted">
-        Supports .csv and .xlsx files using field name file for multipart upload.
-      </p>
+      <p class="muted">Upload CSV/XLSX and send it directly to backend import.</p>
 
       <div class="input-wrap">
         <label for="file">Choose file</label>
@@ -24,8 +20,8 @@
       <div class="input-wrap">
         <label for="mode">Import mode</label>
         <select id="mode" v-model="importMode">
-          <option value="append">Append new contacts</option>
-          <option value="replace">Replace matching email</option>
+          <option value="insert">Insert only</option>
+          <option value="upsert">Upsert by email</option>
         </select>
       </div>
 
@@ -35,7 +31,7 @@
         :disabled="!selectedFile"
         @click="importContacts"
       >
-        Upload to /contacts/import
+        Upload
       </button>
 
       <p class="file-name" v-if="selectedFile">Selected: {{ selectedFile.name }}</p>
@@ -43,9 +39,7 @@
 
     <article class="card panel">
       <h2 class="section-title">Export Contacts</h2>
-      <p class="muted">
-        Generate CSV or XLSX with current filters for external processing.
-      </p>
+      <p class="muted">Download filtered contacts from backend.</p>
 
       <div class="input-wrap">
         <label for="export-format">Format</label>
@@ -55,13 +49,8 @@
         </select>
       </div>
 
-      <div class="filters">
-        <span class="chip">contacts: {{ mockWorkspace.state.contacts.length }}</span>
-        <span class="chip">tags: {{ mockWorkspace.state.tags.length }}</span>
-      </div>
-
-      <button type="button" class="btn btn--secondary" @click="downloadExport">
-        Download from /contacts/export?format={{ format }}
+      <button type="button" class="btn btn--secondary" @click="exportContacts">
+        Download Export
       </button>
     </article>
   </section>
@@ -69,11 +58,13 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
+import { contactsApi } from "../api/contactsApi";
+import { ApiClientError, downloadBlob } from "../api/http";
 import { useNotice } from "../composables/useNotice";
-import { mockWorkspace } from "../stores/mockWorkspace";
+import { auth } from "../stores/auth";
 
 const notice = useNotice();
-const importMode = ref<"append" | "replace">("append");
+const importMode = ref<"insert" | "upsert">("insert");
 const format = ref<"csv" | "xlsx">("csv");
 const selectedFile = ref<File | null>(null);
 
@@ -82,18 +73,35 @@ function onFileChange(event: Event) {
   selectedFile.value = target.files?.[0] || null;
 }
 
-function importContacts() {
-  if (!selectedFile.value) return;
-  const count = mockWorkspace.importContacts(selectedFile.value.name, importMode.value);
-  notice.show(`Imported ${count} contacts from ${selectedFile.value.name}.`, "success");
+async function importContacts() {
+  if (!auth.state.token || !selectedFile.value) return;
+  try {
+    const response = await contactsApi.importContacts(
+      auth.state.token,
+      selectedFile.value,
+      importMode.value,
+    );
+    notice.show(response.message, "success");
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to import contacts";
+    notice.show(message, "error");
+  }
 }
 
-function downloadExport() {
-  const result = mockWorkspace.exportContacts(format.value);
-  notice.show(
-    `Prepared ${result.filename} with ${mockWorkspace.state.contacts.length} contacts.`,
-    "info",
-  );
+async function exportContacts() {
+  if (!auth.state.token) return;
+  try {
+    const response = await contactsApi.exportContacts(auth.state.token, {
+      format: format.value,
+    });
+    downloadBlob(response.blob, response.fileName);
+    notice.show(`Downloaded ${response.fileName}.`, "success");
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to export contacts";
+    notice.show(message, "error");
+  }
 }
 </script>
 
@@ -116,22 +124,6 @@ function downloadExport() {
   margin-top: 12px;
   font-size: 13px;
   color: var(--color-text-soft);
-}
-
-.filters {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin: 8px 0 18px;
-}
-
-.chip {
-  padding: 6px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--color-border-subtle);
-  background: var(--color-control-bg-muted);
-  color: var(--color-text-main);
-  font-size: 12px;
 }
 
 @media (max-width: 900px) {

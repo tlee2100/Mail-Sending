@@ -2,9 +2,7 @@
   <section class="content__header header-with-actions">
     <div>
       <h1 class="page-title">Email Contacts</h1>
-      <p class="page-subtitle">
-        Manage your email contacts and organize them with tags.
-      </p>
+      <p class="page-subtitle">Live contact list from backend</p>
       <p v-if="notice.message" class="notice" :class="`notice--${notice.tone}`">
         {{ notice.message }}
       </p>
@@ -33,24 +31,30 @@
           class="search-input"
         />
       </div>
-      <select v-model="filterTag" class="filter-select">
-        <option value="">All Tags</option>
-        <option v-for="tag in tags" :key="tag.id" :value="tag.id">{{ tag.name }}</option>
-      </select>
       <select v-model="filterStatus" class="filter-select">
         <option value="">All Status</option>
         <option value="active">Active</option>
         <option value="inactive">Inactive</option>
       </select>
-      <button type="button" class="btn btn--primary" @click="applyFilters">Filter</button>
-      <button type="button" class="btn btn--secondary" @click="clearFilters">Clear</button>
+      <input
+        v-model="filterCity"
+        type="text"
+        placeholder="City"
+        class="filter-input"
+      />
+      <button type="button" class="btn btn--primary" @click="loadContacts">
+        Filter
+      </button>
+      <button type="button" class="btn btn--secondary" @click="clearFilters">
+        Clear
+      </button>
     </div>
 
-    <div class="card card--table" v-if="filteredContacts.length">
+    <div class="card card--table" v-if="contacts.length">
       <div class="card__header">
-        <h3 class="card__title">Contacts ({{ filteredContacts.length }})</h3>
-        <button type="button" class="btn btn--secondary btn--sm" @click="bulkCreateTag">
-          Bulk Tag
+        <h3 class="card__title">Contacts ({{ pagination.total }})</h3>
+        <button type="button" class="btn btn--secondary btn--sm" @click="loadContacts">
+          Refresh
         </button>
       </div>
       <table class="table">
@@ -59,16 +63,18 @@
             <th>Name</th>
             <th>Email</th>
             <th>Status</th>
-            <th>Tags</th>
+            <th>Company</th>
+            <th>City</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="contact in filteredContacts" :key="contact.id">
-            <td>{{ contact.name }}</td>
+          <tr v-for="contact in contacts" :key="contact.id">
+            <td>{{ fullName(contact) }}</td>
             <td>{{ contact.email }}</td>
-            <td>{{ contact.status }}</td>
-            <td>{{ formatTagNames(contact.tags) }}</td>
+            <td>{{ contact.email_status || "active" }}</td>
+            <td>{{ contact.company || "-" }}</td>
+            <td>{{ contact.city || "-" }}</td>
             <td>
               <RouterLink :to="`/contacts/${contact.id}/fields`" class="btn btn--secondary btn--sm">
                 Fields
@@ -83,86 +89,111 @@
       <div class="empty-state-inline">
         <div class="empty-icon">List</div>
         <h4 class="empty-title">No Contacts Found</h4>
-        <p class="empty-desc">Add your first contact to get started</p>
-        <RouterLink to="/contacts/ct_001/fields" class="btn btn--secondary">
-          Open Contact Field Values
-        </RouterLink>
+        <p class="empty-desc">Create a contact or adjust filters.</p>
       </div>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { onMounted, reactive, ref } from "vue";
 import { RouterLink } from "vue-router";
+import { contactsApi } from "../api/contactsApi";
+import { ApiClientError } from "../api/http";
 import { useNotice } from "../composables/useNotice";
-import { mockWorkspace } from "../stores/mockWorkspace";
+import { auth } from "../stores/auth";
+
+type ContactRow = {
+  id: number;
+  email: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  company?: string | null;
+  city?: string | null;
+  email_status?: string | null;
+};
 
 const notice = useNotice();
+const contacts = ref<ContactRow[]>([]);
 const searchQuery = ref("");
-const filterTag = ref("");
 const filterStatus = ref("");
-const appliedSearch = ref("");
-const appliedTag = ref("");
-const appliedStatus = ref("");
-
-const tags = computed(() => mockWorkspace.state.tags);
-const filteredContacts = computed(() => {
-  return mockWorkspace.state.contacts.filter((contact) => {
-    const matchesSearch =
-      !appliedSearch.value ||
-      contact.name.toLowerCase().includes(appliedSearch.value) ||
-      contact.email.toLowerCase().includes(appliedSearch.value);
-    const matchesTag =
-      !appliedTag.value || contact.tags.includes(appliedTag.value);
-    const matchesStatus =
-      !appliedStatus.value || contact.status === appliedStatus.value;
-    return matchesSearch && matchesTag && matchesStatus;
-  });
+const filterCity = ref("");
+const pagination = reactive({
+  page: 1,
+  pageSize: 20,
+  total: 0,
+  totalPages: 1,
 });
 
-function applyFilters() {
-  appliedSearch.value = searchQuery.value.trim().toLowerCase();
-  appliedTag.value = filterTag.value;
-  appliedStatus.value = filterStatus.value;
-  notice.show(`Showing ${filteredContacts.value.length} matching contacts.`, "info");
+function fullName(contact: ContactRow) {
+  const name = [contact.first_name, contact.last_name].filter(Boolean).join(" ");
+  return name || contact.email;
+}
+
+async function loadContacts() {
+  if (!auth.state.token) {
+    notice.show("Missing auth token. Please login again.", "error");
+    return;
+  }
+
+  try {
+    const response = await contactsApi.listContacts(auth.state.token, {
+      page: pagination.page,
+      pageSize: pagination.pageSize,
+      search: searchQuery.value || undefined,
+      status: filterStatus.value || undefined,
+      city: filterCity.value || undefined,
+    });
+
+    contacts.value = response.data.items as ContactRow[];
+    Object.assign(pagination, response.data.pagination);
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to load contacts";
+    notice.show(message, "error");
+  }
+}
+
+async function addContact() {
+  if (!auth.state.token) {
+    notice.show("Missing auth token. Please login again.", "error");
+    return;
+  }
+
+  const email = window.prompt("Contact email", "");
+  if (!email?.trim()) return;
+  const firstName = window.prompt("First name", "") || undefined;
+  const lastName = window.prompt("Last name", "") || undefined;
+  const city = window.prompt("City", "") || undefined;
+
+  try {
+    await contactsApi.createContact(auth.state.token, {
+      email: email.trim(),
+      firstName,
+      lastName,
+      city,
+      emailStatus: "active",
+      source: "manual",
+    });
+    notice.show("Contact created.", "success");
+    await loadContacts();
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to create contact";
+    notice.show(message, "error");
+  }
 }
 
 function clearFilters() {
   searchQuery.value = "";
-  filterTag.value = "";
   filterStatus.value = "";
-  appliedSearch.value = "";
-  appliedTag.value = "";
-  appliedStatus.value = "";
-  notice.show("Filters cleared.", "success");
+  filterCity.value = "";
+  void loadContacts();
 }
 
-function addContact() {
-  const email = window.prompt("Contact email", "new.contact@example.com");
-  if (!email?.trim()) return;
-  const name =
-    window.prompt("Contact name", email.split("@")[0] || "New Contact") ||
-    email.split("@")[0] ||
-    "New Contact";
-  const contact = mockWorkspace.addContact({ name, email, status: "active" });
-  notice.show(`Added ${contact.name}.`, "success");
-}
-
-function bulkCreateTag() {
-  if (!filteredContacts.value.length) {
-    notice.show("No filtered contacts to tag.", "error");
-    return;
-  }
-  notice.show("Bulk tagging is ready for backend integration; current filters are preserved.", "info");
-}
-
-function formatTagNames(tagIds: string[]) {
-  const names = tagIds
-    .map((id) => tags.value.find((tag) => tag.id === id)?.name)
-    .filter(Boolean);
-  return names.length ? names.join(", ") : "No tags";
-}
+onMounted(() => {
+  void loadContacts();
+});
 </script>
 
 <style scoped>
@@ -217,8 +248,9 @@ function formatTagNames(tagIds: string[]) {
   color: var(--color-text-main);
 }
 
-.filter-select {
-  padding: 10px 32px 10px 12px;
+.filter-select,
+.filter-input {
+  padding: 10px 12px;
   border-radius: 8px;
   border: 1px solid var(--color-border-subtle);
   font-size: 14px;
@@ -283,6 +315,6 @@ function formatTagNames(tagIds: string[]) {
 .empty-desc {
   font-size: 14px;
   color: #6b7280;
-  margin: 0 0 16px;
+  margin: 0;
 }
 </style>
