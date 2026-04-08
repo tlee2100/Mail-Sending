@@ -1,7 +1,10 @@
 <template>
   <section class="content__header">
     <h1 class="page-title">Dashboard</h1>
-    <p class="page-subtitle">Welcome to your email marketing dashboard</p>
+    <p class="page-subtitle">Live overview loaded from backend services</p>
+    <p class="page-subtitle page-subtitle--muted">
+      Counts only include records that belong to the currently logged-in backend user.
+    </p>
     <p v-if="notice.message" class="notice" :class="`notice--${notice.tone}`">
       {{ notice.message }}
     </p>
@@ -11,47 +14,47 @@
     <div class="card card--stat card--blue">
       <div class="card__icon">Accounts</div>
       <div class="card__label">Total Accounts</div>
-      <div class="card__value">{{ totalAccounts }}</div>
+      <div class="card__value">{{ stats.total_accounts }}</div>
     </div>
     <div class="card card--stat card--green">
       <div class="card__icon">Live</div>
       <div class="card__label">Active Accounts</div>
-      <div class="card__value">{{ activeAccounts }}</div>
+      <div class="card__value">{{ stats.active_accounts }}</div>
     </div>
     <div class="card card--stat card--indigo">
       <div class="card__icon">Default</div>
       <div class="card__label">Default Account</div>
-      <div class="card__value">{{ defaultAccounts }}</div>
+      <div class="card__value">{{ defaultAccountCount }}</div>
     </div>
     <div class="card card--stat card--yellow">
       <div class="card__icon">Sent</div>
       <div class="card__label">Emails Sent</div>
-      <div class="card__value">{{ totalEmailsSent }}</div>
+      <div class="card__value">{{ stats.total_sent }}</div>
     </div>
   </section>
 
   <section class="content__section">
     <h2 class="section-title">Quick Actions</h2>
     <div class="grid grid--actions">
-      <RouterLink to="/instant-campaign" class="card card--action">
-        <div class="card__icon card__icon--purple">Create</div>
-        <div class="card__title">Create Campaign</div>
-        <div class="card__text">Send bulk emails instantly</div>
+      <RouterLink to="/campaigns" class="card card--action">
+        <div class="card__icon card__icon--purple">Camp</div>
+        <div class="card__title">Campaigns</div>
+        <div class="card__text">Create and monitor campaigns</div>
       </RouterLink>
       <RouterLink to="/email-templates" class="card card--action">
         <div class="card__icon card__icon--blue">Tpl</div>
-        <div class="card__title">Manage Templates</div>
-        <div class="card__text">Create and edit email templates</div>
+        <div class="card__title">Templates</div>
+        <div class="card__text">Manage email templates</div>
       </RouterLink>
       <RouterLink to="/email-contacts" class="card card--action">
         <div class="card__icon card__icon--teal">List</div>
-        <div class="card__title">Email Contacts</div>
-        <div class="card__text">Manage your contact list</div>
+        <div class="card__title">Contacts</div>
+        <div class="card__text">Browse live contact data</div>
       </RouterLink>
       <RouterLink to="/email-accounts" class="card card--action">
         <div class="card__icon card__icon--green">SMTP</div>
         <div class="card__title">Email Accounts</div>
-        <div class="card__text">Configure SMTP settings</div>
+        <div class="card__text">Manage sender accounts</div>
       </RouterLink>
     </div>
   </section>
@@ -61,28 +64,25 @@
       <div class="card card--panel">
         <div class="card__header">
           <div class="card__title">Recent Activity</div>
-          <button class="link-button" type="button" @click="openActivities">
-            View All
-          </button>
+          <RouterLink to="/campaigns" class="link-button">View All</RouterLink>
         </div>
-        <ul class="activity-list">
+        <ul class="activity-list" v-if="recentActivity.length">
           <li
-            v-for="activity in recentActivities"
-            :key="activity.id"
+            v-for="activity in recentActivity"
+            :key="String(activity.id)"
             class="activity-item"
           >
-            <div class="activity__icon" :class="activityIconClass(activity.type)">
-              {{ activityLabel(activity.type) }}
-            </div>
+            <div class="activity__icon activity__icon--blue">Log</div>
             <div class="activity__body">
-              <div class="activity__title">{{ activity.title }}</div>
-              <div class="activity__desc">{{ activity.description }}</div>
+              <div class="activity__title">{{ activity.email || "Email log" }}</div>
+              <div class="activity__desc">
+                {{ activity.message || activity.status || "No message" }}
+              </div>
             </div>
-            <div class="activity__time">
-              {{ mockWorkspace.formatRelativeTime(activity.createdAt) }}
-            </div>
+            <div class="activity__time">{{ formatRelativeTime(activity.sent_time) }}</div>
           </li>
         </ul>
+        <p v-else class="empty-text">No recent activity found in backend logs.</p>
       </div>
       <div class="card card--panel">
         <div class="card__header">
@@ -91,30 +91,30 @@
         <div class="performance-list">
           <div class="performance-item">
             <div class="performance__label">Open Rate</div>
-            <div class="performance__value">{{ openRate }}%</div>
+            <div class="performance__value">{{ performance.openRate }}%</div>
             <div class="performance__bar performance__bar--blue">
-              <span :style="{ width: `${openRate}%` }"></span>
+              <span :style="{ width: `${performance.openRate}%` }"></span>
             </div>
           </div>
           <div class="performance-item">
             <div class="performance__label">Click Rate</div>
-            <div class="performance__value">24%</div>
+            <div class="performance__value">{{ performance.clickRate }}%</div>
             <div class="performance__bar performance__bar--green">
-              <span style="width: 24%"></span>
+              <span :style="{ width: `${performance.clickRate}%` }"></span>
             </div>
           </div>
           <div class="performance-item">
             <div class="performance__label">Bounce Rate</div>
-            <div class="performance__value">4%</div>
+            <div class="performance__value">{{ bounceRate }}%</div>
             <div class="performance__bar performance__bar--orange">
-              <span style="width: 4%"></span>
+              <span :style="{ width: `${bounceRate}%` }"></span>
             </div>
           </div>
           <div class="performance-item">
             <div class="performance__label">Unsubscribe Rate</div>
-            <div class="performance__value">1%</div>
+            <div class="performance__value">{{ unsubscribeRate }}%</div>
             <div class="performance__bar performance__bar--red">
-              <span style="width: 1%"></span>
+              <span :style="{ width: `${unsubscribeRate}%` }"></span>
             </div>
           </div>
         </div>
@@ -124,68 +124,87 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
-import { RouterLink, useRouter } from "vue-router";
+import { computed, onMounted, reactive, ref } from "vue";
+import { RouterLink } from "vue-router";
+import { dashboardApi } from "../api/dashboardApi";
+import { emailAccountsApi } from "../api/emailAccountsApi";
+import { ApiClientError } from "../api/http";
 import { useNotice } from "../composables/useNotice";
-import { mockWorkspace, type MockActivity } from "../stores/mockWorkspace";
+import { auth } from "../stores/auth";
 
-const router = useRouter();
+type DashboardStats = {
+  total_accounts: number;
+  active_accounts: number;
+  active_contacts: number;
+  active_templates: number;
+  total_campaigns: number;
+  total_sent: number;
+  total_opened: number;
+  total_clicked: number;
+};
+
 const notice = useNotice();
-
-const totalAccounts = computed(() => mockWorkspace.state.emailAccounts.length);
-const activeAccounts = computed(
-  () => mockWorkspace.state.emailAccounts.filter((item) => item.isActive).length,
-);
-const defaultAccounts = computed(
-  () => mockWorkspace.state.emailAccounts.filter((item) => item.isDefault).length,
-);
-const totalEmailsSent = computed(() =>
-  mockWorkspace.state.emailAccounts.reduce(
-    (sum, item) => sum + item.emailsSent,
-    0,
-  ),
-);
-const recentActivities = computed(() => mockWorkspace.state.activities.slice(0, 5));
-const openRate = computed(() => {
-  const campaigns = mockWorkspace.state.campaigns;
-  if (!campaigns.length) return 0;
-  const recipientRows = campaigns.flatMap((campaign) => campaign.recipientRows);
-  if (!recipientRows.length) return 0;
-  const opened = recipientRows.filter((row) => row.status === "opened").length;
-  return Math.round((opened / recipientRows.length) * 100);
+const stats = reactive<DashboardStats>({
+  total_accounts: 0,
+  active_accounts: 0,
+  active_contacts: 0,
+  active_templates: 0,
+  total_campaigns: 0,
+  total_sent: 0,
+  total_opened: 0,
+  total_clicked: 0,
 });
+const performance = reactive({
+  openRate: 0,
+  clickRate: 0,
+});
+const recentActivity = ref<Array<Record<string, any>>>([]);
+const defaultAccountCount = ref(0);
 
-function activityLabel(type: MockActivity["type"]) {
-  switch (type) {
-    case "campaign":
-      return "Camp";
-    case "contacts":
-      return "List";
-    case "template":
-      return "Tpl";
-    case "account":
-      return "SMTP";
-    case "profile":
-      return "User";
-    case "payment":
-      return "Pay";
-    default:
-      return "Info";
+const bounceRate = computed(() => 0);
+const unsubscribeRate = computed(() => 0);
+
+function formatRelativeTime(value: unknown) {
+  if (!value) return "N/A";
+  const date = new Date(String(value));
+  const diffMinutes = Math.round((Date.now() - date.getTime()) / 60000);
+  if (!Number.isFinite(diffMinutes)) return String(value);
+  if (diffMinutes < 1) return "just now";
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+  const diffHours = Math.round(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.round(diffHours / 24);
+  return `${diffDays}d ago`;
+}
+
+async function loadDashboard() {
+  if (!auth.state.token) {
+    notice.show("Missing auth token. Please login again.", "error");
+    return;
+  }
+
+  try {
+    const [overviewRes, accountsRes] = await Promise.all([
+      dashboardApi.overview(auth.state.token),
+      emailAccountsApi.list(auth.state.token),
+    ]);
+
+    Object.assign(stats, overviewRes.data.stats);
+    Object.assign(performance, overviewRes.data.performance);
+    recentActivity.value = overviewRes.data.recentActivity || [];
+    defaultAccountCount.value = (accountsRes.data || []).filter(
+      (item) => item.is_default === true,
+    ).length;
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to load dashboard";
+    notice.show(message, "error");
   }
 }
 
-function activityIconClass(type: MockActivity["type"]) {
-  return {
-    "activity__icon--blue": type === "campaign" || type === "template",
-    "activity__icon--green": type === "contacts" || type === "account",
-    "activity__icon--purple": type === "profile" || type === "payment",
-  };
-}
-
-function openActivities() {
-  notice.show("Showing recent activity in Campaigns.", "info");
-  router.push("/campaigns");
-}
+onMounted(() => {
+  void loadDashboard();
+});
 </script>
 
 <style scoped>
@@ -210,6 +229,11 @@ function openActivities() {
   flex-direction: column;
   gap: 10px;
   color: #0f172a;
+}
+
+.page-subtitle--muted {
+  margin-top: 6px;
+  font-size: 13px;
 }
 
 .card--blue {
@@ -331,6 +355,7 @@ function openActivities() {
   color: #4f46e5;
   font-size: 12px;
   cursor: pointer;
+  text-decoration: none;
 }
 
 .activity-list {
@@ -366,16 +391,6 @@ function openActivities() {
   color: #2563eb;
 }
 
-.activity__icon--green {
-  background: rgba(34, 197, 94, 0.14);
-  color: #15803d;
-}
-
-.activity__icon--purple {
-  background: rgba(168, 85, 247, 0.16);
-  color: #7c3aed;
-}
-
 .activity__body {
   flex: 1;
 }
@@ -394,6 +409,11 @@ function openActivities() {
   font-size: 11px;
   color: #9ca3af;
   white-space: nowrap;
+}
+
+.empty-text {
+  color: #6b7280;
+  font-size: 13px;
 }
 
 .performance-list {

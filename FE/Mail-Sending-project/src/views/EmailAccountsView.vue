@@ -1,10 +1,8 @@
 <template>
   <section class="content__header header-with-action">
     <div>
-      <h1 class="page-title">Email Account <span class="title-accent">Management</span></h1>
-      <p class="page-subtitle">
-        Configure and manage your SMTP email accounts for bulk sending.
-      </p>
+      <h1 class="page-title">Email Account Management</h1>
+      <p class="page-subtitle">Live sender accounts from backend</p>
       <p v-if="notice.message" class="notice" :class="`notice--${notice.tone}`">
         {{ notice.message }}
       </p>
@@ -17,7 +15,7 @@
   <section class="grid grid--stats-four">
     <div class="card card--stat card--blue">
       <div class="card__icon">SMTP</div>
-      <div class="card__value">{{ totalAccounts }}</div>
+      <div class="card__value">{{ accounts.length }}</div>
       <div class="card__label">Total Accounts</div>
     </div>
     <div class="card card--stat card--green">
@@ -32,50 +30,46 @@
     </div>
     <div class="card card--stat card--yellow">
       <div class="card__icon">Sent</div>
-      <div class="card__value">{{ totalSent }}</div>
-      <div class="card__label">Emails Sent</div>
+      <div class="card__value">{{ sentToday }}</div>
+      <div class="card__label">Emails Sent Today</div>
     </div>
   </section>
 
-  <section class="content__section" v-if="accounts.length">
-    <div class="card card--list">
+  <section class="content__section">
+    <div class="card card--list" v-if="accounts.length">
       <div class="account-row" v-for="account in accounts" :key="account.id">
         <div>
           <div class="account-title">
-            {{ account.name }}
-            <span v-if="account.isDefault" class="pill">Default</span>
+            {{ account.display_name || account.email_address }}
+            <span v-if="account.is_default" class="pill">Default</span>
           </div>
           <div class="account-meta">
-            {{ account.emailAddress }} · {{ account.provider }} ·
-            {{ account.isActive ? "Active" : "Paused" }}
+            {{ account.email_address }} · {{ account.smtp_host || "No SMTP host" }} ·
+            {{ account.status || "active" }}
           </div>
         </div>
         <div class="account-actions">
           <button
             type="button"
             class="btn btn--secondary btn--small"
-            @click="makeDefault(account.id)"
-            :disabled="account.isDefault"
+            :disabled="account.is_default"
+            @click="setDefault(account.id)"
           >
             Set Default
           </button>
           <button
             type="button"
             class="btn btn--secondary btn--small"
-            @click="toggleAccount(account.id)"
+            @click="toggleStatus(account)"
           >
-            {{ account.isActive ? "Pause" : "Activate" }}
+            {{ account.status === "active" ? "Pause" : "Activate" }}
           </button>
         </div>
       </div>
     </div>
-  </section>
-
-  <section class="content__section" v-else>
-    <div class="card card--empty-state">
-      <div class="empty-icon">SMTP</div>
+    <div class="card card--empty-state" v-else>
       <h3 class="empty-title">No Email Accounts</h3>
-      <p class="empty-desc">Add your first SMTP account to start sending emails.</p>
+      <p class="empty-desc">Create one sender account to enable campaign delivery.</p>
       <button type="button" class="btn btn--primary" @click="addAccount">
         + Add Email Account
       </button>
@@ -84,53 +78,109 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onMounted, ref } from "vue";
+import { emailAccountsApi } from "../api/emailAccountsApi";
+import { ApiClientError } from "../api/http";
 import { useNotice } from "../composables/useNotice";
-import { mockWorkspace } from "../stores/mockWorkspace";
+import { auth } from "../stores/auth";
+
+type AccountRow = {
+  id: number;
+  email_address: string;
+  display_name?: string | null;
+  smtp_host?: string | null;
+  smtp_port?: number | null;
+  status?: string | null;
+  is_default?: boolean;
+  sent_today?: number | null;
+};
 
 const notice = useNotice();
-const accounts = computed(() => mockWorkspace.state.emailAccounts);
-const totalAccounts = computed(() => accounts.value.length);
+const accounts = ref<AccountRow[]>([]);
+
 const activeAccounts = computed(
-  () => accounts.value.filter((item) => item.isActive).length,
+  () => accounts.value.filter((item) => item.status === "active").length,
 );
 const defaultAccounts = computed(
-  () => accounts.value.filter((item) => item.isDefault).length,
+  () => accounts.value.filter((item) => item.is_default).length,
 );
-const totalSent = computed(() =>
-  accounts.value.reduce((sum, item) => sum + item.emailsSent, 0),
+const sentToday = computed(() =>
+  accounts.value.reduce((sum, item) => sum + Number(item.sent_today || 0), 0),
 );
 
-function addAccount() {
-  const emailAddress = window.prompt("Sender email", "sales@example.com");
-  if (!emailAddress?.trim()) return;
-  const name =
-    window.prompt("Account label", emailAddress.split("@")[0] || "New SMTP") ||
-    "New SMTP";
-  const account = mockWorkspace.addEmailAccount({
-    name,
-    emailAddress,
-    provider: "SMTP",
-  });
-  notice.show(`Added ${account.emailAddress}.`, "success");
-}
-
-function makeDefault(id: string) {
-  mockWorkspace.setDefaultEmailAccount(id);
-  notice.show("Default sender updated.", "success");
-}
-
-function toggleAccount(id: string) {
-  const account = mockWorkspace.toggleEmailAccount(id);
-  if (!account) {
-    notice.show("Account not found.", "error");
-    return;
+async function loadAccounts() {
+  if (!auth.state.token) return;
+  try {
+    const response = await emailAccountsApi.list(auth.state.token);
+    accounts.value = response.data as AccountRow[];
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to load email accounts";
+    notice.show(message, "error");
   }
-  notice.show(
-    `${account.emailAddress} is now ${account.isActive ? "active" : "paused"}.`,
-    "info",
-  );
 }
+
+async function addAccount() {
+  if (!auth.state.token) return;
+  const emailAddress = window.prompt("Sender email", "");
+  if (!emailAddress?.trim()) return;
+  const displayName = window.prompt("Display name", "") || undefined;
+  const smtpHost = window.prompt("SMTP host", "smtp.gmail.com") || undefined;
+  const smtpPort = Number(window.prompt("SMTP port", "587") || 587);
+
+  try {
+    await emailAccountsApi.create(auth.state.token, {
+      emailAddress: emailAddress.trim(),
+      displayName,
+      smtpHost,
+      smtpPort,
+      smtpUsername: emailAddress.trim(),
+      smtpPassword: "demo-password",
+      useTls: true,
+      status: "active",
+      isDefault: accounts.value.length === 0,
+      dailyLimit: 500,
+    });
+    notice.show("Email account created.", "success");
+    await loadAccounts();
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to create email account";
+    notice.show(message, "error");
+  }
+}
+
+async function setDefault(id: number) {
+  if (!auth.state.token) return;
+  try {
+    await emailAccountsApi.setDefault(auth.state.token, id);
+    notice.show("Default account updated.", "success");
+    await loadAccounts();
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to set default account";
+    notice.show(message, "error");
+  }
+}
+
+async function toggleStatus(account: AccountRow) {
+  if (!auth.state.token) return;
+  try {
+    await emailAccountsApi.update(auth.state.token, account.id, {
+      status: account.status === "active" ? "inactive" : "active",
+    });
+    notice.show("Account status updated.", "success");
+    await loadAccounts();
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to update account";
+    notice.show(message, "error");
+  }
+}
+
+onMounted(() => {
+  void loadAccounts();
+});
 </script>
 
 <style scoped>
@@ -140,10 +190,6 @@ function toggleAccount(id: string) {
   align-items: flex-start;
   flex-wrap: wrap;
   gap: 16px;
-}
-
-.title-accent {
-  color: #6366f1;
 }
 
 .grid--stats-four {
@@ -158,21 +204,10 @@ function toggleAccount(id: string) {
   color: #0f172a;
 }
 
-.card--blue {
-  border-top: 3px solid #3b82f6;
-}
-
-.card--green {
-  border-top: 3px solid #22c55e;
-}
-
-.card--cyan {
-  border-top: 3px solid #06b6d4;
-}
-
-.card--yellow {
-  border-top: 3px solid #facc15;
-}
+.card--blue { border-top: 3px solid #3b82f6; }
+.card--green { border-top: 3px solid #22c55e; }
+.card--cyan { border-top: 3px solid #06b6d4; }
+.card--yellow { border-top: 3px solid #facc15; }
 
 .card__icon {
   width: 54px;
@@ -185,35 +220,8 @@ function toggleAccount(id: string) {
   font-weight: 700;
 }
 
-.card--blue .card__icon {
-  background: rgba(59, 130, 246, 0.12);
-  color: #1d4ed8;
-}
-
-.card--green .card__icon {
-  background: rgba(34, 197, 94, 0.12);
-  color: #15803d;
-}
-
-.card--cyan .card__icon {
-  background: rgba(6, 182, 212, 0.14);
-  color: #0e7490;
-}
-
-.card--yellow .card__icon {
-  background: rgba(250, 204, 21, 0.16);
-  color: #a16207;
-}
-
-.card__label {
-  font-size: 13px;
-  color: #6b7280;
-}
-
-.card__value {
-  font-size: 24px;
-  font-weight: 600;
-}
+.card__label { font-size: 13px; color: #6b7280; }
+.card__value { font-size: 24px; font-weight: 600; }
 
 .card--list {
   display: flex;
@@ -235,15 +243,8 @@ function toggleAccount(id: string) {
   border-bottom: none;
 }
 
-.account-title {
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.account-meta {
-  font-size: 13px;
-  color: var(--color-text-muted);
-}
+.account-title { font-size: 15px; font-weight: 600; }
+.account-meta { font-size: 13px; color: var(--color-text-muted); }
 
 .account-actions {
   display: flex;
@@ -261,52 +262,17 @@ function toggleAccount(id: string) {
   font-size: 11px;
 }
 
-.btn--small {
-  padding: 6px 10px;
-  font-size: 12px;
-}
-
-.card--empty-state {
-  padding: 48px 24px;
-  text-align: center;
-  border: 1px dashed #d1d5db;
-  background: #fafafa;
-}
-
-.empty-icon {
-  font-size: 22px;
-  font-weight: 700;
-  opacity: 0.5;
-  margin-bottom: 16px;
-}
-
-.empty-title {
-  font-size: 18px;
-  font-weight: 600;
-  margin: 0 0 8px;
-  color: #111827;
-}
-
-.empty-desc {
-  font-size: 14px;
-  color: #6b7280;
-  margin: 0 0 20px;
-}
+.btn--small { padding: 6px 10px; font-size: 12px; }
+.card--empty-state { padding: 40px 24px; text-align: center; }
+.empty-title { font-size: 18px; font-weight: 600; margin: 0 0 8px; }
+.empty-desc { font-size: 14px; color: #6b7280; margin: 0 0 20px; }
 
 @media (max-width: 1024px) {
-  .grid--stats-four {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+  .grid--stats-four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 768px) {
-  .grid--stats-four {
-    grid-template-columns: 1fr;
-  }
-
-  .account-row {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+  .grid--stats-four { grid-template-columns: 1fr; }
+  .account-row { flex-direction: column; align-items: flex-start; }
 }
 </style>

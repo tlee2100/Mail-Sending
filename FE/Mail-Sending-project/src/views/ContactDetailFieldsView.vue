@@ -1,9 +1,7 @@
 <template>
   <section class="content__header">
     <h1 class="page-title">Contact Field Values</h1>
-    <p class="page-subtitle">
-      Contact ID: {{ route.params.id }} - Update per-contact field values.
-    </p>
+    <p class="page-subtitle">Contact ID: {{ route.params.id }}</p>
     <p v-if="notice.message" class="notice" :class="`notice--${notice.tone}`">
       {{ notice.message }}
     </p>
@@ -11,22 +9,24 @@
 
   <section class="content__section">
     <div class="card form-card">
-      <div class="input-wrap" v-for="field in fields" :key="field.key">
-        <label :for="field.key">{{ field.label }}</label>
+      <div class="input-wrap" v-for="field in fields" :key="field.fieldId">
+        <label :for="`field-${field.fieldId}`">
+          {{ field.fieldLabel || field.fieldName }}
+        </label>
         <input
-          :id="field.key"
-          v-model="field.value"
+          :id="`field-${field.fieldId}`"
+          v-model="field.valueText"
           type="text"
-          :placeholder="field.placeholder"
+          :placeholder="field.fieldType"
         />
       </div>
 
       <div class="actions">
-        <button type="button" class="btn btn--secondary" @click="loadContactFields">
-          Load Contact Fields
+        <button type="button" class="btn btn--secondary" @click="loadFields">
+          Load
         </button>
-        <button type="button" class="btn btn--primary" @click="saveContactFields">
-          Save Contact Fields
+        <button type="button" class="btn btn--primary" @click="saveFields">
+          Save
         </button>
       </div>
     </div>
@@ -34,45 +34,68 @@
 </template>
 
 <script setup lang="ts">
-import { reactive } from "vue";
+import { onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
+import { contactsApi } from "../api/contactsApi";
+import { ApiClientError } from "../api/http";
 import { useNotice } from "../composables/useNotice";
-import { mockWorkspace } from "../stores/mockWorkspace";
+import { auth } from "../stores/auth";
+
+type FieldValueRow = {
+  fieldId: number;
+  fieldName: string;
+  fieldLabel?: string | null;
+  fieldType: string;
+  isRequired: boolean;
+  value: string | number | boolean | null;
+  valueText: string;
+};
 
 const route = useRoute();
 const notice = useNotice();
+const fields = ref<FieldValueRow[]>([]);
 
-const fields = reactive([
-  { key: "company", label: "Company", value: "", placeholder: "Acme Inc." },
-  { key: "plan", label: "Plan", value: "", placeholder: "Enterprise" },
-  { key: "renewal_date", label: "Renewal Date", value: "", placeholder: "2026-12-31" },
-]);
-
-function loadContactFields() {
-  const contact = mockWorkspace.getContactById(String(route.params.id));
-  if (!contact) {
-    notice.show("Contact not found in mock data.", "error");
-    return;
+async function loadFields() {
+  if (!auth.state.token) return;
+  try {
+    const response = await contactsApi.listContactFields(
+      auth.state.token,
+      String(route.params.id),
+    );
+    fields.value = (response.data as Array<any>).map((item) => ({
+      ...item,
+      valueText: item.value === null || item.value === undefined ? "" : String(item.value),
+    }));
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to load field values";
+    notice.show(message, "error");
   }
-  for (const field of fields) {
-    field.value = contact.fields[field.key] || "";
-  }
-  notice.show(`Loaded field values for ${contact.name}.`, "info");
 }
 
-function saveContactFields() {
-  const contact = mockWorkspace.updateContactFields(
-    String(route.params.id),
-    Object.fromEntries(fields.map((field) => [field.key, field.value])),
-  );
-  if (!contact) {
-    notice.show("Contact not found in mock data.", "error");
-    return;
+async function saveFields() {
+  if (!auth.state.token) return;
+  try {
+    await contactsApi.replaceContactFields(
+      auth.state.token,
+      String(route.params.id),
+      fields.value.map((field) => ({
+        fieldId: field.fieldId,
+        value: field.valueText.trim() ? field.valueText.trim() : null,
+      })),
+    );
+    notice.show("Field values saved.", "success");
+    await loadFields();
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to save field values";
+    notice.show(message, "error");
   }
-  notice.show(`Saved custom fields for ${contact.name}.`, "success");
 }
 
-loadContactFields();
+onMounted(() => {
+  void loadFields();
+});
 </script>
 
 <style scoped>

@@ -9,10 +9,10 @@
     </div>
     <div class="actions" v-if="campaign">
       <button type="button" class="btn btn--primary" @click="startCampaign">
-        Start Campaign
+        Start
       </button>
       <button type="button" class="btn btn--secondary" @click="pauseCampaign">
-        Pause Campaign
+        Pause
       </button>
     </div>
   </section>
@@ -21,77 +21,78 @@
     <article class="card panel">
       <h2 class="section-title">Overview</h2>
       <p class="metric"><strong>Status</strong>: {{ campaign.status }}</p>
-      <p class="metric"><strong>Template</strong>: {{ campaign.templateName }}</p>
-      <p class="metric"><strong>Sender</strong>: {{ campaign.sender }}</p>
-      <p class="metric"><strong>Audience</strong>: {{ campaign.audience }}</p>
-      <p class="metric">
-        <strong>Updated</strong>: {{ mockWorkspace.formatRelativeTime(campaign.updatedAt) }}
-      </p>
+      <p class="metric"><strong>Template</strong>: {{ campaign.template_name || "-" }}</p>
+      <p class="metric"><strong>Sender</strong>: {{ campaign.sender_email || "-" }}</p>
+      <p class="metric"><strong>Audience</strong>: {{ campaign.total_recipients || 0 }}</p>
     </article>
 
     <article class="card panel">
       <h2 class="section-title">Actions</h2>
       <div class="stack">
-        <button type="button" class="btn btn--secondary" @click="refreshState">
-          Refresh Mock State
+        <button type="button" class="btn btn--secondary" @click="loadCampaign">
+          Refresh
         </button>
-        <RouterLink
-          :to="`/campaigns/${route.params.id}/recipients`"
-          class="btn btn--secondary"
-        >
+        <RouterLink :to="`/campaigns/${route.params.id}/recipients`" class="btn btn--secondary">
           View Recipients
         </RouterLink>
       </div>
     </article>
   </section>
-
-  <section v-else class="content__section">
-    <div class="card panel">
-      <p class="metric">Campaign not found in mock workspace.</p>
-    </div>
-  </section>
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { onMounted, ref } from "vue";
 import { useRoute, RouterLink } from "vue-router";
+import { campaignsApi } from "../api/campaignsApi";
+import { ApiClientError } from "../api/http";
 import { useNotice } from "../composables/useNotice";
-import { mockWorkspace } from "../stores/mockWorkspace";
+import { auth } from "../stores/auth";
 
 const route = useRoute();
 const notice = useNotice();
-const campaign = computed(() =>
-  mockWorkspace.getCampaignById(String(route.params.id)),
-);
+const campaign = ref<Record<string, any> | null>(null);
 
-function startCampaign() {
-  const updated = mockWorkspace.startCampaign(String(route.params.id));
-  if (!updated) {
-    notice.show("Campaign not found.", "error");
-    return;
+async function loadCampaign() {
+  if (!auth.state.token) return;
+  try {
+    const response = await campaignsApi.get(auth.state.token, String(route.params.id));
+    campaign.value = response.data;
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to load campaign";
+    notice.show(message, "error");
   }
-  notice.show(`"${updated.name}" is now sending.`, "success");
 }
 
-function pauseCampaign() {
-  const updated = mockWorkspace.pauseCampaign(String(route.params.id));
-  if (!updated) {
-    notice.show("Campaign not found.", "error");
-    return;
+async function startCampaign() {
+  if (!auth.state.token) return;
+  try {
+    await campaignsApi.start(auth.state.token, String(route.params.id));
+    notice.show("Campaign started.", "success");
+    await loadCampaign();
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to start campaign";
+    notice.show(message, "error");
   }
-  notice.show(`"${updated.name}" is paused.`, "info");
 }
 
-function refreshState() {
-  if (!campaign.value) {
-    notice.show("Campaign not found.", "error");
-    return;
+async function pauseCampaign() {
+  if (!auth.state.token) return;
+  try {
+    await campaignsApi.pause(auth.state.token, String(route.params.id));
+    notice.show("Campaign paused.", "success");
+    await loadCampaign();
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to pause campaign";
+    notice.show(message, "error");
   }
-  notice.show(
-    `Campaign is ${campaign.value.status} with ${campaign.value.recipients} recipients.`,
-    "info",
-  );
 }
+
+onMounted(() => {
+  void loadCampaign();
+});
 </script>
 
 <style scoped>
@@ -103,34 +104,13 @@ function refreshState() {
   gap: 12px;
 }
 
-.grid--detail {
-  grid-template-columns: 1.7fr 1fr;
-}
-
-.panel {
-  border: 1px solid var(--color-border-subtle);
-}
-
-.metric {
-  margin: 0 0 8px;
-  font-size: 14px;
-  color: var(--color-text-main);
-}
-
-.actions,
-.stack {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.stack .btn {
-  text-decoration: none;
-}
+.grid--detail { grid-template-columns: 1.7fr 1fr; }
+.panel { border: 1px solid var(--color-border-subtle); }
+.metric { margin: 0 0 8px; font-size: 14px; color: var(--color-text-main); }
+.actions, .stack { display: flex; gap: 10px; flex-wrap: wrap; }
+.stack .btn { text-decoration: none; }
 
 @media (max-width: 900px) {
-  .grid--detail {
-    grid-template-columns: 1fr;
-  }
+  .grid--detail { grid-template-columns: 1fr; }
 }
 </style>

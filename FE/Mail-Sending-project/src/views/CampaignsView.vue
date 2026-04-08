@@ -2,9 +2,7 @@
   <section class="content__header header-row">
     <div>
       <h1 class="page-title">Campaigns</h1>
-      <p class="page-subtitle">
-        Create, monitor and control campaign delivery lifecycle.
-      </p>
+      <p class="page-subtitle">Campaign list from backend</p>
       <p v-if="notice.message" class="notice" :class="`notice--${notice.tone}`">
         {{ notice.message }}
       </p>
@@ -16,7 +14,7 @@
 
   <section class="content__section">
     <div class="card card--table">
-      <table class="table">
+      <table class="table" v-if="campaigns.length">
         <thead>
           <tr>
             <th>Name</th>
@@ -28,48 +26,117 @@
         </thead>
         <tbody>
           <tr v-for="item in campaigns" :key="item.id">
-            <td>{{ item.name }}</td>
-            <td>
-              <span class="badge" :class="`badge--${item.status}`">{{ item.status }}</span>
-            </td>
-            <td>{{ item.recipients }}</td>
-            <td>{{ mockWorkspace.formatRelativeTime(item.updatedAt) }}</td>
+            <td>{{ item.campaign_name }}</td>
+            <td><span class="badge">{{ item.status }}</span></td>
+            <td>{{ item.total_recipients || 0 }}</td>
+            <td>{{ formatDate(item.updated_at || item.created_at) }}</td>
             <td class="actions">
-              <RouterLink
-                :to="`/campaigns/${item.id}`"
-                class="btn btn--secondary btn--small"
-              >
+              <RouterLink :to="`/campaigns/${item.id}`" class="btn btn--secondary btn--small">
                 Detail
               </RouterLink>
-              <RouterLink
-                :to="`/campaigns/${item.id}/recipients`"
-                class="btn btn--secondary btn--small"
-              >
+              <RouterLink :to="`/campaigns/${item.id}/recipients`" class="btn btn--secondary btn--small">
                 Recipients
               </RouterLink>
             </td>
           </tr>
         </tbody>
       </table>
+      <p v-else class="empty-text">No campaigns found.</p>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { onMounted, ref } from "vue";
 import { RouterLink } from "vue-router";
+import { campaignsApi } from "../api/campaignsApi";
+import { contactsApi } from "../api/contactsApi";
+import { emailAccountsApi } from "../api/emailAccountsApi";
+import { templatesApi } from "../api/templatesApi";
+import { ApiClientError } from "../api/http";
 import { useNotice } from "../composables/useNotice";
-import { mockWorkspace } from "../stores/mockWorkspace";
+import { auth } from "../stores/auth";
+
+type CampaignRow = Record<string, any>;
 
 const notice = useNotice();
-const campaigns = computed(() => mockWorkspace.state.campaigns);
+const campaigns = ref<CampaignRow[]>([]);
 
-function createCampaign() {
-  const name = window.prompt("Campaign name", "Spring Launch");
-  if (!name?.trim()) return;
-  const campaign = mockWorkspace.addCampaign({ name: name.trim() });
-  notice.show(`Created "${campaign.name}" in draft mode.`, "success");
+function formatDate(value?: string) {
+  return value ? new Date(value).toLocaleString() : "-";
 }
+
+async function loadCampaigns() {
+  if (!auth.state.token) return;
+  try {
+    const response = await campaignsApi.list(auth.state.token);
+    campaigns.value = response.data.items;
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to load campaigns";
+    notice.show(message, "error");
+  }
+}
+
+async function createCampaign() {
+  if (!auth.state.token) return;
+  try {
+    const [templatesRes, accountsRes, contactsRes] = await Promise.all([
+      templatesApi.listTemplates(auth.state.token, { pageSize: 1 }),
+      emailAccountsApi.list(auth.state.token),
+      contactsApi.listContacts(auth.state.token, { pageSize: 5, status: "active" }),
+    ]);
+
+    const firstTemplate = templatesRes.data.items[0];
+    const firstAccount = accountsRes.data[0];
+    const contactIds = contactsRes.data.items.map((item: any) => Number(item.id));
+
+    if (!firstTemplate && !firstAccount) {
+      notice.show(
+        "Cannot create campaign. The current account needs at least one template and one email account.",
+        "error",
+      );
+      return;
+    }
+
+    if (!firstTemplate) {
+      notice.show(
+        "Cannot create campaign. The current account does not have any email template yet.",
+        "error",
+      );
+      return;
+    }
+
+    if (!firstAccount) {
+      notice.show(
+        "Cannot create campaign. The current account does not have any email account yet.",
+        "error",
+      );
+      return;
+    }
+
+    const campaignName = window.prompt("Campaign name", "Spring Launch");
+    if (!campaignName?.trim()) return;
+
+    await campaignsApi.create(auth.state.token, {
+      campaignName: campaignName.trim(),
+      templateId: Number(firstTemplate.id),
+      emailAccountId: Number(firstAccount.id),
+      campaignType: "regular",
+      contactIds,
+    });
+    notice.show("Campaign created.", "success");
+    await loadCampaigns();
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to create campaign";
+    notice.show(message, "error");
+  }
+}
+
+onMounted(() => {
+  void loadCampaigns();
+});
 </script>
 
 <style scoped>
@@ -111,22 +178,6 @@ function createCampaign() {
   background: var(--color-control-bg-muted);
   color: var(--color-text-main);
   font-size: 12px;
-  text-transform: capitalize;
-}
-
-.badge--running {
-  background: rgba(34, 197, 94, 0.12);
-  color: #15803d;
-}
-
-.badge--paused {
-  background: rgba(245, 158, 11, 0.14);
-  color: #92400e;
-}
-
-.badge--sent {
-  background: rgba(59, 130, 246, 0.12);
-  color: #1d4ed8;
 }
 
 .actions {
@@ -134,9 +185,6 @@ function createCampaign() {
   gap: 8px;
 }
 
-.btn--small {
-  padding: 6px 10px;
-  font-size: 12px;
-  text-decoration: none;
-}
+.btn--small { padding: 6px 10px; font-size: 12px; text-decoration: none; }
+.empty-text { padding: 18px; color: var(--color-text-muted); }
 </style>
