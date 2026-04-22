@@ -33,4 +33,8 @@ export const templatesApi = {
       body,
     });
   },
+
+  getTemplate(token: string, id: string | number) {
+    return apiRequest<Record<string, unknown>>(`/templates/${id}`, { token });
+  },
 };

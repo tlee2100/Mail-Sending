@@ -15,7 +15,7 @@
       <span>
         {{
           hasAccounts
-            ? "A mock sender account is available. You can proceed to compose."
+            ? `Found ${accountCount} configured sender account${accountCount > 1 ? "s" : ""}. You can proceed to compose.`
             : "Add an email account first so preview and send actions have a sender."
         }}
       </span>
@@ -57,17 +57,44 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { RouterLink } from "vue-router";
+import { ApiClientError } from "../api/http";
+import { emailAccountsApi } from "../api/emailAccountsApi";
 import { useNotice } from "../composables/useNotice";
-import { mockWorkspace } from "../stores/mockWorkspace";
+import { auth } from "../stores/auth";
+import {
+  readIndividualEmailDraft,
+  writeIndividualEmailDraft,
+} from "../utils/individualEmailDraft";
 
 const notice = useNotice();
-const recipients = ref(mockWorkspace.state.composeDraft.recipients);
-const hasAccounts = computed(() => mockWorkspace.state.emailAccounts.length > 0);
+const draft = readIndividualEmailDraft();
+const recipients = ref(draft.recipients);
+const accountCount = ref(0);
+const hasAccounts = computed(() => accountCount.value > 0);
 
 watch(recipients, () => {
-  mockWorkspace.saveComposeDraft({ recipients: recipients.value });
+  writeIndividualEmailDraft({ recipients: recipients.value });
+});
+
+async function loadAccounts() {
+  if (!auth.state.token) return;
+
+  try {
+    const response = await emailAccountsApi.list(auth.state.token);
+    accountCount.value = (response.data || []).length;
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError
+        ? error.message
+        : "Failed to load email accounts";
+    notice.show(message, "error");
+  }
+}
+
+onMounted(() => {
+  void loadAccounts();
 });
 </script>
 
