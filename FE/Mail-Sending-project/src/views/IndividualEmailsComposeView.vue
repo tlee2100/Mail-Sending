@@ -12,9 +12,44 @@
   <div class="compose-layout">
     <div class="compose-main">
       <div class="card card--compose">
+        <div class="compose-config">
+          <div class="input-wrap">
+            <label>Sender Account *</label>
+            <select v-model="selectedAccountId">
+              <option value="">Select a sender account</option>
+              <option
+                v-for="account in accounts"
+                :key="String(account.id)"
+                :value="String(account.id)"
+              >
+                {{ String(account.email_address || "Unknown account") }}
+              </option>
+            </select>
+          </div>
+
+          <div class="input-wrap">
+            <label>Template</label>
+            <select v-model="selectedTemplateId">
+              <option value="">Manual compose</option>
+              <option
+                v-for="template in templates"
+                :key="String(template.id)"
+                :value="String(template.id)"
+              >
+                {{ String(template.template_name || "Template") }}
+              </option>
+            </select>
+          </div>
+        </div>
+
         <div class="compose-actions">
-          <button type="button" class="btn btn--yellow" @click="selectTemplate">
-            Select Template
+          <button
+            type="button"
+            class="btn btn--yellow"
+            :disabled="!selectedTemplateId"
+            @click="selectTemplate"
+          >
+            Load Template
           </button>
           <button type="button" class="btn btn--primary" @click="useEditorStarter">
             Use Email Editor
@@ -66,8 +101,13 @@
         <button type="button" class="btn btn--secondary" @click="resetForm">
           Reset Form
         </button>
-        <button type="button" class="btn btn--primary" @click="sendEmails">
-          Send Emails
+        <button
+          type="button"
+          class="btn btn--primary"
+          :disabled="isSending"
+          @click="sendEmails"
+        >
+          {{ isSending ? "Sending..." : "Send Emails" }}
         </button>
       </div>
     </div>
@@ -82,8 +122,13 @@
             placeholder="your-email@example.com"
           />
         </div>
-        <button type="button" class="btn btn--green full" @click="sendPreview">
-          Send Preview
+        <button
+          type="button"
+          class="btn btn--green full"
+          :disabled="isPreviewing"
+          @click="sendPreview"
+        >
+          {{ isPreviewing ? "Sending..." : "Send Preview" }}
         </button>
         <p class="sidebar-hint">
           Send a preview first to verify the content before bulk send.
@@ -105,16 +150,33 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
+import { emailAccountsApi } from "../api/emailAccountsApi";
+import { ApiClientError } from "../api/http";
+import { individualEmailsApi } from "../api/individualEmailsApi";
+import { templatesApi } from "../api/templatesApi";
 import { useNotice } from "../composables/useNotice";
-import { mockWorkspace } from "../stores/mockWorkspace";
+import { auth } from "../stores/auth";
+import {
+  parseRecipientInput,
+  readIndividualEmailDraft,
+  resetIndividualEmailDraft,
+  writeIndividualEmailDraft,
+} from "../utils/individualEmailDraft";
 
 const notice = useNotice();
+const draft = readIndividualEmailDraft();
 const editorRef = ref<HTMLTextAreaElement | null>(null);
-const subject = ref(mockWorkspace.state.composeDraft.subject);
-const content = ref(mockWorkspace.state.composeDraft.content);
-const previewEmail = ref(mockWorkspace.state.composeDraft.previewEmail);
-const recipients = ref(mockWorkspace.state.composeDraft.recipients);
+const subject = ref(draft.subject);
+const content = ref(draft.content);
+const previewEmail = ref(draft.previewEmail);
+const recipients = ref(draft.recipients);
+const selectedAccountId = ref(draft.emailAccountId);
+const selectedTemplateId = ref(draft.templateId);
+const accounts = ref<Array<Record<string, unknown>>>([]);
+const templates = ref<Array<Record<string, unknown>>>([]);
+const isSending = ref(false);
+const isPreviewing = ref(false);
 
 const mergeTags = [
   { tag: "{{name}}", desc: "Customer Name" },
@@ -134,24 +196,103 @@ const recipientCount = computed(() =>
     .filter(Boolean).length,
 );
 
+function getApiErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof ApiClientError) {
+    const details = error.details as
+      | { reason?: string; results?: Array<{ error?: string }> }
+      | undefined;
+    const reason =
+      details?.reason ||
+      details?.results?.find((item) => item.error)?.error ||
+      "";
+    return reason ? `${error.message}: ${reason}` : error.message;
+  }
+
+  return fallback;
+}
+
 watch([subject, content, previewEmail], () => {
-  mockWorkspace.saveComposeDraft({
+  writeIndividualEmailDraft({
     recipients: recipients.value,
     subject: subject.value,
     content: content.value,
     previewEmail: previewEmail.value,
+    emailAccountId: selectedAccountId.value,
+    templateId: selectedTemplateId.value,
   });
 });
 
-function selectTemplate() {
-  const template = mockWorkspace.state.templates[0];
-  if (!template) {
-    notice.show("No templates available in mock storage.", "error");
+watch([recipients, selectedAccountId, selectedTemplateId], () => {
+  writeIndividualEmailDraft({
+    recipients: recipients.value,
+    subject: subject.value,
+    content: content.value,
+    previewEmail: previewEmail.value,
+    emailAccountId: selectedAccountId.value,
+    templateId: selectedTemplateId.value,
+  });
+});
+
+function stripHtml(value: unknown) {
+  return String(value || "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function resolveDefaultAccountId(rows: Array<Record<string, unknown>>) {
+  const defaultAccount = rows.find((item) => item.is_default === true) || rows[0];
+  return defaultAccount ? String(defaultAccount.id || "") : "";
+}
+
+async function loadDependencies() {
+  if (!auth.state.token) {
+    notice.show("Missing auth token. Please login again.", "error");
     return;
   }
-  subject.value = `${template.name} Update`;
-  content.value = `Hi {{name}},\n\nThis message is based on the ${template.name} template.\n\n${template.description}\n\nBest regards,\nYour team`;
-  notice.show(`Loaded template "${template.name}".`, "success");
+
+  try {
+    const [accountsRes, templatesRes] = await Promise.all([
+      emailAccountsApi.list(auth.state.token),
+      templatesApi.listTemplates(auth.state.token, { pageSize: 100 }),
+    ]);
+
+    accounts.value = accountsRes.data || [];
+    templates.value = templatesRes.data.items || [];
+
+    if (!selectedAccountId.value) {
+      selectedAccountId.value = resolveDefaultAccountId(accounts.value);
+    }
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to load compose data";
+    notice.show(message, "error");
+  }
+}
+
+async function selectTemplate() {
+  if (!auth.state.token) return;
+  if (!selectedTemplateId.value) {
+    notice.show("Choose a template first.", "error");
+    return;
+  }
+
+  try {
+    const response = await templatesApi.getTemplate(
+      auth.state.token,
+      Number(selectedTemplateId.value),
+    );
+    const template = response.data;
+    subject.value = String(template.subject || template.template_name || "").trim();
+    content.value = String(template.content_text || "").trim() || stripHtml(template.content_html);
+    notice.show(`Loaded template "${String(template.template_name || "Template")}".`, "success");
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to load template";
+    notice.show(message, "error");
+  }
 }
 
 function useEditorStarter() {
@@ -189,12 +330,15 @@ function resetForm() {
   subject.value = "";
   content.value = "";
   previewEmail.value = "";
-  mockWorkspace.resetComposeDraft();
-  recipients.value = mockWorkspace.state.composeDraft.recipients;
+  selectedTemplateId.value = "";
+  resetIndividualEmailDraft();
+  recipients.value = "";
+  selectedAccountId.value = resolveDefaultAccountId(accounts.value);
   notice.show("Compose form reset.", "info");
 }
 
-function sendEmails() {
+async function sendEmails() {
+  if (!auth.state.token) return;
   if (!subject.value.trim() || !content.value.trim()) {
     notice.show("Subject and content are required.", "error");
     return;
@@ -203,22 +347,70 @@ function sendEmails() {
     notice.show("Add recipients in the previous step first.", "error");
     return;
   }
-  const campaign = mockWorkspace.sendIndividualEmails({
-    recipients: recipients.value,
-    subject: subject.value,
-    content: content.value,
-  });
-  notice.show(`Sent mock email batch via campaign "${campaign.name}".`, "success");
+  if (!selectedAccountId.value) {
+    notice.show("Select an email account first.", "error");
+    return;
+  }
+
+  const parsedRecipients = parseRecipientInput(recipients.value);
+  if (parsedRecipients.length === 0) {
+    notice.show("Recipients list is empty.", "error");
+    return;
+  }
+
+  isSending.value = true;
+  try {
+    const response = await individualEmailsApi.send(auth.state.token, {
+      recipients: parsedRecipients,
+      subject: subject.value.trim(),
+      content: content.value,
+      emailAccountId: Number(selectedAccountId.value),
+    });
+    notice.show(
+      `Sent ${response.data.sentCount}/${response.data.requestedCount} emails via backend SMTP.`,
+      response.data.failedCount > 0 ? "info" : "success",
+    );
+  } catch (error) {
+    notice.show(getApiErrorMessage(error, "Failed to send emails"), "error");
+  } finally {
+    isSending.value = false;
+  }
 }
 
-function sendPreview() {
+async function sendPreview() {
+  if (!auth.state.token) return;
   if (!previewEmail.value.trim()) {
     notice.show("Preview email is required.", "error");
     return;
   }
-  mockWorkspace.sendPreview(previewEmail.value);
-  notice.show(`Preview sent to ${previewEmail.value}.`, "success");
+  if (!subject.value.trim() || !content.value.trim()) {
+    notice.show("Subject and content are required before preview.", "error");
+    return;
+  }
+  if (!selectedAccountId.value) {
+    notice.show("Select an email account first.", "error");
+    return;
+  }
+
+  isPreviewing.value = true;
+  try {
+    await individualEmailsApi.sendPreview(auth.state.token, {
+      previewEmail: previewEmail.value.trim(),
+      subject: subject.value.trim(),
+      content: content.value,
+      emailAccountId: Number(selectedAccountId.value),
+    });
+    notice.show(`Preview sent to ${previewEmail.value.trim()}.`, "success");
+  } catch (error) {
+    notice.show(getApiErrorMessage(error, "Failed to send preview"), "error");
+  } finally {
+    isPreviewing.value = false;
+  }
 }
+
+onMounted(() => {
+  void loadDependencies();
+});
 </script>
 
 <style scoped>
@@ -237,6 +429,13 @@ function sendPreview() {
 
 .card--compose {
   padding: 20px;
+}
+
+.compose-config {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
 }
 
 .compose-actions {
@@ -362,6 +561,10 @@ function sendPreview() {
 
 @media (max-width: 900px) {
   .compose-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .compose-config {
     grid-template-columns: 1fr;
   }
 }

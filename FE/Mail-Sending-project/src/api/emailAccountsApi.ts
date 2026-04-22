@@ -56,4 +56,24 @@ export const emailAccountsApi = {
       token,
     });
   },
+
+  testConnection(
+    token: string,
+    body: {
+      accountId?: number;
+      emailAddress?: string;
+      displayName?: string;
+      smtpHost?: string;
+      smtpPort?: number;
+      smtpUsername?: string;
+      smtpPassword?: string;
+      useTls?: boolean;
+    },
+  ) {
+    return apiRequest<Record<string, unknown>>("/email-accounts/test", {
+      method: "POST",
+      token,
+      body,
+    });
+  },
 };
