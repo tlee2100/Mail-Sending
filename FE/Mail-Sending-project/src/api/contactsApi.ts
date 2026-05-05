@@ -3,7 +3,14 @@ import { apiDownload, apiRequest } from "./http";
 export const contactsApi = {
   listContacts(
     token: string,
-    query?: { page?: number; pageSize?: number; search?: string; status?: string; city?: string },
+    query?: {
+      page?: number;
+      pageSize?: number;
+      search?: string;
+      status?: string;
+      city?: string;
+      tagId?: number;
+    },
   ) {
     return apiRequest<{
       items: Array<Record<string, unknown>>;
@@ -51,6 +58,22 @@ export const contactsApi = {
       method: "POST",
       token,
       body,
+    });
+  },
+
+  listTagRecipients(token: string, tagId: string | number) {
+    return apiRequest<{
+      tagId: number;
+      total: number;
+      recipients: Array<Record<string, unknown>>;
+    }>(`/contacts/tags/${tagId}/recipients`, { token });
+  },
+
+  replaceContactTags(token: string, id: string | number, tagIds: number[]) {
+    return apiRequest<Array<Record<string, unknown>>>(`/contacts/${id}/tags`, {
+      method: "PUT",
+      token,
+      body: { tagIds },
     });
   },
 
@@ -132,7 +155,13 @@ export const contactsApi = {
 
   exportContacts(
     token: string,
-    query?: { format?: "csv" | "xlsx"; search?: string; status?: string; city?: string },
+    query?: {
+      format?: "csv" | "xlsx";
+      search?: string;
+      status?: string;
+      city?: string;
+      tagId?: number;
+    },
   ) {
     return apiDownload("/contacts/export", { token }, query);
   },

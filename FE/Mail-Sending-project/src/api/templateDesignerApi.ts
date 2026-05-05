@@ -60,6 +60,13 @@ export type SaveDesignerDraftPayload = {
   renderedText?: string;
 };
 
+type ApiEnvelope<T> = {
+  success?: boolean;
+  message?: string;
+  data?: T;
+  details?: unknown;
+};
+
 const API_BASE = String(import.meta.env.VITE_API_BASE_URL || "/api/v1").replace(
   /\/$/,
   "",
@@ -119,6 +126,10 @@ async function requestJson<T>(
       detailsText ? `${message}: ${detailsText}` : message,
       response.status,
     );
+  }
+
+  if (typeof payload === "object" && payload !== null && "data" in payload) {
+    return (payload as ApiEnvelope<T>).data as T;
   }
 
   return payload as T;

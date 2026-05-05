@@ -151,9 +151,11 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
+import { useRouter } from "vue-router";
 import { emailAccountsApi } from "../api/emailAccountsApi";
 import { ApiClientError } from "../api/http";
 import { individualEmailsApi } from "../api/individualEmailsApi";
+import { templateDesignerApi, type TemplateLayout } from "../api/templateDesignerApi";
 import { templatesApi } from "../api/templatesApi";
 import { useNotice } from "../composables/useNotice";
 import { auth } from "../stores/auth";
@@ -165,6 +167,7 @@ import {
 } from "../utils/individualEmailDraft";
 
 const notice = useNotice();
+const router = useRouter();
 const draft = readIndividualEmailDraft();
 const editorRef = ref<HTMLTextAreaElement | null>(null);
 const subject = ref(draft.subject);
@@ -177,6 +180,7 @@ const accounts = ref<Array<Record<string, unknown>>>([]);
 const templates = ref<Array<Record<string, unknown>>>([]);
 const isSending = ref(false);
 const isPreviewing = ref(false);
+const templateHtmlContent = ref("");
 
 const mergeTags = [
   { tag: "{{name}}", desc: "Customer Name" },
@@ -233,6 +237,12 @@ watch([recipients, selectedAccountId, selectedTemplateId], () => {
   });
 });
 
+watch(selectedTemplateId, (value, previousValue) => {
+  if (value !== previousValue) {
+    templateHtmlContent.value = "";
+  }
+});
+
 function stripHtml(value: unknown) {
   return String(value || "")
     .replace(/<style[\s\S]*?<\/style>/gi, "")
@@ -287,6 +297,7 @@ async function selectTemplate() {
     const template = response.data;
     subject.value = String(template.subject || template.template_name || "").trim();
     content.value = String(template.content_text || "").trim() || stripHtml(template.content_html);
+    templateHtmlContent.value = String(template.content_html || "").trim();
     notice.show(`Loaded template "${String(template.template_name || "Template")}".`, "success");
   } catch (error) {
     const message =
@@ -295,13 +306,130 @@ async function selectTemplate() {
   }
 }
 
-function useEditorStarter() {
-  if (content.value.trim()) {
-    content.value += "\n\n---\nCTA: [Add your action here]";
-  } else {
-    content.value = "Hi {{name}},\n\nThanks for being part of our audience.\n\nWrite your message here.\n\nBest regards,\nYour team";
+async function resolveHtmlContentForDelivery() {
+  if (!auth.state.token || !selectedTemplateId.value) {
+    return undefined;
   }
-  notice.show("Inserted editable starter content.", "info");
+
+  try {
+    const designer = await templateDesignerApi.getDesigner(
+      selectedTemplateId.value,
+      auth.state.token,
+    );
+    const renderedDesignerHtml =
+      designer.draft?.renderedHtml || designer.published?.renderedHtml || "";
+
+    if (renderedDesignerHtml.trim()) {
+      templateHtmlContent.value = renderedDesignerHtml;
+      return renderedDesignerHtml;
+    }
+  } catch {
+    // fallback to template content_html below
+  }
+
+  if (templateHtmlContent.value.trim()) {
+    return templateHtmlContent.value;
+  }
+
+  try {
+    const response = await templatesApi.getTemplate(
+      auth.state.token,
+      Number(selectedTemplateId.value),
+    );
+    const html = String(response.data.content_html || "").trim();
+    templateHtmlContent.value = html;
+    return html || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function buildDesignerLayoutFromComposeBody(body: string): TemplateLayout {
+  const paragraphs = body
+    .split(/\n{2,}/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  const blocks =
+    paragraphs.length > 0
+      ? paragraphs.map((paragraph, index) => ({
+          type: "text",
+          props: {
+            content: paragraph,
+            fontSize: index === 0 ? "18" : "16",
+            color: "#334155",
+            align: "left",
+          },
+        }))
+      : [
+          {
+            type: "text",
+            props: {
+              content:
+                "Hi {{name}},\n\nThanks for being part of our audience.\n\nWrite your message here.\n\nBest regards,\nYour team",
+              fontSize: "16",
+              color: "#334155",
+              align: "left",
+            },
+          },
+        ];
+
+  return {
+    root: {
+      type: "section",
+      children: blocks as TemplateLayout["root"]["children"],
+    },
+  };
+}
+
+async function useEditorStarter() {
+  if (!auth.state.token) return;
+
+  const token = auth.state.token;
+
+  try {
+    let nextTemplateId = selectedTemplateId.value;
+
+    if (!nextTemplateId) {
+      const nextTemplateName =
+        subject.value.trim() || `Compose Draft ${new Date().toLocaleDateString()}`;
+
+      const created = await templatesApi.createTemplate(token, {
+        templateName: nextTemplateName,
+        subject: subject.value.trim() || nextTemplateName,
+        contentText: content.value.trim() || undefined,
+        isActive: true,
+      });
+
+      nextTemplateId = String(created.data.id || "");
+      if (!nextTemplateId) {
+        throw new Error("Template creation did not return an id");
+      }
+
+      await templateDesignerApi.saveDraft(nextTemplateId, token, {
+        layout: buildDesignerLayoutFromComposeBody(content.value),
+      });
+
+      selectedTemplateId.value = nextTemplateId;
+      notice.show("Created a new template draft and opened Email Editor.", "success");
+    } else {
+      notice.show("Opening Email Editor for the selected template.", "info");
+    }
+
+    await router.push({
+      name: "template-designer",
+      params: { id: nextTemplateId },
+      query: { from: "compose" },
+    });
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError
+        ? error.message
+        : error instanceof Error
+          ? error.message
+          : "Failed to open Email Editor";
+    notice.show(message, "error");
+  }
 }
 
 function wrapSelection(prefix: string, suffix: string) {
@@ -331,6 +459,7 @@ function resetForm() {
   content.value = "";
   previewEmail.value = "";
   selectedTemplateId.value = "";
+  templateHtmlContent.value = "";
   resetIndividualEmailDraft();
   recipients.value = "";
   selectedAccountId.value = resolveDefaultAccountId(accounts.value);
@@ -360,10 +489,12 @@ async function sendEmails() {
 
   isSending.value = true;
   try {
+    const htmlContent = await resolveHtmlContentForDelivery();
     const response = await individualEmailsApi.send(auth.state.token, {
       recipients: parsedRecipients,
       subject: subject.value.trim(),
       content: content.value,
+      htmlContent,
       emailAccountId: Number(selectedAccountId.value),
     });
     notice.show(
@@ -394,10 +525,12 @@ async function sendPreview() {
 
   isPreviewing.value = true;
   try {
+    const htmlContent = await resolveHtmlContentForDelivery();
     await individualEmailsApi.sendPreview(auth.state.token, {
       previewEmail: previewEmail.value.trim(),
       subject: subject.value.trim(),
       content: content.value,
+      htmlContent,
       emailAccountId: Number(selectedAccountId.value),
     });
     notice.show(`Preview sent to ${previewEmail.value.trim()}.`, "success");

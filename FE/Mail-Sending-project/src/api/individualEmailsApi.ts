@@ -1,6 +1,50 @@
-import { apiRequest } from "./http";
+import { apiRequest, API_BASE_URL, ApiClientError } from "./http";
 
 export const individualEmailsApi = {
+  async importRecipients(token: string, file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch(`${API_BASE_URL}/individual-emails/import-recipients`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    const payload = (await response.json().catch(() => ({}))) as {
+      data?: {
+        totalRows: number;
+        importedCount: number;
+        invalidRows: number;
+        recipients: string[];
+        errors: Array<{ row: number; message: string }>;
+      };
+      message?: string;
+      error?: {
+        message?: string;
+        details?: unknown;
+      };
+    };
+
+    if (!response.ok) {
+      throw new ApiClientError(
+        payload?.error?.message || payload?.message || "Failed to import recipients",
+        response.status,
+        payload?.error?.details,
+      );
+    }
+
+    return payload.data || {
+      totalRows: 0,
+      importedCount: 0,
+      invalidRows: 0,
+      recipients: [],
+      errors: [],
+    };
+  },
+
   sendPreview(
     token: string,
     body: {
