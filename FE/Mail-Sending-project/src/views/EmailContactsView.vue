@@ -36,6 +36,12 @@
         <option value="active">Active</option>
         <option value="inactive">Inactive</option>
       </select>
+      <select v-model="filterTagId" class="filter-select">
+        <option value="">All Tags</option>
+        <option v-for="tag in tags" :key="tag.id" :value="String(tag.id)">
+          {{ tag.tag_name }} ({{ tag.contact_count || 0 }})
+        </option>
+      </select>
       <input
         v-model="filterCity"
         type="text"
@@ -63,6 +69,7 @@
             <th>Name</th>
             <th>Email</th>
             <th>Status</th>
+            <th>Tags</th>
             <th>Company</th>
             <th>City</th>
             <th></th>
@@ -73,9 +80,29 @@
             <td>{{ fullName(contact) }}</td>
             <td>{{ contact.email }}</td>
             <td>{{ contact.email_status || "active" }}</td>
+            <td>
+              <div class="tag-stack" v-if="contact.tags?.length">
+                <span
+                  v-for="tag in contact.tags"
+                  :key="tag.id"
+                  class="contact-tag"
+                  :style="{ backgroundColor: `${tag.color}20`, color: tag.color }"
+                >
+                  {{ tag.tag_name }}
+                </span>
+              </div>
+              <span v-else class="muted">No tags</span>
+            </td>
             <td>{{ contact.company || "-" }}</td>
             <td>{{ contact.city || "-" }}</td>
             <td>
+              <button
+                type="button"
+                class="btn btn--secondary btn--sm"
+                @click="openTagManager(contact)"
+              >
+                Tags
+              </button>
               <RouterLink :to="`/contacts/${contact.id}/fields`" class="btn btn--secondary btn--sm">
                 Fields
               </RouterLink>
@@ -93,11 +120,60 @@
       </div>
     </div>
   </section>
+
+  <div v-if="tagDialogContact" class="modal-backdrop" @click.self="closeTagManager">
+    <section class="modal-card">
+      <header class="modal-head">
+        <div>
+          <h2 class="modal-title">Manage Tags</h2>
+          <p class="modal-subtitle">{{ fullName(tagDialogContact) }}</p>
+        </div>
+        <button type="button" class="modal-close" @click="closeTagManager">x</button>
+      </header>
+
+      <div class="tag-picker" v-if="tags.length">
+        <label
+          v-for="tag in tags"
+          :key="tag.id"
+          class="tag-option"
+          :style="{ borderColor: `${tag.color}55` }"
+        >
+          <input
+            v-model="selectedTagIds"
+            type="checkbox"
+            :value="tag.id"
+          />
+          <span
+            class="contact-tag"
+            :style="{ backgroundColor: `${tag.color}20`, color: tag.color }"
+          >
+            {{ tag.tag_name }}
+          </span>
+          <span class="tag-option__count">{{ tag.contact_count || 0 }} contacts</span>
+        </label>
+      </div>
+      <p v-else class="empty-desc">Create tags first before assigning contacts.</p>
+
+      <footer class="modal-actions">
+        <button type="button" class="btn btn--secondary" @click="closeTagManager">
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="btn btn--primary"
+          :disabled="isSavingTags"
+          @click="saveContactTags"
+        >
+          {{ isSavingTags ? "Saving..." : "Save Tags" }}
+        </button>
+      </footer>
+    </section>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted, reactive, ref } from "vue";
-import { RouterLink } from "vue-router";
+import { RouterLink, useRoute } from "vue-router";
 import { contactsApi } from "../api/contactsApi";
 import { ApiClientError } from "../api/http";
 import { useNotice } from "../composables/useNotice";
@@ -111,13 +187,28 @@ type ContactRow = {
   company?: string | null;
   city?: string | null;
   email_status?: string | null;
+  tags?: TagRow[];
+};
+
+type TagRow = {
+  id: number;
+  tag_name: string;
+  color: string;
+  created_at?: string;
+  contact_count?: number;
 };
 
 const notice = useNotice();
+const route = useRoute();
 const contacts = ref<ContactRow[]>([]);
+const tags = ref<TagRow[]>([]);
 const searchQuery = ref("");
 const filterStatus = ref("");
 const filterCity = ref("");
+const filterTagId = ref(String(route.query.tagId || ""));
+const tagDialogContact = ref<ContactRow | null>(null);
+const selectedTagIds = ref<number[]>([]);
+const isSavingTags = ref(false);
 const pagination = reactive({
   page: 1,
   pageSize: 20,
@@ -143,6 +234,7 @@ async function loadContacts() {
       search: searchQuery.value || undefined,
       status: filterStatus.value || undefined,
       city: filterCity.value || undefined,
+      tagId: filterTagId.value ? Number(filterTagId.value) : undefined,
     });
 
     contacts.value = response.data.items as ContactRow[];
@@ -150,6 +242,18 @@ async function loadContacts() {
   } catch (error) {
     const message =
       error instanceof ApiClientError ? error.message : "Failed to load contacts";
+    notice.show(message, "error");
+  }
+}
+
+async function loadTags() {
+  if (!auth.state.token) return;
+  try {
+    const response = await contactsApi.listTags(auth.state.token);
+    tags.value = response.data as TagRow[];
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to load tags";
     notice.show(message, "error");
   }
 }
@@ -188,11 +292,44 @@ function clearFilters() {
   searchQuery.value = "";
   filterStatus.value = "";
   filterCity.value = "";
+  filterTagId.value = "";
   void loadContacts();
 }
 
+function openTagManager(contact: ContactRow) {
+  tagDialogContact.value = contact;
+  selectedTagIds.value = (contact.tags || []).map((tag) => tag.id);
+}
+
+function closeTagManager() {
+  tagDialogContact.value = null;
+  selectedTagIds.value = [];
+}
+
+async function saveContactTags() {
+  if (!auth.state.token || !tagDialogContact.value) return;
+
+  isSavingTags.value = true;
+  try {
+    await contactsApi.replaceContactTags(
+      auth.state.token,
+      tagDialogContact.value.id,
+      selectedTagIds.value,
+    );
+    notice.show("Contact tags updated.", "success");
+    closeTagManager();
+    await Promise.all([loadContacts(), loadTags()]);
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to update tags";
+    notice.show(message, "error");
+  } finally {
+    isSavingTags.value = false;
+  }
+}
+
 onMounted(() => {
-  void loadContacts();
+  void Promise.all([loadTags(), loadContacts()]);
 });
 </script>
 
@@ -278,6 +415,7 @@ onMounted(() => {
 .btn--sm {
   padding: 8px 14px;
   font-size: 13px;
+  margin-right: 8px;
 }
 
 .table {
@@ -291,6 +429,100 @@ onMounted(() => {
   padding: 10px 8px;
   border-bottom: 1px solid var(--color-border-subtle);
   font-size: 13px;
+}
+
+.tag-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.contact-tag {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.muted {
+  color: #94a3b8;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.modal-card {
+  width: min(560px, 100%);
+  border-radius: 12px;
+  background: var(--color-surface-card);
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24);
+  padding: 22px;
+}
+
+.modal-head,
+.modal-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 18px;
+}
+
+.modal-subtitle {
+  margin: 4px 0 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.modal-close {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
+  background: var(--color-control-bg);
+  cursor: pointer;
+}
+
+.tag-picker {
+  display: grid;
+  gap: 10px;
+  margin: 18px 0;
+}
+
+.tag-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.tag-option__count {
+  margin-left: auto;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.modal-actions {
+  justify-content: flex-end;
+  margin-top: 18px;
 }
 
 .empty-state-inline {

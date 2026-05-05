@@ -17,7 +17,9 @@ export class ApiClientError extends Error {
   }
 }
 
-const API_BASE = String(import.meta.env.VITE_API_BASE_URL || "/api/v1").replace(
+export const API_BASE_URL = String(
+  import.meta.env.VITE_API_BASE_URL || "/api/v1",
+).replace(
   /\/$/,
   "",
 );
@@ -30,7 +32,7 @@ type RequestOptions = {
 };
 
 function buildUrl(path: string, query?: Record<string, string | number | boolean | undefined>) {
-  const url = new URL(`${API_BASE}${path}`, window.location.origin);
+  const url = new URL(`${API_BASE_URL}${path}`, window.location.origin);
   if (query) {
     for (const [key, value] of Object.entries(query)) {
       if (value === undefined || value === null || value === "") continue;
