@@ -151,3 +151,41 @@ body {
   border-color: rgba(239, 68, 68, 0.18);
   color: #b91c1c;
 }
+
+@media (max-width: 768px) {
+  .content__header {
+    margin-bottom: 16px;
+  }
+
+  .page-title {
+    font-size: 20px;
+    line-height: 1.2;
+  }
+
+  .page-subtitle {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .content__section {
+    margin-top: 20px;
+  }
+
+  .card {
+    border-radius: 12px;
+    padding: 14px;
+  }
+
+  .btn {
+    min-height: 42px;
+    justify-content: center;
+    padding: 10px 14px;
+  }
+
+  .input-wrap input,
+  .input-wrap textarea,
+  .input-wrap select {
+    min-height: 42px;
+    font-size: 16px;
+  }
+}

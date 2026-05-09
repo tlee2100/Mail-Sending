@@ -27,9 +27,9 @@
         <tbody>
           <tr v-for="item in campaigns" :key="item.id">
             <td>{{ item.campaign_name }}</td>
-            <td><span class="badge">{{ item.status }}</span></td>
-            <td>{{ item.total_recipients || 0 }}</td>
-            <td>{{ formatDate(item.updated_at || item.created_at) }}</td>
+            <td data-label="Status"><span class="badge">{{ item.status }}</span></td>
+            <td data-label="Recipients">{{ item.total_recipients || 0 }}</td>
+            <td data-label="Updated">{{ formatDate(item.updated_at || item.created_at) }}</td>
             <td class="actions">
               <RouterLink :to="`/campaigns/${item.id}`" class="btn btn--secondary btn--small">
                 Detail
@@ -187,4 +187,88 @@ onMounted(() => {
 
 .btn--small { padding: 6px 10px; font-size: 12px; text-decoration: none; }
 .empty-text { padding: 18px; color: var(--color-text-muted); }
+
+@media (max-width: 768px) {
+  .header-row {
+    align-items: stretch;
+  }
+
+  .header-row .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .card--table {
+    padding: 0;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .table,
+  .table thead,
+  .table tbody,
+  .table tr,
+  .table td {
+    display: block;
+    width: 100%;
+  }
+
+  .table thead {
+    display: none;
+  }
+
+  .table tr {
+    box-sizing: border-box;
+    padding: 14px;
+    margin-bottom: 12px;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 12px;
+    background: var(--color-bg-surface-elevated);
+    box-shadow: var(--shadow-elevated);
+  }
+
+  .table td {
+    box-sizing: border-box;
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+
+  .table td::before {
+    content: attr(data-label);
+    color: var(--color-text-muted);
+    font-weight: 600;
+  }
+
+  .table td:first-child {
+    display: block;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .table td:first-child::before {
+    display: none;
+  }
+
+  .table td:last-child {
+    border-bottom: none;
+  }
+
+  .actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .actions::before {
+    display: none;
+  }
+
+  .btn--small {
+    justify-content: center;
+  }
+}
 </style>
