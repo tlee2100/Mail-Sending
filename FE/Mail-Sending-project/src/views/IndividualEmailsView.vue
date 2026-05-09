@@ -387,8 +387,37 @@ onMounted(() => {
     grid-template-columns: 1fr;
   }
 
+  .alert {
+    align-items: stretch;
+  }
+
+  .alert .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
   .import-panel__controls .btn {
     width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .grid--individual {
+    gap: 14px;
+  }
+
+  .card--guidelines {
+    order: -1;
+  }
+
+  .guidelines-list {
+    gap: 8px;
+    font-size: 13px;
+  }
+
+  .card--form > .btn {
+    width: 100%;
+    justify-content: center;
   }
 }
 </style>

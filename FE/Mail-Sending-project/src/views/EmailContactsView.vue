@@ -78,9 +78,9 @@
         <tbody>
           <tr v-for="contact in contacts" :key="contact.id">
             <td>{{ fullName(contact) }}</td>
-            <td>{{ contact.email }}</td>
-            <td>{{ contact.email_status || "active" }}</td>
-            <td>
+            <td data-label="Email">{{ contact.email }}</td>
+            <td data-label="Status">{{ contact.email_status || "active" }}</td>
+            <td data-label="Tags">
               <div class="tag-stack" v-if="contact.tags?.length">
                 <span
                   v-for="tag in contact.tags"
@@ -93,8 +93,8 @@
               </div>
               <span v-else class="muted">No tags</span>
             </td>
-            <td>{{ contact.company || "-" }}</td>
-            <td>{{ contact.city || "-" }}</td>
+            <td data-label="Company">{{ contact.company || "-" }}</td>
+            <td data-label="City">{{ contact.city || "-" }}</td>
             <td>
               <button
                 type="button"
@@ -465,7 +465,7 @@ onMounted(() => {
 .modal-card {
   width: min(560px, 100%);
   border-radius: 12px;
-  background: var(--color-surface-card);
+  background: var(--color-bg-surface-elevated);
   box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24);
   padding: 22px;
 }
@@ -548,5 +548,121 @@ onMounted(() => {
   font-size: 14px;
   color: #6b7280;
   margin: 0;
+}
+
+@media (max-width: 768px) {
+  .header-with-actions {
+    align-items: stretch;
+  }
+
+  .header-buttons {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .header-buttons .btn {
+    justify-content: center;
+  }
+
+  .filter-bar {
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  .search-wrap,
+  .filter-select,
+  .filter-input,
+  .filter-bar .btn {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .card--table {
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .card__header {
+    margin-bottom: 12px;
+  }
+
+  .table,
+  .table thead,
+  .table tbody,
+  .table tr,
+  .table td {
+    display: block;
+    width: 100%;
+  }
+
+  .table thead {
+    display: none;
+  }
+
+  .table tr {
+    box-sizing: border-box;
+    padding: 14px;
+    margin-bottom: 12px;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 12px;
+    background: var(--color-bg-surface-elevated);
+    box-shadow: var(--shadow-elevated);
+  }
+
+  .table td {
+    box-sizing: border-box;
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--color-border-subtle);
+    overflow-wrap: anywhere;
+  }
+
+  .table td::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    color: var(--color-text-muted);
+    font-weight: 600;
+  }
+
+  .table td:first-child {
+    display: block;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .table td:first-child::before {
+    display: none;
+  }
+
+  .table td:last-child {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    border-bottom: none;
+  }
+
+  .table td:last-child::before {
+    display: none;
+  }
+
+  .btn--sm {
+    margin-right: 0;
+    justify-content: center;
+  }
+
+  .modal-backdrop {
+    align-items: flex-end;
+    padding: 12px;
+  }
+
+  .modal-card {
+    max-height: 88vh;
+    overflow: auto;
+    border-radius: 16px 16px 12px 12px;
+  }
 }
 </style>

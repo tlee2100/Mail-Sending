@@ -482,6 +482,46 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
+  .grid--stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .grid--actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .card--stat {
+    min-height: 112px;
+  }
+
+  .card__icon {
+    width: auto;
+    min-width: 46px;
+    height: 30px;
+    padding: 0 8px;
+    font-size: 11px;
+  }
+
+  .card__value {
+    font-size: 22px;
+  }
+
+  .card--action {
+    min-height: 118px;
+  }
+
+  .activity-item {
+    align-items: flex-start;
+  }
+
+  .activity__time {
+    display: none;
+  }
+}
+
+@media (max-width: 380px) {
   .grid--stats,
   .grid--actions {
     grid-template-columns: minmax(0, 1fr);

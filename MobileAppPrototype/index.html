@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ChadMailer Mobile</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="phone-shell">
+      <header class="app-topbar">
+        <div>
+          <p class="eyebrow">ChadMailer</p>
+          <h1 id="screen-title">Dashboard</h1>
+        </div>
+        <button class="avatar" type="button">F</button>
+      </header>
+
+      <section class="screen screen--active" data-screen="dashboard">
+        <div class="metric-grid">
+          <article class="metric-card">
+            <span class="metric-label">Sent today</span>
+            <strong>1,248</strong>
+          </article>
+          <article class="metric-card">
+            <span class="metric-label">Campaigns</span>
+            <strong>6</strong>
+          </article>
+          <article class="metric-card">
+            <span class="metric-label">Contacts</span>
+            <strong>482</strong>
+          </article>
+          <article class="metric-card">
+            <span class="metric-label">SMTP live</span>
+            <strong>3</strong>
+          </article>
+        </div>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Active campaigns</h2>
+            <span class="pill pill--green">Healthy</span>
+          </div>
+          <div class="campaign-row">
+            <div>
+              <strong>Welcome Onboarding</strong>
+              <span>312 recipients</span>
+            </div>
+            <span class="status-dot"></span>
+          </div>
+          <div class="campaign-row">
+            <div>
+              <strong>May Newsletter</strong>
+              <span>170 recipients</span>
+            </div>
+            <span class="status-dot status-dot--warning"></span>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Recent alerts</h2>
+          <p class="alert-line">SMTP test passed for noreply@yourdomain.com</p>
+          <p class="alert-line">2 emails failed because of invalid recipients</p>
+        </section>
+      </section>
+
+      <section class="screen" data-screen="send">
+        <section class="panel">
+          <h2>Quick Send</h2>
+          <label class="field">
+            <span>Sender</span>
+            <select>
+              <option>lephuocngoctan4869@gmail.com</option>
+              <option>noreply@yourdomain.com</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Template</span>
+            <select>
+              <option>Welcome Onboarding</option>
+              <option>Payment Reminder</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Audience tag</span>
+            <select>
+              <option>VIP</option>
+              <option>New Leads</option>
+            </select>
+          </label>
+          <button class="primary-action" type="button">Send Preview</button>
+          <button class="secondary-action" type="button">Send Campaign</button>
+        </section>
+      </section>
+
+      <section class="screen" data-screen="campaigns">
+        <div class="list-stack">
+          <article class="list-card">
+            <div>
+              <strong>Welcome Onboarding</strong>
+              <span>Running - 312 recipients</span>
+            </div>
+            <button type="button">Pause</button>
+          </article>
+          <article class="list-card">
+            <div>
+              <strong>May Newsletter</strong>
+              <span>Scheduled - tomorrow</span>
+            </div>
+            <button type="button">Edit</button>
+          </article>
+          <article class="list-card">
+            <div>
+              <strong>Winback Offer</strong>
+              <span>Draft - missing template</span>
+            </div>
+            <button type="button">Open</button>
+          </article>
+        </div>
+      </section>
+
+      <section class="screen" data-screen="contacts">
+        <label class="search-box">
+          <span>Search</span>
+          <input type="search" placeholder="name, email, company" />
+        </label>
+        <div class="list-stack">
+          <article class="contact-card">
+            <strong>Tan Le</strong>
+            <span>lephuocngoctan4869@gmail.com</span>
+            <div class="tag-line">
+              <em>VIP</em>
+              <em>Customer</em>
+            </div>
+          </article>
+          <article class="contact-card">
+            <strong>Frontend Demo</strong>
+            <span>demo@chadmailer.local</span>
+            <div class="tag-line">
+              <em>Lead</em>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="screen" data-screen="tags">
+        <div class="tag-grid">
+          <article class="tag-card">
+            <span class="tag-swatch tag-swatch--blue"></span>
+            <strong>VIP</strong>
+            <span>32 contacts</span>
+          </article>
+          <article class="tag-card">
+            <span class="tag-swatch tag-swatch--green"></span>
+            <strong>Customer</strong>
+            <span>214 contacts</span>
+          </article>
+          <article class="tag-card">
+            <span class="tag-swatch tag-swatch--amber"></span>
+            <strong>Trial</strong>
+            <span>89 contacts</span>
+          </article>
+          <article class="tag-card">
+            <span class="tag-swatch tag-swatch--rose"></span>
+            <strong>Inactive</strong>
+            <span>41 contacts</span>
+          </article>
+        </div>
+      </section>
+
+      <nav class="bottom-tabs" aria-label="Prototype navigation">
+        <button class="tab tab--active" type="button" data-target="dashboard">Home</button>
+        <button class="tab" type="button" data-target="send">Send</button>
+        <button class="tab" type="button" data-target="campaigns">Campaigns</button>
+        <button class="tab" type="button" data-target="contacts">Contacts</button>
+        <button class="tab" type="button" data-target="tags">Tags</button>
+      </nav>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
