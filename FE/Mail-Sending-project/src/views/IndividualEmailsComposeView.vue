@@ -95,6 +95,12 @@
           </p>
           <p class="word-count">{{ wordCount }} words</p>
         </div>
+
+        <AIMediaGenerator
+          :token="auth.state.token"
+          @insert-image="insertAiImageHtml"
+          @insert-html="insertAiHtml"
+        />
       </div>
 
       <div class="compose-footer">
@@ -153,10 +159,12 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { emailAccountsApi } from "../api/emailAccountsApi";
+import type { AiImageResult } from "../api/aiMediaApi";
 import { ApiClientError } from "../api/http";
 import { individualEmailsApi } from "../api/individualEmailsApi";
 import { templateDesignerApi, type TemplateLayout } from "../api/templateDesignerApi";
 import { templatesApi } from "../api/templatesApi";
+import AIMediaGenerator from "../components/AIMediaGenerator.vue";
 import { useNotice } from "../composables/useNotice";
 import { auth } from "../stores/auth";
 import {
@@ -187,6 +195,16 @@ const mergeTags = [
   { tag: "{{email}}", desc: "Email Address" },
   { tag: "{{phone}}", desc: "Phone Number" },
 ];
+
+type AiImageInsertPayload = AiImageResult & {
+  emailWidth: number;
+};
+
+type AiHtmlInsertPayload = {
+  type: "video";
+  html: string;
+  url?: string;
+};
 
 const wordCount = computed(() => {
   const text = content.value.trim();
@@ -252,6 +270,18 @@ function stripHtml(value: unknown) {
     .trim();
 }
 
+function hasHtml(value: string) {
+  return /<\/?[a-z][\s\S]*>/i.test(value);
+}
+
+function escapeHtmlAttribute(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 function resolveDefaultAccountId(rows: Array<Record<string, unknown>>) {
   const defaultAccount = rows.find((item) => item.is_default === true) || rows[0];
   return defaultAccount ? String(defaultAccount.id || "") : "";
@@ -307,6 +337,10 @@ async function selectTemplate() {
 }
 
 async function resolveHtmlContentForDelivery() {
+  if (hasHtml(content.value)) {
+    return content.value;
+  }
+
   if (!auth.state.token || !selectedTemplateId.value) {
     return undefined;
   }
@@ -452,6 +486,45 @@ function insertMergeTag() {
 
 function appendText(text: string) {
   content.value = `${content.value}${text}`;
+}
+
+function insertTextAtCursor(text: string) {
+  const element = editorRef.value;
+  if (!element) {
+    const separator = content.value.trim() ? "\n\n" : "";
+    content.value = `${content.value}${separator}${text}`;
+    return;
+  }
+
+  const start = element.selectionStart ?? content.value.length;
+  const end = element.selectionEnd ?? content.value.length;
+  const before = content.value.slice(0, start);
+  const after = content.value.slice(end);
+  const separator = before.trim() && !before.endsWith("\n\n") ? "\n\n" : "";
+  const inserted = `${separator}${text}`;
+
+  content.value = `${before}${inserted}${after}`;
+
+  window.requestAnimationFrame(() => {
+    element.focus();
+    const cursor = start + inserted.length;
+    element.setSelectionRange(cursor, cursor);
+  });
+}
+
+function buildImageHtml(result: AiImageInsertPayload) {
+  const width = Number.isFinite(result.emailWidth) ? result.emailWidth : 600;
+  return `<img src="${escapeHtmlAttribute(result.url)}" alt="${escapeHtmlAttribute(result.altText || "")}" width="${width}" style="display:block;width:${width}px;max-width:100%;height:auto;" />`;
+}
+
+function insertAiImageHtml(result: AiImageInsertPayload) {
+  insertTextAtCursor(result.emailHtml || buildImageHtml(result));
+  notice.show("Đã chèn ảnh AI vào email.", "success");
+}
+
+function insertAiHtml(payload: AiHtmlInsertPayload) {
+  insertTextAtCursor(payload.html);
+  notice.show("Đã chèn video AI vào email.", "success");
 }
 
 function resetForm() {

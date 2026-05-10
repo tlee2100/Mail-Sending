@@ -11,7 +11,7 @@ export class TemplateDesignerApiError extends Error {
 export type TemplateLayout = {
   root: {
     type: string;
-    props?: Record<string, string>;
+    props?: Record<string, string | number>;
     children?: TemplateLayout["root"][];
   };
 };
