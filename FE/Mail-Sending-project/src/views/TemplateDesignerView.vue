@@ -148,6 +148,12 @@
         </div>
       </div>
 
+      <AIMediaGenerator
+        :token="authToken"
+        @insert-image="insertAiImageBlock"
+        @insert-html="insertAiHtmlBlock"
+      />
+
       <article class="card studio-card">
         <div class="studio-head">
           <div>
@@ -292,6 +298,17 @@
               <label>Image alt</label>
               <input v-model="selectedBlock.props.alt" type="text" />
             </div>
+            <div class="input-wrap">
+              <label>Image width (px)</label>
+              <input v-model="selectedBlock.props.width" type="number" min="120" max="1200" />
+            </div>
+          </template>
+
+          <template v-if="selectedBlock.type === 'html'">
+            <div class="input-wrap">
+              <label>HTML</label>
+              <textarea v-model="selectedBlock.props.html" rows="6"></textarea>
+            </div>
           </template>
 
           <template v-if="selectedBlock.type === 'qrcode'">
@@ -420,27 +437,56 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import { auth } from "../stores/auth";
+import type { AiImageResult } from "../api/aiMediaApi";
 import {
   TemplateDesignerApiError,
   templateDesignerApi,
   type TemplateLayout,
 } from "../api/templateDesignerApi";
+import AIMediaGenerator from "../components/AIMediaGenerator.vue";
 
 const route = useRoute();
 const router = useRouter();
 
+type BlockPropValue = string | number;
+
 type LayoutNode = {
-  type: "section" | "text" | "button" | "divider" | "image" | "columns" | "qrcode";
-  props?: Record<string, string>;
+  type:
+    | "section"
+    | "text"
+    | "button"
+    | "divider"
+    | "image"
+    | "columns"
+    | "qrcode"
+    | "html";
+  props?: Record<string, BlockPropValue>;
   children?: LayoutNode[];
 };
 
-type BlockType = "text" | "button" | "divider" | "image" | "columns" | "qrcode";
+type BlockType =
+  | "text"
+  | "button"
+  | "divider"
+  | "image"
+  | "columns"
+  | "qrcode"
+  | "html";
 
 type DesignerBlock = {
   id: string;
   type: BlockType;
-  props: Record<string, string>;
+  props: Record<string, BlockPropValue>;
+};
+
+type AiImageInsertPayload = AiImageResult & {
+  emailWidth: number;
+};
+
+type AiHtmlInsertPayload = {
+  type: "video";
+  html: string;
+  url?: string;
 };
 
 type DragPayload =
@@ -691,7 +737,15 @@ const selectedSample = ref<SampleKey>(initialSample);
 const previewMode = ref<"email" | "html" | "text">("email");
 const previewDevice = ref<"desktop" | "mobile">("desktop");
 const layout = ref(JSON.stringify(samples[initialSample], null, 2));
-const palette: BlockType[] = ["text", "button", "image", "qrcode", "columns", "divider"];
+const palette: BlockType[] = [
+  "text",
+  "button",
+  "image",
+  "html",
+  "qrcode",
+  "columns",
+  "divider",
+];
 const canvasBlocks = ref<DesignerBlock[]>([]);
 const selectedBlockIndex = ref<number | null>(null);
 const dragPayload = ref<DragPayload>(null);
@@ -727,6 +781,7 @@ function prettyType(type: BlockType) {
     qrcode: "QR Code",
     columns: "Columns",
     divider: "Divider",
+    html: "HTML",
   };
   return labels[type];
 }
@@ -739,6 +794,7 @@ function blockShort(type: BlockType) {
     qrcode: "QR",
     columns: "Co",
     divider: "Dv",
+    html: "HT",
   };
   return labels[type];
 }
@@ -755,7 +811,7 @@ function uid() {
   return `blk_${Math.random().toString(16).slice(2, 8)}_${Date.now().toString(16)}`;
 }
 
-function defaultProps(type: BlockType): Record<string, string> {
+function defaultProps(type: BlockType): Record<string, BlockPropValue> {
   if (type === "text") {
     return {
       content: "New text block",
@@ -778,6 +834,12 @@ function defaultProps(type: BlockType): Record<string, string> {
     return {
       src: "https://dummyimage.com/640x220/e2e8f0/334155&text=Banner",
       alt: "Banner image",
+      width: 600,
+    };
+  }
+  if (type === "html") {
+    return {
+      html: '<a href="https://example.com" style="display:inline-block;padding:10px 16px;background:#4f46e5;color:#ffffff;border-radius:8px;text-decoration:none;font-weight:600;">Open link</a>',
     };
   }
   if (type === "qrcode") {
@@ -800,12 +862,15 @@ function defaultProps(type: BlockType): Record<string, string> {
 }
 
 function blockSummary(block: DesignerBlock): string {
-  if (block.type === "text") return block.props.content || "(empty text)";
+  if (block.type === "text") return String(block.props.content || "(empty text)");
   if (block.type === "button") {
     return `${block.props.label || "Button"} -> ${block.props.href || "#"}`;
   }
   if (block.type === "image") {
     return `${block.props.alt || "Image"} -> ${block.props.src || ""}`;
+  }
+  if (block.type === "html") {
+    return String(block.props.html || "Raw HTML block").replace(/\s+/g, " ");
   }
   if (block.type === "qrcode") {
     return `${block.props.title || "QR Code"} -> ${block.props.value || ""}`;
@@ -876,6 +941,43 @@ function redo() {
 function addBlock(type: BlockType) {
   canvasBlocks.value.push({ id: uid(), type, props: defaultProps(type) });
   selectedBlockIndex.value = canvasBlocks.value.length - 1;
+}
+
+function blockId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return uid();
+}
+
+function insertAiImageBlock(result: AiImageInsertPayload) {
+  const width = Math.max(120, Math.min(1200, Math.round(result.emailWidth || 600)));
+  canvasBlocks.value.push({
+    id: blockId(),
+    type: "image",
+    props: {
+      src: result.url,
+      alt: result.altText || "",
+      width,
+    },
+  });
+  selectedBlockIndex.value = canvasBlocks.value.length - 1;
+  requestError.value = "";
+  requestInfo.value = "Đã chèn ảnh AI vào canvas.";
+}
+
+function insertAiHtmlBlock(payload: AiHtmlInsertPayload) {
+  canvasBlocks.value.push({
+    id: blockId(),
+    type: "html",
+    props: {
+      html: payload.html,
+      source: payload.url || "",
+    },
+  });
+  selectedBlockIndex.value = canvasBlocks.value.length - 1;
+  requestError.value = "";
+  requestInfo.value = "Đã chèn video AI vào canvas.";
 }
 
 function duplicateBlock(index: number) {
@@ -980,6 +1082,7 @@ function nodeToBlock(node: LayoutNode): DesignerBlock | null {
     node.type === "button" ||
     node.type === "divider" ||
     node.type === "image" ||
+    node.type === "html" ||
     node.type === "qrcode" ||
     node.type === "columns"
   ) {
@@ -1057,6 +1160,8 @@ async function saveDraft() {
   try {
     await templateDesignerApi.saveDraft(templateId.value, token, {
       layout: parsedLayout.value as TemplateLayout,
+      renderedHtml: renderedHtml.value,
+      renderedText: renderedText.value,
     });
     requestInfo.value = "Draft saved.";
   } catch (err) {
@@ -1127,19 +1232,19 @@ function insertVariable(token: string) {
   const block = selectedBlock.value;
   if (!block) return;
   if (block.type === "text") {
-    block.props.content = `${block.props.content || ""} ${token}`.trim();
+    block.props.content = `${String(block.props.content || "")} ${token}`.trim();
     return;
   }
   if (block.type === "button") {
-    block.props.label = `${block.props.label || ""} ${token}`.trim();
+    block.props.label = `${String(block.props.label || "")} ${token}`.trim();
     return;
   }
   if (block.type === "columns") {
-    block.props.leftContent = `${block.props.leftContent || ""} ${token}`.trim();
+    block.props.leftContent = `${String(block.props.leftContent || "")} ${token}`.trim();
     return;
   }
   if (block.type === "qrcode") {
-    block.props.value = `${block.props.value || ""}${token}`;
+    block.props.value = `${String(block.props.value || "")}${token}`;
   }
 }
 
@@ -1175,6 +1280,7 @@ function validateNodeSchema(node: LayoutNode, path: string, errors: string[]) {
     "button",
     "divider",
     "image",
+    "html",
     "qrcode",
     "columns",
   ];
@@ -1185,25 +1291,28 @@ function validateNodeSchema(node: LayoutNode, path: string, errors: string[]) {
 
   if (node.type === "text") {
     if (!node.props?.content) errors.push(`${path}: text.content is required`);
-    if (hasUnknownVariable(node.props?.content || "")) {
+    if (hasUnknownVariable(String(node.props?.content || ""))) {
       errors.push(`${path}: text contains unknown variable token`);
     }
   }
   if (node.type === "button") {
     if (!node.props?.label) errors.push(`${path}: button.label is required`);
     if (!node.props?.href) errors.push(`${path}: button.href is required`);
-    if (hasUnknownVariable(node.props?.label || "")) {
+    if (hasUnknownVariable(String(node.props?.label || ""))) {
       errors.push(`${path}: button label contains unknown variable token`);
     }
   }
   if (node.type === "image" && !node.props?.src) {
     errors.push(`${path}: image.src is required`);
   }
+  if (node.type === "html" && !node.props?.html) {
+    errors.push(`${path}: html.html is required`);
+  }
   if (node.type === "qrcode") {
     if (!node.props?.value) {
       errors.push(`${path}: qrcode.value is required`);
     }
-    if (hasUnknownVariable(node.props?.value || "")) {
+    if (hasUnknownVariable(String(node.props?.value || ""))) {
       errors.push(`${path}: QR content contains unknown variable token`);
     }
   }
@@ -1238,35 +1347,44 @@ function escapeHtml(value: string) {
     .replace(/"/g, "&quot;");
 }
 
-function sanitizeCssValue(value: string | undefined, fallback: string) {
-  if (!value) return fallback;
-  const cleaned = value.replace(/[;"<>]/g, "").trim();
+function sanitizeCssValue(value: BlockPropValue | undefined, fallback: string) {
+  if (value === undefined || value === null || value === "") return fallback;
+  const cleaned = String(value).replace(/[;"<>]/g, "").trim();
   return cleaned || fallback;
 }
 
-function px(value: string | undefined, fallback: number) {
+function px(value: BlockPropValue | undefined, fallback: number) {
   const n = Number(value);
   if (!Number.isFinite(n)) return `${fallback}px`;
   return `${Math.max(0, n)}px`;
 }
 
-function clampQrSize(value: string | undefined, fallback: number) {
+function clampQrSize(value: BlockPropValue | undefined, fallback: number) {
   const n = Number(value);
   if (!Number.isFinite(n)) return fallback;
   return Math.max(96, Math.min(480, n));
 }
 
-function buildQrUrl(value: string, size: number) {
+function buildQrUrl(value: BlockPropValue, size: number) {
   const params = new URLSearchParams({
     size: `${size}x${size}`,
-    data: value,
+    data: String(value),
   });
   return `https://api.qrserver.com/v1/create-qr-code/?${params.toString()}`;
 }
 
-function textAlign(value: string | undefined) {
+function textAlign(value: BlockPropValue | undefined) {
   if (value === "center" || value === "right") return value;
   return "left";
+}
+
+function stripHtmlText(value: string) {
+  return value
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function renderNode(node: LayoutNode): string {
@@ -1274,11 +1392,11 @@ function renderNode(node: LayoutNode): string {
     const color = sanitizeCssValue(node.props?.color, "#334155");
     const fontSize = px(node.props?.fontSize, 16);
     const align = textAlign(node.props?.align);
-    return `<p style="margin:0 0 12px;color:${color};line-height:1.5;font-size:${fontSize};text-align:${align};">${escapeHtml(node.props?.content || "")}</p>`;
+    return `<p style="margin:0 0 12px;color:${color};line-height:1.5;font-size:${fontSize};text-align:${align};">${escapeHtml(String(node.props?.content || ""))}</p>`;
   }
   if (node.type === "button") {
-    const label = escapeHtml(node.props?.label || "Open");
-    const href = escapeHtml(node.props?.href || "#");
+    const label = escapeHtml(String(node.props?.label || "Open"));
+    const href = escapeHtml(String(node.props?.href || "#"));
     const backgroundColor = sanitizeCssValue(
       node.props?.backgroundColor,
       "#4f46e5",
@@ -1293,16 +1411,25 @@ function renderNode(node: LayoutNode): string {
   }
   if (node.type === "image") {
     const src = escapeHtml(
-      node.props?.src ||
+      String(
+        node.props?.src ||
         "https://dummyimage.com/640x220/e2e8f0/334155&text=Email+Banner",
+      ),
     );
-    const alt = escapeHtml(node.props?.alt || "Banner");
-    return `<img src="${src}" alt="${alt}" style="max-width:100%;height:auto;border-radius:8px;margin:0 0 12px;" />`;
+    const alt = escapeHtml(String(node.props?.alt || "Banner"));
+    const rawWidth = Number(node.props?.width ?? 600);
+    const width = Number.isFinite(rawWidth)
+      ? Math.max(120, Math.min(1200, Math.round(rawWidth)))
+      : 600;
+    return `<img src="${src}" alt="${alt}" width="${width}" style="display:block;width:${width}px;max-width:100%;height:auto;border-radius:8px;margin:0 0 12px;" />`;
+  }
+  if (node.type === "html") {
+    return String(node.props?.html || "");
   }
   if (node.type === "qrcode") {
     const value = node.props?.value || "";
-    const title = escapeHtml(node.props?.title || "QR Code");
-    const caption = escapeHtml(node.props?.caption || "");
+    const title = escapeHtml(String(node.props?.title || "QR Code"));
+    const caption = escapeHtml(String(node.props?.caption || ""));
     const size = clampQrSize(node.props?.size, 220);
     const src = buildQrUrl(value, size);
     return `<div style="margin:0 0 14px;border:1px solid #dbeafe;background:#f8fbff;border-radius:16px;padding:18px;text-align:center;"><div style="margin-bottom:10px;color:#334155;font-weight:700;font-size:18px;">${title}</div><img src="${src}" alt="QR code" width="${size}" height="${size}" style="display:block;margin:0 auto;width:${size}px;height:${size}px;max-width:100%;" />${caption ? `<div style="margin-top:10px;color:#64748b;font-size:13px;">${caption}</div>` : ""}</div>`;
@@ -1310,8 +1437,8 @@ function renderNode(node: LayoutNode): string {
   if (node.type === "columns") {
     const gap = px(node.props?.gap, 16);
     const color = sanitizeCssValue(node.props?.color, "#334155");
-    const left = escapeHtml(node.props?.leftContent || "");
-    const right = escapeHtml(node.props?.rightContent || "");
+    const left = escapeHtml(String(node.props?.leftContent || ""));
+    const right = escapeHtml(String(node.props?.rightContent || ""));
     return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 12px;border-collapse:separate;border-spacing:${gap} 0;"><tr><td valign="top" width="50%" style="color:${color};line-height:1.5;">${left}</td><td valign="top" width="50%" style="color:${color};line-height:1.5;">${right}</td></tr></table>`;
   }
   const children = (node.children || []).map((child) => renderNode(child)).join("");
@@ -1327,12 +1454,13 @@ const renderedHtml = computed(() => {
 });
 
 function renderTextNode(node: LayoutNode): string {
-  if (node.type === "text") return node.props?.content || "";
+  if (node.type === "text") return String(node.props?.content || "");
   if (node.type === "button") {
     return `[${node.props?.label || "Open"}] ${node.props?.href || ""}`;
   }
   if (node.type === "divider") return "------------------------------";
   if (node.type === "image") return `[Image] ${node.props?.alt || ""}`;
+  if (node.type === "html") return stripHtmlText(String(node.props?.html || ""));
   if (node.type === "qrcode") {
     return `[QR Code] ${node.props?.title || ""} ${node.props?.value || ""}`.trim();
   }
@@ -1487,6 +1615,10 @@ onMounted(() => {
 
 .toolbox-item--image {
   background: #ecfdf5;
+}
+
+.toolbox-item--html {
+  background: #f8fafc;
 }
 
 .toolbox-item--qrcode {
