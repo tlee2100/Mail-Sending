@@ -1184,6 +1184,23 @@ function buildLayoutFromTemplateContent(template: TemplateContent) {
 function normalizeLayout(raw: TemplateLayout | string | undefined): string {
   if (!raw) return "";
   if (typeof raw === "string") return raw;
+  if ("root" in raw && raw.root) {
+    return JSON.stringify(raw, null, 2);
+  }
+  if (
+    "blocks" in raw &&
+    Array.isArray((raw as unknown as { blocks?: unknown[] }).blocks)
+  ) {
+    const legacy = raw as unknown as { blocks: LayoutNode[] };
+    if (legacy.blocks.length === 0) {
+      return "";
+    }
+    return JSON.stringify(
+      { root: { type: "section", children: legacy.blocks } },
+      null,
+      2,
+    );
+  }
   return JSON.stringify(raw, null, 2);
 }
 
@@ -1219,12 +1236,14 @@ async function saveDraft() {
 
   isRequesting.value = true;
   try {
-    await templateDesignerApi.saveDraft(templateId.value, token, {
+    const saved = await templateDesignerApi.saveDraft(templateId.value, token, {
       layout: parsedLayout.value as TemplateLayout,
       renderedHtml: renderedHtml.value,
       renderedText: renderedText.value,
     });
-    requestInfo.value = "Draft saved.";
+    requestInfo.value = saved.updatedAt
+      ? `Draft saved at ${new Date(saved.updatedAt).toLocaleString()}.`
+      : "Draft saved.";
   } catch (err) {
     setRequestError(err);
   } finally {
@@ -1290,11 +1309,21 @@ async function publishDraft() {
     requestError.value = "Unauthorized. Please login again.";
     return;
   }
+  if (!parsedLayout.value?.root) {
+    requestError.value = "Cannot publish because layout JSON is invalid.";
+    return;
+  }
 
   isRequesting.value = true;
   try {
-    const res = await templateDesignerApi.publishDraft(templateId.value, token);
-    requestInfo.value = `Published draft as version ${res.id}.`;
+    const res = await templateDesignerApi.publishDraft(templateId.value, token, {
+      layout: parsedLayout.value as TemplateLayout,
+      renderedHtml: renderedHtml.value,
+      renderedText: renderedText.value,
+    });
+    requestInfo.value = res.versionNumber
+      ? `Published draft as version ${res.versionNumber}.`
+      : "Draft published.";
   } catch (err) {
     setRequestError(err);
   } finally {

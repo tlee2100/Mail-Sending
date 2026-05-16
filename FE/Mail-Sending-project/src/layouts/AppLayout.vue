@@ -143,6 +143,10 @@
 
     <div class="main">
       <header class="topbar">
+        <div class="topbar__mobile-brand">
+          <div class="brand__logo brand__logo--small">CM</div>
+          <span>ChadMailer</span>
+        </div>
         <div class="topbar__breadcrumb">
           <span class="muted">{{ breadcrumb }}</span>
         </div>
@@ -160,6 +164,45 @@
       <main class="content">
         <RouterView />
       </main>
+
+      <nav class="mobile-nav" aria-label="Mobile navigation">
+        <RouterLink to="/" class="mobile-nav__item" active-class="mobile-nav__item--active">
+          <span class="mobile-nav__icon">DB</span>
+          <span>Home</span>
+        </RouterLink>
+        <RouterLink
+          to="/individual-emails"
+          class="mobile-nav__item"
+          active-class="mobile-nav__item--active"
+        >
+          <span class="mobile-nav__icon">SD</span>
+          <span>Send</span>
+        </RouterLink>
+        <RouterLink
+          to="/campaigns"
+          class="mobile-nav__item"
+          active-class="mobile-nav__item--active"
+        >
+          <span class="mobile-nav__icon">CP</span>
+          <span>Campaigns</span>
+        </RouterLink>
+        <RouterLink
+          to="/email-contacts"
+          class="mobile-nav__item"
+          active-class="mobile-nav__item--active"
+        >
+          <span class="mobile-nav__icon">CT</span>
+          <span>Contacts</span>
+        </RouterLink>
+        <RouterLink
+          to="/contact-tags"
+          class="mobile-nav__item"
+          active-class="mobile-nav__item--active"
+        >
+          <span class="mobile-nav__icon">TG</span>
+          <span>Tags</span>
+        </RouterLink>
+      </nav>
     </div>
   </div>
 </template>
@@ -285,6 +328,13 @@ async function handleLogout() {
   font-size: 16px;
 }
 
+.brand__logo--small {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
 .brand__name {
   font-weight: 600;
   font-size: 15px;
@@ -399,6 +449,15 @@ async function handleLogout() {
   border-bottom: 1px solid var(--color-border-subtle);
 }
 
+.topbar__mobile-brand {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-text-main);
+  font-size: 14px;
+  font-weight: 700;
+}
+
 .topbar__right {
   display: flex;
   align-items: center;
@@ -440,6 +499,10 @@ async function handleLogout() {
   background: var(--color-bg-surface);
 }
 
+.mobile-nav {
+  display: none;
+}
+
 @media (max-width: 1024px) {
   .layout {
     grid-template-columns: 220px 1fr;
@@ -450,8 +513,108 @@ async function handleLogout() {
   .layout {
     grid-template-columns: 1fr;
   }
+
   .sidebar {
     display: none;
+  }
+
+  .main {
+    min-height: 100vh;
+  }
+
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    height: 58px;
+    padding: 0 14px;
+  }
+
+  .topbar__mobile-brand {
+    display: flex;
+  }
+
+  .topbar__breadcrumb,
+  .topbar__welcome,
+  .topbar__name {
+    display: none;
+  }
+
+  .topbar__right {
+    gap: 8px;
+  }
+
+  .theme-toggle {
+    margin-right: 2px;
+    padding: 6px 9px;
+  }
+
+  .topbar__avatar {
+    width: 30px;
+    height: 30px;
+    font-size: 13px;
+  }
+
+  .content {
+    padding: 16px 14px 92px;
+  }
+
+  .mobile-nav {
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    z-index: 30;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px;
+    padding: 8px;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 18px 50px rgba(15, 23, 42, 0.18);
+    backdrop-filter: blur(14px);
+  }
+
+  body.dark-mode .mobile-nav {
+    background: rgba(2, 6, 23, 0.92);
+  }
+
+  .mobile-nav__item {
+    min-width: 0;
+    min-height: 54px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    border-radius: 14px;
+    color: var(--color-text-muted);
+    font-size: 10px;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .mobile-nav__icon {
+    width: 26px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: var(--color-control-bg-muted);
+    color: var(--color-text-main);
+    font-size: 10px;
+  }
+
+  .mobile-nav__item--active {
+    background: rgba(79, 70, 229, 0.1);
+    color: var(--color-primary);
+  }
+
+  .mobile-nav__item--active .mobile-nav__icon {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-soft));
+    color: var(--color-text-on-primary);
   }
 }
 </style>

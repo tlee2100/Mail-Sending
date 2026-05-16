@@ -1,13 +1,17 @@
 <template>
-  <section class="content__header header-row">
+  <section class="content__header detail-hero" v-if="campaign">
     <div>
-      <h1 class="page-title">Campaign Detail</h1>
-      <p class="page-subtitle">Campaign ID: {{ route.params.id }}</p>
+      <p class="eyebrow">Campaign Detail</p>
+      <h1 class="page-title">{{ campaign.campaign_name }}</h1>
+      <p class="page-subtitle">
+        ID #{{ route.params.id }} - {{ campaign.template_name || "No template" }} -
+        {{ campaign.sender_email || "No sender" }}
+      </p>
       <p v-if="notice.message" class="notice" :class="`notice--${notice.tone}`">
         {{ notice.message }}
       </p>
     </div>
-    <div class="actions" v-if="campaign">
+    <div class="hero-actions">
       <button type="button" class="btn btn--primary" @click="startCampaign">
         Start
       </button>
@@ -17,17 +21,80 @@
     </div>
   </section>
 
-  <section class="grid grid--detail" v-if="campaign">
-    <article class="card panel">
-      <h2 class="section-title">Overview</h2>
-      <p class="metric"><strong>Status</strong>: {{ campaign.status }}</p>
-      <p class="metric"><strong>Template</strong>: {{ campaign.template_name || "-" }}</p>
-      <p class="metric"><strong>Sender</strong>: {{ campaign.sender_email || "-" }}</p>
-      <p class="metric"><strong>Audience</strong>: {{ campaign.total_recipients || 0 }}</p>
+  <section v-if="campaign" class="detail-grid">
+    <article class="card hero-card">
+      <div class="status-line">
+        <span class="badge" :class="`badge--${campaign.status || 'draft'}`">
+          {{ campaign.status }}
+        </span>
+        <span>Updated {{ formatDate(campaign.updated_at || campaign.created_at) }}</span>
+      </div>
+
+      <div class="progress-ring">
+        <div>
+          <strong>{{ sentRate }}%</strong>
+          <span>sent</span>
+        </div>
+      </div>
+
+      <div class="metrics-grid">
+        <div>
+          <span>Total recipients</span>
+          <strong>{{ campaign.total_recipients || 0 }}</strong>
+        </div>
+        <div>
+          <span>Sent</span>
+          <strong>{{ campaign.sent_count || 0 }}</strong>
+        </div>
+        <div>
+          <span>Opened</span>
+          <strong>{{ campaign.open_count || 0 }}</strong>
+        </div>
+        <div>
+          <span>Clicked</span>
+          <strong>{{ campaign.click_count || 0 }}</strong>
+        </div>
+      </div>
     </article>
 
-    <article class="card panel">
+    <article class="card panel-card">
+      <h2 class="section-title">Campaign Setup</h2>
+      <dl class="info-list">
+        <div>
+          <dt>Template</dt>
+          <dd>{{ campaign.template_name || "-" }}</dd>
+        </div>
+        <div>
+          <dt>Sender</dt>
+          <dd>{{ campaign.sender_email || "-" }}</dd>
+        </div>
+        <div>
+          <dt>Type</dt>
+          <dd>{{ campaign.campaign_type || "regular" }}</dd>
+        </div>
+        <div>
+          <dt>Scheduled</dt>
+          <dd>{{ formatDate(campaign.scheduled_time) }}</dd>
+        </div>
+      </dl>
+    </article>
+
+    <article class="card panel-card status-card">
+      <h2 class="section-title">Recipient Status</h2>
+      <div v-for="item in statusBreakdown" :key="item.label" class="status-row">
+        <div>
+          <span>{{ item.label }}</span>
+          <strong>{{ item.count }}</strong>
+        </div>
+        <div class="bar">
+          <span :style="{ width: `${item.percent}%`, background: item.color }"></span>
+        </div>
+      </div>
+    </article>
+
+    <article class="card panel-card action-card">
       <h2 class="section-title">Actions</h2>
+      <p>Refresh live data or inspect every recipient in this campaign.</p>
       <div class="stack">
         <button type="button" class="btn btn--secondary" @click="loadCampaign">
           Refresh
@@ -35,13 +102,21 @@
         <RouterLink :to="`/campaigns/${route.params.id}/recipients`" class="btn btn--secondary">
           View Recipients
         </RouterLink>
+        <RouterLink to="/campaigns" class="btn btn--secondary">
+          Back to Campaigns
+        </RouterLink>
       </div>
     </article>
+  </section>
+
+  <section v-else class="empty-panel">
+    <h1 class="page-title">Campaign Detail</h1>
+    <p class="page-subtitle">Loading campaign information...</p>
   </section>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRoute, RouterLink } from "vue-router";
 import { campaignsApi } from "../api/campaignsApi";
 import { ApiClientError } from "../api/http";
@@ -51,6 +126,34 @@ import { auth } from "../stores/auth";
 const route = useRoute();
 const notice = useNotice();
 const campaign = ref<Record<string, any> | null>(null);
+
+const totalRecipients = computed(() => Number(campaign.value?.total_recipients || 0));
+const sentRate = computed(() => {
+  if (!totalRecipients.value) return 0;
+  return Math.round((Number(campaign.value?.sent_count || 0) / totalRecipients.value) * 100);
+});
+
+const statusBreakdown = computed(() => {
+  const counts = campaign.value?.recipientsByStatus || {};
+  const total = Math.max(1, totalRecipients.value);
+  return [
+    { label: "Pending", key: "pending", color: "#6366f1" },
+    { label: "Sent", key: "sent", color: "#22c55e" },
+    { label: "Failed", key: "failed", color: "#ef4444" },
+    { label: "Bounced", key: "bounced", color: "#f97316" },
+  ].map((item) => {
+    const count = Number(counts[item.key] || 0);
+    return {
+      ...item,
+      count,
+      percent: Math.round((count / total) * 100),
+    };
+  });
+});
+
+function formatDate(value?: string) {
+  return value ? new Date(value).toLocaleString() : "-";
+}
 
 async function loadCampaign() {
   if (!auth.state.token) return;
@@ -96,21 +199,221 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.header-row {
+.detail-hero {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 16px;
+  padding: 28px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 12% 10%, rgba(99, 91, 255, 0.18), transparent 30%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(239, 246, 255, 0.86));
+  box-shadow: var(--shadow-elevated);
 }
 
-.grid--detail { grid-template-columns: 1.7fr 1fr; }
-.panel { border: 1px solid var(--color-border-subtle); }
-.metric { margin: 0 0 8px; font-size: 14px; color: var(--color-text-main); }
-.actions, .stack { display: flex; gap: 10px; flex-wrap: wrap; }
-.stack .btn { text-decoration: none; }
+.eyebrow {
+  margin: 0 0 6px;
+  color: var(--color-accent-primary);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
 
-@media (max-width: 900px) {
-  .grid--detail { grid-template-columns: 1fr; }
+.hero-actions,
+.stack {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.8fr);
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.hero-card,
+.panel-card {
+  border: 1px solid var(--color-border-subtle);
+}
+
+.hero-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 22px;
+  align-items: center;
+  min-height: 270px;
+}
+
+.status-line {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: var(--color-control-bg-muted);
+  color: var(--color-text-main);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.badge--sent { background: #dcfce7; color: #166534; }
+.badge--sending,
+.badge--scheduled { background: #fef3c7; color: #92400e; }
+.badge--paused { background: #e2e8f0; color: #334155; }
+
+.progress-ring {
+  display: grid;
+  place-items: center;
+  width: 170px;
+  height: 170px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, white 58%, transparent 59%),
+    conic-gradient(#635bff calc(var(--rate) * 1%), #e2e8f0 0);
+  --rate: v-bind(sentRate);
+}
+
+.progress-ring div {
+  display: grid;
+  place-items: center;
+}
+
+.progress-ring strong {
+  color: var(--color-text-main);
+  font-size: 38px;
+}
+
+.progress-ring span {
+  color: var(--color-text-muted);
+  font-weight: 700;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.metrics-grid div {
+  padding: 18px;
+  border-radius: 18px;
+  background: #f8fafc;
+}
+
+.metrics-grid span,
+.info-list dt,
+.action-card p {
+  color: var(--color-text-muted);
+}
+
+.metrics-grid strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--color-text-main);
+  font-size: 28px;
+}
+
+.info-list {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+}
+
+.info-list div {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.info-list div:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.info-list dt {
+  margin-bottom: 4px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.info-list dd {
+  margin: 0;
+  color: var(--color-text-main);
+  font-weight: 700;
+}
+
+.status-row {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.status-row div:first-child {
+  display: flex;
+  justify-content: space-between;
+  color: var(--color-text-main);
+  font-weight: 700;
+}
+
+.bar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e5e7eb;
+}
+
+.bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.stack .btn {
+  text-decoration: none;
+}
+
+.empty-panel {
+  padding: 30px;
+}
+
+@media (max-width: 960px) {
+  .detail-grid,
+  .hero-card {
+    grid-template-columns: 1fr;
+  }
+
+  .progress-ring {
+    justify-self: center;
+  }
+}
+
+@media (max-width: 640px) {
+  .detail-hero {
+    padding: 20px;
+  }
+
+  .hero-actions,
+  .hero-actions .btn,
+  .stack .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

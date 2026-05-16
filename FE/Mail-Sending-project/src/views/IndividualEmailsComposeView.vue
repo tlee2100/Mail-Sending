@@ -350,8 +350,7 @@ async function resolveHtmlContentForDelivery() {
       selectedTemplateId.value,
       auth.state.token,
     );
-    const renderedDesignerHtml =
-      designer.draft?.renderedHtml || designer.published?.renderedHtml || "";
+    const renderedDesignerHtml = designer.renderedHtml || "";
 
     if (renderedDesignerHtml.trim()) {
       templateHtmlContent.value = renderedDesignerHtml;
