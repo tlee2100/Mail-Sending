@@ -14,7 +14,7 @@
       <RouterLink to="/contacts/fields" class="btn btn--secondary">
         Fields
       </RouterLink>
-      <button type="button" class="btn btn--primary" @click="addContact">
+      <button type="button" class="btn btn--primary" @click="openCreateContactModal">
         + Add Contact
       </button>
     </div>
@@ -99,6 +99,13 @@
               <button
                 type="button"
                 class="btn btn--secondary btn--sm"
+                @click="openEditContactModal(contact)"
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                class="btn btn--secondary btn--sm"
                 @click="openTagManager(contact)"
               >
                 Tags
@@ -106,6 +113,13 @@
               <RouterLink :to="`/contacts/${contact.id}/fields`" class="btn btn--secondary btn--sm">
                 Fields
               </RouterLink>
+              <button
+                type="button"
+                class="btn btn--danger btn--sm"
+                @click="openDeleteContactModal(contact)"
+              >
+                Delete
+              </button>
             </td>
           </tr>
         </tbody>
@@ -120,6 +134,91 @@
       </div>
     </div>
   </section>
+
+  <div v-if="contactDialogOpen" class="modal-backdrop" @click.self="closeContactDialog">
+    <form class="modal-card modal-card--wide" @submit.prevent="saveContact">
+      <header class="modal-head">
+        <div>
+          <p class="modal-kicker">{{ editingContact ? "Edit contact" : "New contact" }}</p>
+          <h2 class="modal-title">{{ editingContact ? "Update contact" : "Add contact" }}</h2>
+          <p class="modal-subtitle">Manage recipient profile data used for merge tags.</p>
+        </div>
+        <button type="button" class="modal-close" @click="closeContactDialog">x</button>
+      </header>
+
+      <div class="contact-form-grid">
+        <label class="field field--wide">
+          <span>Email *</span>
+          <input v-model.trim="contactForm.email" type="email" required placeholder="customer@example.com" />
+        </label>
+        <label class="field">
+          <span>First name</span>
+          <input v-model.trim="contactForm.firstName" type="text" placeholder="Tan" />
+        </label>
+        <label class="field">
+          <span>Last name</span>
+          <input v-model.trim="contactForm.lastName" type="text" placeholder="Le" />
+        </label>
+        <label class="field">
+          <span>Phone</span>
+          <input v-model.trim="contactForm.phone" type="text" placeholder="090..." />
+        </label>
+        <label class="field">
+          <span>Company</span>
+          <input v-model.trim="contactForm.company" type="text" placeholder="ChadMailer" />
+        </label>
+        <label class="field">
+          <span>City</span>
+          <input v-model.trim="contactForm.city" type="text" placeholder="Ho Chi Minh" />
+        </label>
+        <label class="field">
+          <span>Country</span>
+          <input v-model.trim="contactForm.country" type="text" placeholder="Vietnam" />
+        </label>
+        <label class="field">
+          <span>Status</span>
+          <select v-model="contactForm.emailStatus">
+            <option value="active">Active</option>
+            <option value="unsubscribed">Unsubscribed</option>
+            <option value="bounced">Bounced</option>
+            <option value="blocked">Blocked</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Source</span>
+          <input v-model.trim="contactForm.source" type="text" placeholder="manual" />
+        </label>
+      </div>
+
+      <footer class="modal-actions">
+        <button type="button" class="btn btn--secondary" @click="closeContactDialog">Cancel</button>
+        <button type="submit" class="btn btn--primary" :disabled="isSavingContact">
+          {{ isSavingContact ? "Saving..." : editingContact ? "Save changes" : "Create contact" }}
+        </button>
+      </footer>
+    </form>
+  </div>
+
+  <div v-if="deleteContactTarget" class="modal-backdrop" @click.self="deleteContactTarget = null">
+    <section class="modal-card">
+      <header class="modal-head">
+        <div>
+          <p class="modal-kicker">Delete contact</p>
+          <h2 class="modal-title">Delete {{ fullName(deleteContactTarget) }}?</h2>
+          <p class="modal-subtitle">This contact will be removed from lists and tag mappings.</p>
+        </div>
+        <button type="button" class="modal-close" @click="deleteContactTarget = null">x</button>
+      </header>
+      <footer class="modal-actions">
+        <button type="button" class="btn btn--secondary" @click="deleteContactTarget = null">
+          Cancel
+        </button>
+        <button type="button" class="btn btn--danger" :disabled="isSavingContact" @click="deleteContact">
+          Delete contact
+        </button>
+      </footer>
+    </section>
+  </div>
 
   <div v-if="tagDialogContact" class="modal-backdrop" @click.self="closeTagManager">
     <section class="modal-card">
@@ -184,9 +283,12 @@ type ContactRow = {
   email: string;
   first_name?: string | null;
   last_name?: string | null;
+  phone?: string | null;
   company?: string | null;
   city?: string | null;
+  country?: string | null;
   email_status?: string | null;
+  source?: string | null;
   tags?: TagRow[];
 };
 
@@ -209,6 +311,21 @@ const filterTagId = ref(String(route.query.tagId || ""));
 const tagDialogContact = ref<ContactRow | null>(null);
 const selectedTagIds = ref<number[]>([]);
 const isSavingTags = ref(false);
+const contactDialogOpen = ref(false);
+const editingContact = ref<ContactRow | null>(null);
+const deleteContactTarget = ref<ContactRow | null>(null);
+const isSavingContact = ref(false);
+const contactForm = reactive({
+  email: "",
+  firstName: "",
+  lastName: "",
+  phone: "",
+  company: "",
+  city: "",
+  country: "",
+  emailStatus: "active",
+  source: "manual",
+});
 const pagination = reactive({
   page: 1,
   pageSize: 20,
@@ -258,33 +375,105 @@ async function loadTags() {
   }
 }
 
-async function addContact() {
-  if (!auth.state.token) {
+function resetContactForm() {
+  contactForm.email = "";
+  contactForm.firstName = "";
+  contactForm.lastName = "";
+  contactForm.phone = "";
+  contactForm.company = "";
+  contactForm.city = "";
+  contactForm.country = "";
+  contactForm.emailStatus = "active";
+  contactForm.source = "manual";
+}
+
+function openCreateContactModal() {
+  editingContact.value = null;
+  resetContactForm();
+  contactDialogOpen.value = true;
+}
+
+function openEditContactModal(contact: ContactRow) {
+  editingContact.value = contact;
+  contactForm.email = contact.email || "";
+  contactForm.firstName = contact.first_name || "";
+  contactForm.lastName = contact.last_name || "";
+  contactForm.phone = contact.phone || "";
+  contactForm.company = contact.company || "";
+  contactForm.city = contact.city || "";
+  contactForm.country = contact.country || "";
+  contactForm.emailStatus = contact.email_status || "active";
+  contactForm.source = contact.source || "manual";
+  contactDialogOpen.value = true;
+}
+
+function closeContactDialog() {
+  contactDialogOpen.value = false;
+}
+
+function contactPayload() {
+  return {
+    email: contactForm.email,
+    firstName: contactForm.firstName || undefined,
+    lastName: contactForm.lastName || undefined,
+    phone: contactForm.phone || undefined,
+    company: contactForm.company || undefined,
+    city: contactForm.city || undefined,
+    country: contactForm.country || undefined,
+    emailStatus: contactForm.emailStatus || "active",
+    source: contactForm.source || "manual",
+  };
+}
+
+async function saveContact() {
+  if (!auth.state.token || isSavingContact.value) {
     notice.show("Missing auth token. Please login again.", "error");
     return;
   }
 
-  const email = window.prompt("Contact email", "");
-  if (!email?.trim()) return;
-  const firstName = window.prompt("First name", "") || undefined;
-  const lastName = window.prompt("Last name", "") || undefined;
-  const city = window.prompt("City", "") || undefined;
-
+  isSavingContact.value = true;
   try {
-    await contactsApi.createContact(auth.state.token, {
-      email: email.trim(),
-      firstName,
-      lastName,
-      city,
-      emailStatus: "active",
-      source: "manual",
-    });
-    notice.show("Contact created.", "success");
+    if (editingContact.value) {
+      await contactsApi.updateContact(
+        auth.state.token,
+        editingContact.value.id,
+        contactPayload(),
+      );
+      notice.show("Contact updated.", "success");
+    } else {
+      await contactsApi.createContact(auth.state.token, contactPayload());
+      notice.show("Contact created.", "success");
+    }
+    closeContactDialog();
     await loadContacts();
   } catch (error) {
     const message =
-      error instanceof ApiClientError ? error.message : "Failed to create contact";
+      error instanceof ApiClientError ? error.message : "Failed to save contact";
     notice.show(message, "error");
+  } finally {
+    isSavingContact.value = false;
+  }
+}
+
+function openDeleteContactModal(contact: ContactRow) {
+  deleteContactTarget.value = contact;
+}
+
+async function deleteContact() {
+  if (!auth.state.token || !deleteContactTarget.value || isSavingContact.value) return;
+
+  isSavingContact.value = true;
+  try {
+    await contactsApi.deleteContact(auth.state.token, deleteContactTarget.value.id);
+    notice.show("Contact deleted.", "success");
+    deleteContactTarget.value = null;
+    await Promise.all([loadContacts(), loadTags()]);
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to delete contact";
+    notice.show(message, "error");
+  } finally {
+    isSavingContact.value = false;
   }
 }
 
@@ -464,10 +653,15 @@ onMounted(() => {
 
 .modal-card {
   width: min(560px, 100%);
-  border-radius: 12px;
-  background: var(--color-bg-surface-elevated);
-  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24);
-  padding: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 249, 0.96));
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.3);
+  padding: 24px;
+}
+
+.modal-card--wide {
+  width: min(820px, 100%);
 }
 
 .modal-head,
@@ -481,6 +675,15 @@ onMounted(() => {
 .modal-title {
   margin: 0;
   font-size: 18px;
+}
+
+.modal-kicker {
+  margin: 0 0 6px;
+  color: var(--color-accent-primary);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .modal-subtitle {
@@ -523,6 +726,36 @@ onMounted(() => {
 .modal-actions {
   justify-content: flex-end;
   margin-top: 18px;
+}
+
+.contact-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+  color: var(--color-text-main);
+  font-weight: 700;
+}
+
+.field--wide {
+  grid-column: 1 / -1;
+}
+
+.field input,
+.field select {
+  min-height: 46px;
+  box-sizing: border-box;
+  padding: 0 12px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 12px;
+  background: white;
+  color: var(--color-text-main);
+  font: inherit;
 }
 
 .empty-state-inline {
@@ -663,6 +896,14 @@ onMounted(() => {
     max-height: 88vh;
     overflow: auto;
     border-radius: 16px 16px 12px 12px;
+  }
+
+  .contact-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .field--wide {
+    grid-column: auto;
   }
 }
 </style>
