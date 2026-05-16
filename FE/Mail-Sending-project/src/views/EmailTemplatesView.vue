@@ -1,13 +1,14 @@
 <template>
   <section class="content__header header-with-action">
     <div>
+      <p class="eyebrow">Template Library</p>
       <h1 class="page-title">Saved Email Templates</h1>
-      <p class="page-subtitle">Templates loaded from backend</p>
+      <p class="page-subtitle">Create, edit, delete and open templates in Designer.</p>
       <p v-if="notice.message" class="notice" :class="`notice--${notice.tone}`">
         {{ notice.message }}
       </p>
     </div>
-    <button type="button" class="btn btn--primary" @click="createTemplate">
+    <button type="button" class="btn btn--primary" @click="openCreateModal">
       + Create Template
     </button>
   </section>
@@ -49,29 +50,109 @@
     </div>
 
     <div class="grid grid--samples" v-if="filteredTemplates.length">
-      <RouterLink
-        v-for="item in filteredTemplates"
-        :key="item.id"
-        :to="`/templates/${item.id}/designer`"
-        class="card sample-card"
-      >
+      <article v-for="item in filteredTemplates" :key="item.id" class="card sample-card">
         <div class="sample-card__top">
           <h3 class="sample-card__title">{{ item.template_name }}</h3>
-          <span class="sample-card__badge">{{ item.is_active ? "Active" : "Inactive" }}</span>
+          <span class="sample-card__badge" :class="{ 'sample-card__badge--off': !item.is_active }">
+            {{ item.is_active ? "Active" : "Inactive" }}
+          </span>
         </div>
-        <p class="sample-card__desc">{{ item.preview_text || item.subject || "No preview text" }}</p>
-        <span class="sample-card__cta">Open in Designer</span>
-      </RouterLink>
+        <p class="sample-card__subject">{{ item.subject || "No subject" }}</p>
+        <p class="sample-card__desc">{{ item.preview_text || "No preview text" }}</p>
+        <div class="sample-card__actions">
+          <RouterLink :to="`/templates/${item.id}/designer`" class="btn btn--secondary btn--small">
+            Designer
+          </RouterLink>
+          <button type="button" class="btn btn--secondary btn--small" @click="openEditModal(item)">
+            Edit
+          </button>
+          <button type="button" class="btn btn--danger btn--small" @click="openDeleteModal(item)">
+            Delete
+          </button>
+        </div>
+      </article>
     </div>
-    <div v-else class="card">
-      <p>No templates found.</p>
+    <div v-else class="card empty-card">
+      <h3>No templates found.</h3>
+      <p>Create a template, then open it in Designer for drag-and-drop editing.</p>
+      <button type="button" class="btn btn--primary" @click="openCreateModal">
+        Create Template
+      </button>
     </div>
   </section>
+
+  <Teleport to="body">
+    <div v-if="isModalOpen" class="modal-backdrop" @click.self="closeModal">
+      <form class="modal-card" @submit.prevent="submitTemplate">
+        <header class="modal-head">
+          <div>
+            <p class="eyebrow">{{ editingTemplate ? "Edit template" : "New template" }}</p>
+            <h2 class="modal-title">{{ editingTemplate ? "Update email template" : "Create email template" }}</h2>
+            <p class="modal-subtitle">Set base content here, then refine the layout in Template Designer.</p>
+          </div>
+          <button type="button" class="modal-close" @click="closeModal">x</button>
+        </header>
+
+        <div class="form-grid">
+          <label class="field field--wide">
+            <span>Template name *</span>
+            <input v-model.trim="form.templateName" type="text" required placeholder="Launch Announcement" />
+          </label>
+          <label class="field">
+            <span>Subject</span>
+            <input v-model.trim="form.subject" type="text" placeholder="New update for you" />
+          </label>
+          <label class="field">
+            <span>Preview text</span>
+            <input v-model.trim="form.previewText" type="text" placeholder="Short inbox preview" />
+          </label>
+          <label class="check-row field--wide">
+            <input v-model="form.isActive" type="checkbox" />
+            <span>Active template</span>
+          </label>
+          <label class="field">
+            <span>Text content</span>
+            <textarea v-model="form.contentText" rows="7" placeholder="Hello {{name}},"></textarea>
+          </label>
+          <label class="field">
+            <span>HTML content</span>
+            <textarea v-model="form.contentHtml" rows="7" placeholder="<p>Hello {{name}}</p>"></textarea>
+          </label>
+        </div>
+
+        <footer class="modal-actions">
+          <button type="button" class="btn btn--secondary" @click="closeModal">Cancel</button>
+          <button type="submit" class="btn btn--primary" :disabled="saving">
+            {{ saving ? "Saving..." : editingTemplate ? "Save changes" : "Create template" }}
+          </button>
+        </footer>
+      </form>
+    </div>
+
+    <div v-if="deleteTarget" class="modal-backdrop" @click.self="deleteTarget = null">
+      <section class="modal-card modal-card--danger">
+        <header class="modal-head">
+          <div>
+            <p class="eyebrow">Delete template</p>
+            <h2 class="modal-title">Delete {{ deleteTarget.template_name }}?</h2>
+            <p class="modal-subtitle">Campaigns using this template may lose their source template reference.</p>
+          </div>
+          <button type="button" class="modal-close" @click="deleteTarget = null">x</button>
+        </header>
+        <footer class="modal-actions">
+          <button type="button" class="btn btn--secondary" @click="deleteTarget = null">Cancel</button>
+          <button type="button" class="btn btn--danger" :disabled="saving" @click="deleteTemplate">
+            Delete template
+          </button>
+        </footer>
+      </section>
+    </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
-import { RouterLink, useRouter } from "vue-router";
+import { computed, onMounted, reactive, ref } from "vue";
+import { RouterLink } from "vue-router";
 import { templatesApi } from "../api/templatesApi";
 import { ApiClientError } from "../api/http";
 import { useNotice } from "../composables/useNotice";
@@ -82,13 +163,26 @@ type TemplateRow = {
   template_name: string;
   subject?: string | null;
   preview_text?: string | null;
+  content_html?: string | null;
+  content_text?: string | null;
   is_active: boolean;
 };
 
-const router = useRouter();
 const notice = useNotice();
 const templates = ref<TemplateRow[]>([]);
 const searchQuery = ref("");
+const isModalOpen = ref(false);
+const saving = ref(false);
+const editingTemplate = ref<TemplateRow | null>(null);
+const deleteTarget = ref<TemplateRow | null>(null);
+const form = reactive({
+  templateName: "",
+  subject: "",
+  previewText: "",
+  contentHtml: "",
+  contentText: "",
+  isActive: true,
+});
 
 const filteredTemplates = computed(() => {
   const query = searchQuery.value.trim().toLowerCase();
@@ -113,10 +207,19 @@ const versionsTarget = computed(() => {
   return current ? `/templates/${current.id}/designer/versions` : "/templates/1/designer/versions";
 });
 
+function resetForm() {
+  form.templateName = "";
+  form.subject = "";
+  form.previewText = "";
+  form.contentHtml = "<p>Hello {{name}},</p>";
+  form.contentText = "Hello {{name}},";
+  form.isActive = true;
+}
+
 async function loadTemplates() {
   if (!auth.state.token) return;
   try {
-    const response = await templatesApi.listTemplates(auth.state.token);
+    const response = await templatesApi.listTemplates(auth.state.token, { pageSize: 100 });
     templates.value = response.data.items as TemplateRow[];
   } catch (error) {
     const message =
@@ -125,30 +228,86 @@ async function loadTemplates() {
   }
 }
 
-async function createTemplate() {
-  if (!auth.state.token) return;
-  const templateName = window.prompt("Template name", "Launch Announcement");
-  if (!templateName?.trim()) return;
-  const subject = window.prompt("Subject", "New update for you") || undefined;
-  const previewText = window.prompt("Preview text", "Short preview") || undefined;
+function openCreateModal() {
+  editingTemplate.value = null;
+  resetForm();
+  isModalOpen.value = true;
+}
 
+async function openEditModal(item: TemplateRow) {
+  if (!auth.state.token) return;
   try {
-    const response = await templatesApi.createTemplate(auth.state.token, {
-      templateName: templateName.trim(),
-      subject,
-      previewText,
-      contentHtml: "<p>Hello from template</p>",
-      contentText: "Hello from template",
-      isActive: true,
-    });
-    const id = Number(response.data.id);
-    notice.show("Template created.", "success");
-    await loadTemplates();
-    router.push(`/templates/${id}/designer`);
+    const response = await templatesApi.getTemplate(auth.state.token, item.id);
+    const detail = response.data as TemplateRow;
+    editingTemplate.value = detail;
+    form.templateName = detail.template_name || "";
+    form.subject = detail.subject || "";
+    form.previewText = detail.preview_text || "";
+    form.contentHtml = detail.content_html || "";
+    form.contentText = detail.content_text || "";
+    form.isActive = detail.is_active !== false;
+    isModalOpen.value = true;
   } catch (error) {
     const message =
-      error instanceof ApiClientError ? error.message : "Failed to create template";
+      error instanceof ApiClientError ? error.message : "Failed to load template";
     notice.show(message, "error");
+  }
+}
+
+function closeModal() {
+  isModalOpen.value = false;
+}
+
+function openDeleteModal(item: TemplateRow) {
+  deleteTarget.value = item;
+}
+
+async function submitTemplate() {
+  if (!auth.state.token || saving.value) return;
+  saving.value = true;
+  try {
+    const body = {
+      templateName: form.templateName,
+      subject: form.subject || undefined,
+      previewText: form.previewText || undefined,
+      contentHtml: form.contentHtml || undefined,
+      contentText: form.contentText || undefined,
+      isActive: form.isActive,
+    };
+
+    if (editingTemplate.value) {
+      await templatesApi.updateTemplate(auth.state.token, editingTemplate.value.id, body);
+      notice.show("Template updated.", "success");
+    } else {
+      await templatesApi.createTemplate(auth.state.token, body);
+      notice.show("Template created.", "success");
+    }
+
+    closeModal();
+    await loadTemplates();
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to save template";
+    notice.show(message, "error");
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function deleteTemplate() {
+  if (!auth.state.token || !deleteTarget.value || saving.value) return;
+  saving.value = true;
+  try {
+    await templatesApi.deleteTemplate(auth.state.token, deleteTarget.value.id);
+    notice.show("Template deleted.", "success");
+    deleteTarget.value = null;
+    await loadTemplates();
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to delete template";
+    notice.show(message, "error");
+  } finally {
+    saving.value = false;
   }
 }
 
@@ -158,12 +317,23 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.header-with-action {
+.header-with-action,
+.modal-head,
+.modal-actions {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   flex-wrap: wrap;
   gap: 16px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: var(--color-accent-primary);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .grid--stats-three {
@@ -177,14 +347,15 @@ onMounted(() => {
   gap: 8px;
   color: white;
   padding: 20px;
+  border: none;
 }
 
-.card--blue { background: #4a90e2; }
-.card--green { background: #50e3c2; color: #0f766e; }
-.card--cyan { background: #00bcd4; color: #0c4a6e; }
+.card--blue { background: linear-gradient(135deg, #2563eb, #60a5fa); }
+.card--green { background: linear-gradient(135deg, #059669, #5eead4); color: #ecfeff; }
+.card--cyan { background: linear-gradient(135deg, #0891b2, #67e8f9); color: #ecfeff; }
 
 .card--stat-tpl .card__icon { font-size: 18px; font-weight: 700; }
-.card--stat-tpl .card__value { font-size: 28px; font-weight: 700; }
+.card--stat-tpl .card__value { font-size: 28px; font-weight: 800; }
 .card--stat-tpl .card__label { font-size: 13px; opacity: 0.95; color: inherit; }
 
 .filter-bar { display: flex; gap: 12px; margin-bottom: 16px; }
@@ -199,29 +370,173 @@ onMounted(() => {
   background: var(--color-control-bg); color: var(--color-text-main);
 }
 
-.grid--samples { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+.grid--samples { grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); }
 .sample-card {
   border: 1px solid var(--color-border-subtle);
-  text-decoration: none;
   color: var(--color-text-main);
+  box-shadow: var(--shadow-elevated);
 }
 .sample-card__top {
   display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px;
 }
-.sample-card__title { margin: 0; font-size: 15px; font-weight: 600; }
+.sample-card__title { margin: 0; font-size: 16px; font-weight: 800; }
 .sample-card__badge {
-  border: 1px solid var(--color-border-subtle);
   border-radius: 999px;
-  background: var(--color-control-bg-muted);
-  color: var(--color-text-muted);
+  background: #dcfce7;
+  color: #166534;
   font-size: 11px;
-  padding: 4px 8px;
+  font-weight: 800;
+  padding: 5px 9px;
 }
-.sample-card__desc { margin: 0 0 14px; font-size: 13px; color: var(--color-text-muted); }
-.sample-card__cta { color: var(--color-primary); font-size: 12px; font-weight: 600; }
+.sample-card__badge--off {
+  background: #e5e7eb;
+  color: #475569;
+}
+.sample-card__subject { margin: 0 0 8px; font-weight: 700; }
+.sample-card__desc { margin: 0 0 16px; font-size: 13px; color: var(--color-text-muted); }
+.sample-card__actions {
+  display: grid;
+  grid-template-columns: 1fr 0.7fr 0.7fr;
+  gap: 8px;
+}
+.btn--small { justify-content: center; padding: 8px 10px; font-size: 12px; text-decoration: none; }
 .quick-links { display: flex; gap: 10px; flex-wrap: wrap; }
 
+.empty-card {
+  padding: 36px;
+  text-align: center;
+}
+
+.empty-card p,
+.modal-subtitle {
+  color: var(--color-text-muted);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.56);
+  backdrop-filter: blur(8px);
+}
+
+.modal-card {
+  width: min(920px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  padding: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 26px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 249, 0.96));
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.3);
+}
+
+.modal-card--danger {
+  width: min(620px, 100%);
+  border-color: rgba(239, 68, 68, 0.25);
+}
+
+.modal-title {
+  margin: 0 0 6px;
+  color: var(--color-text-main);
+}
+
+.modal-close {
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 12px;
+  background: white;
+  color: var(--color-text-main);
+  cursor: pointer;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 22px;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+  color: var(--color-text-main);
+  font-weight: 800;
+}
+
+.field--wide,
+.check-row {
+  grid-column: 1 / -1;
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 14px;
+  background: white;
+  color: var(--color-text-main);
+  font: inherit;
+}
+
+.field input {
+  min-height: 48px;
+  padding: 0 14px;
+}
+
+.field textarea {
+  padding: 14px;
+  resize: vertical;
+}
+
+.check-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+}
+
+.modal-actions {
+  justify-content: flex-end;
+  margin-top: 22px;
+}
+
 @media (max-width: 768px) {
-  .grid--stats-three { grid-template-columns: 1fr; }
+  .grid--stats-three,
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .field--wide,
+  .check-row {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .header-with-action .btn,
+  .sample-card__actions,
+  .modal-actions .btn {
+    width: 100%;
+  }
+
+  .sample-card__actions {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-backdrop {
+    align-items: end;
+    padding: 12px;
+  }
+
+  .modal-card {
+    max-height: 92vh;
+    border-radius: 24px 24px 0 0;
+  }
 }
 </style>

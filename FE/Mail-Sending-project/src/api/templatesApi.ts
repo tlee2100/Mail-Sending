@@ -37,4 +37,30 @@ export const templatesApi = {
   getTemplate(token: string, id: string | number) {
     return apiRequest<Record<string, unknown>>(`/templates/${id}`, { token });
   },
+
+  updateTemplate(
+    token: string,
+    id: string | number,
+    body: {
+      templateName?: string;
+      subject?: string;
+      previewText?: string;
+      contentHtml?: string;
+      contentText?: string;
+      isActive?: boolean;
+    },
+  ) {
+    return apiRequest<Record<string, unknown>>(`/templates/${id}`, {
+      method: "PATCH",
+      token,
+      body,
+    });
+  },
+
+  deleteTemplate(token: string, id: string | number) {
+    return apiRequest<Record<string, unknown>>(`/templates/${id}`, {
+      method: "DELETE",
+      token,
+    });
+  },
 };

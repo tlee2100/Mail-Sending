@@ -16,40 +16,52 @@ export type TemplateLayout = {
   };
 };
 
-export type DesignerDraft = {
-  layout?: TemplateLayout | string;
+export type DesignerState = {
+  templateId?: string | number;
+  layout?: TemplateLayout | string | null;
+  editorState?: Record<string, unknown> | null;
   renderedHtml?: string;
   renderedText?: string;
   updatedAt?: string;
+  draftVersion?: number;
+  lastPublishedVersion?: number | null;
 };
 
 export type DesignerPublished = {
-  versionId?: string;
+  versionId?: string | number;
+  versionNumber?: number;
   layout?: TemplateLayout | string;
+  editorState?: Record<string, unknown> | null;
   renderedHtml?: string;
   renderedText?: string;
-  publishedAt?: string;
-  summary?: string;
+  note?: string | null;
+  isPublished?: boolean;
+  createdAt?: string;
 };
 
-export type DesignerLoadResponse = {
-  draft?: DesignerDraft | null;
-  published?: DesignerPublished | null;
-};
+export type DesignerLoadResponse = DesignerState;
 
 export type DesignerVersionItem = {
   id: string;
+  versionNumber?: number;
   createdAt?: string;
   author?: string;
   summary?: string;
+  note?: string | null;
+  isPublished?: boolean;
 };
 
 export type DesignerVersionDetail = {
   id: string;
+  versionId?: string | number;
+  versionNumber?: number;
   createdAt?: string;
   author?: string;
   summary?: string;
+  note?: string | null;
+  isPublished?: boolean;
   layout?: TemplateLayout | string;
+  editorState?: Record<string, unknown> | null;
   renderedHtml?: string;
   renderedText?: string;
 };
@@ -58,6 +70,7 @@ export type SaveDesignerDraftPayload = {
   layout: TemplateLayout;
   renderedHtml?: string;
   renderedText?: string;
+  editorState?: Record<string, unknown>;
 };
 
 type ApiEnvelope<T> = {
@@ -161,24 +174,33 @@ export const templateDesignerApi = {
     );
   },
 
-  publishDraft(templateId: string, token: string) {
+  publishDraft(
+    templateId: string,
+    token: string,
+    payload?: SaveDesignerDraftPayload & { note?: string },
+  ) {
     return requestJson<DesignerVersionDetail>(
       `/templates/${encodeURIComponent(templateId)}/designer/publish`,
       {
         method: "POST",
         token,
+        body: payload || {},
       },
     );
   },
 
-  getVersions(templateId: string, token: string) {
-    return requestJson<DesignerVersionItem[]>(
+  async getVersions(templateId: string, token: string) {
+    const response = await requestJson<{
+      items: DesignerVersionItem[];
+      pagination?: Record<string, unknown>;
+    }>(
       `/templates/${encodeURIComponent(templateId)}/designer/versions`,
       {
         method: "GET",
         token,
       },
     );
+    return response.items || [];
   },
 
   getVersionDetail(templateId: string, versionId: string, token: string) {
@@ -192,7 +214,7 @@ export const templateDesignerApi = {
   },
 
   restoreVersion(templateId: string, versionId: string, token: string) {
-    return requestJson<DesignerLoadResponse>(
+    return requestJson<Record<string, unknown>>(
       `/templates/${encodeURIComponent(templateId)}/designer/versions/${encodeURIComponent(versionId)}/restore`,
       {
         method: "POST",

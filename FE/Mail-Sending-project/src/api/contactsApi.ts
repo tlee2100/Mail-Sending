@@ -49,6 +49,36 @@ export const contactsApi = {
     });
   },
 
+  updateContact(
+    token: string,
+    id: string | number,
+    body: {
+      email?: string;
+      firstName?: string;
+      lastName?: string;
+      phone?: string;
+      company?: string;
+      city?: string;
+      country?: string;
+      language?: string;
+      emailStatus?: string;
+      source?: string;
+    },
+  ) {
+    return apiRequest<Record<string, unknown>>(`/contacts/${id}`, {
+      method: "PATCH",
+      token,
+      body,
+    });
+  },
+
+  deleteContact(token: string, id: string | number) {
+    return apiRequest<Record<string, unknown>>(`/contacts/${id}`, {
+      method: "DELETE",
+      token,
+    });
+  },
+
   listTags(token: string) {
     return apiRequest<Array<Record<string, unknown>>>("/contacts/tags", { token });
   },
@@ -58,6 +88,25 @@ export const contactsApi = {
       method: "POST",
       token,
       body,
+    });
+  },
+
+  updateTag(
+    token: string,
+    id: string | number,
+    body: { tagName?: string; color?: string },
+  ) {
+    return apiRequest<Record<string, unknown>>(`/contacts/tags/${id}`, {
+      method: "PATCH",
+      token,
+      body,
+    });
+  },
+
+  deleteTag(token: string, id: string | number) {
+    return apiRequest<Record<string, unknown>>(`/contacts/tags/${id}`, {
+      method: "DELETE",
+      token,
     });
   },
 
