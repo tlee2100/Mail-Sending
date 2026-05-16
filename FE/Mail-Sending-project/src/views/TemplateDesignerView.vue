@@ -443,6 +443,7 @@ import {
   templateDesignerApi,
   type TemplateLayout,
 } from "../api/templateDesignerApi";
+import { templatesApi } from "../api/templatesApi";
 import AIMediaGenerator from "../components/AIMediaGenerator.vue";
 
 const route = useRoute();
@@ -477,6 +478,13 @@ type DesignerBlock = {
   id: string;
   type: BlockType;
   props: Record<string, BlockPropValue>;
+};
+
+type TemplateContent = {
+  template_name?: unknown;
+  subject?: unknown;
+  content_html?: unknown;
+  content_text?: unknown;
 };
 
 type AiImageInsertPayload = AiImageResult & {
@@ -1120,7 +1128,60 @@ function loadSample() {
   applyJsonToCanvas();
 }
 
-function normalizeLayout(raw: TemplateLayout | string | null | undefined): string {
+function stringifyLayoutFromNodes(children: LayoutNode[]) {
+  return JSON.stringify({ root: { type: "section", children } }, null, 2);
+}
+
+function isValidLayoutString(value: string) {
+  try {
+    const parsed = JSON.parse(value) as { root?: LayoutNode };
+    return !!parsed.root;
+  } catch {
+    return false;
+  }
+}
+
+function buildLayoutFromPlainText(value: string) {
+  const paragraphs = value
+    .split(/\n{2,}/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  const children = paragraphs.map((content, index) => ({
+    type: "text" as const,
+    props: {
+      content,
+      fontSize: index === 0 ? "18" : "16",
+      color: "#334155",
+      align: "left",
+    },
+  }));
+
+  return stringifyLayoutFromNodes(children);
+}
+
+function buildLayoutFromHtml(value: string) {
+  return stringifyLayoutFromNodes([
+    {
+      type: "html",
+      props: {
+        html: value,
+      },
+    },
+  ]);
+}
+
+function buildLayoutFromTemplateContent(template: TemplateContent) {
+  const text = String(template.content_text || "").trim();
+  if (text) return buildLayoutFromPlainText(text);
+
+  const html = String(template.content_html || "").trim();
+  if (html) return buildLayoutFromHtml(html);
+
+  return "";
+}
+
+function normalizeLayout(raw: TemplateLayout | string | undefined): string {
   if (!raw) return "";
   if (typeof raw === "string") return raw;
   if ("root" in raw && raw.root) {
@@ -1206,15 +1267,29 @@ async function loadDraft() {
   isRequesting.value = true;
   try {
     const res = await templateDesignerApi.getDesigner(templateId.value, token);
-    const nextLayout = normalizeLayout(res.layout);
+    const source = res.draft || res.published;
+    let nextLayout = normalizeLayout(source?.layout);
+    if (nextLayout && !isValidLayoutString(nextLayout)) {
+      nextLayout = source?.renderedHtml
+        ? buildLayoutFromHtml(source.renderedHtml)
+        : source?.renderedText
+          ? buildLayoutFromPlainText(source.renderedText)
+          : "";
+    }
     if (!nextLayout) {
-      requestInfo.value = "No draft/published designer data found.";
-      return;
+      const templateRes = await templatesApi.getTemplate(token, templateId.value);
+      nextLayout = buildLayoutFromTemplateContent(templateRes.data as TemplateContent);
+      if (!nextLayout) {
+        requestInfo.value = "No draft/published designer data or template content found.";
+        return;
+      }
     }
     layout.value = nextLayout;
     applyJsonToCanvas();
     pushHistory();
-    requestInfo.value = "Designer data loaded.";
+    requestInfo.value = source
+      ? "Designer data loaded."
+      : "Template content loaded into designer.";
   } catch (err) {
     setRequestError(err);
   } finally {
