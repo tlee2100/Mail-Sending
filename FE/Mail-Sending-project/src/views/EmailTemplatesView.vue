@@ -57,16 +57,29 @@
             {{ item.is_active ? "Active" : "Inactive" }}
           </span>
         </div>
+        <p v-if="ownerText(item)" class="sample-card__owner">{{ ownerText(item) }}</p>
         <p class="sample-card__subject">{{ item.subject || "No subject" }}</p>
         <p class="sample-card__desc">{{ item.preview_text || "No preview text" }}</p>
         <div class="sample-card__actions">
           <RouterLink :to="`/templates/${item.id}/designer`" class="btn btn--secondary btn--small">
             Designer
           </RouterLink>
-          <button type="button" class="btn btn--secondary btn--small" @click="openEditModal(item)">
+          <button
+            type="button"
+            class="btn btn--secondary btn--small"
+            :disabled="!canManage(item)"
+            :title="manageBlockedTitle(item)"
+            @click="openEditModal(item)"
+          >
             Edit
           </button>
-          <button type="button" class="btn btn--danger btn--small" @click="openDeleteModal(item)">
+          <button
+            type="button"
+            class="btn btn--danger btn--small"
+            :disabled="!canDelete(item)"
+            :title="deleteBlockedTitle(item)"
+            @click="openDeleteModal(item)"
+          >
             Delete
           </button>
         </div>
@@ -157,6 +170,13 @@ import { templatesApi } from "../api/templatesApi";
 import { ApiClientError } from "../api/http";
 import { useNotice } from "../composables/useNotice";
 import { auth } from "../stores/auth";
+import {
+  canDeleteTemplate,
+  canManageTemplate,
+  hasTemplateOwner,
+  isTemplateOwnedByUser,
+  templateOwnerLabel,
+} from "../utils/templateOwnership";
 
 type TemplateRow = {
   id: number;
@@ -166,6 +186,7 @@ type TemplateRow = {
   content_html?: string | null;
   content_text?: string | null;
   is_active: boolean;
+  [key: string]: unknown;
 };
 
 const notice = useNotice();
@@ -216,6 +237,31 @@ function resetForm() {
   form.isActive = true;
 }
 
+function canManage(item: TemplateRow | null) {
+  return canManageTemplate(item, auth.state.user);
+}
+
+function canDelete(item: TemplateRow | null) {
+  return canDeleteTemplate(item, auth.state.user);
+}
+
+function ownerText(item: TemplateRow) {
+  if (!hasTemplateOwner(item)) return "";
+  if (isTemplateOwnedByUser(item, auth.state.user)) return "Owned by you";
+  const owner = templateOwnerLabel(item);
+  return owner ? `Shared by ${owner}` : "Shared template";
+}
+
+function manageBlockedTitle(item: TemplateRow) {
+  return canManage(item)
+    ? ""
+    : "Only the owner can edit this template. Open Designer to save changes as your own copy.";
+}
+
+function deleteBlockedTitle(item: TemplateRow) {
+  return canDelete(item) ? "" : "Only the owner or an admin can delete this template.";
+}
+
 async function loadTemplates() {
   if (!auth.state.token) return;
   try {
@@ -236,6 +282,13 @@ function openCreateModal() {
 
 async function openEditModal(item: TemplateRow) {
   if (!auth.state.token) return;
+  if (!canManage(item)) {
+    notice.show(
+      "Only the owner can edit this template. Open Designer to save changes as your own copy.",
+      "error",
+    );
+    return;
+  }
   try {
     const response = await templatesApi.getTemplate(auth.state.token, item.id);
     const detail = response.data as TemplateRow;
@@ -259,6 +312,10 @@ function closeModal() {
 }
 
 function openDeleteModal(item: TemplateRow) {
+  if (!canDelete(item)) {
+    notice.show("Only the owner or an admin can delete this template.", "error");
+    return;
+  }
   deleteTarget.value = item;
 }
 
@@ -275,12 +332,15 @@ async function submitTemplate() {
       isActive: form.isActive,
     };
 
-    if (editingTemplate.value) {
+    if (editingTemplate.value && canManage(editingTemplate.value)) {
       await templatesApi.updateTemplate(auth.state.token, editingTemplate.value.id, body);
       notice.show("Template updated.", "success");
     } else {
       await templatesApi.createTemplate(auth.state.token, body);
-      notice.show("Template created.", "success");
+      notice.show(
+        editingTemplate.value ? "Template copy created." : "Template created.",
+        "success",
+      );
     }
 
     closeModal();
@@ -296,6 +356,11 @@ async function submitTemplate() {
 
 async function deleteTemplate() {
   if (!auth.state.token || !deleteTarget.value || saving.value) return;
+  if (!canDelete(deleteTarget.value)) {
+    notice.show("Only the owner or an admin can delete this template.", "error");
+    deleteTarget.value = null;
+    return;
+  }
   saving.value = true;
   try {
     await templatesApi.deleteTemplate(auth.state.token, deleteTarget.value.id);
@@ -393,6 +458,12 @@ onMounted(() => {
   color: #475569;
 }
 .sample-card__subject { margin: 0 0 8px; font-weight: 700; }
+.sample-card__owner {
+  margin: 0 0 8px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
 .sample-card__desc { margin: 0 0 16px; font-size: 13px; color: var(--color-text-muted); }
 .sample-card__actions {
   display: grid;
@@ -400,6 +471,10 @@ onMounted(() => {
   gap: 8px;
 }
 .btn--small { justify-content: center; padding: 8px 10px; font-size: 12px; text-decoration: none; }
+.btn--small:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
 .quick-links { display: flex; gap: 10px; flex-wrap: wrap; }
 
 .empty-card {

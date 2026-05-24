@@ -5,6 +5,9 @@
       Template ID: {{ route.params.id }} - inspect and restore historic
       snapshots.
     </p>
+    <p v-if="ownershipNotice" class="page-subtitle">
+      {{ ownershipNotice }}
+    </p>
   </section>
 
   <section class="content__section">
@@ -44,7 +47,8 @@
                 type="button"
                 class="btn btn--primary btn--small"
                 @click="restoreVersion(v.id)"
-                :disabled="isRequesting || !authToken"
+                :disabled="isRequesting || !authToken || !canRestore"
+                :title="restoreBlockedTitle"
               >
                 Restore
               </button>
@@ -86,7 +90,14 @@ import {
   type DesignerVersionDetail,
   type DesignerVersionItem,
 } from "../api/templateDesignerApi";
+import { templatesApi } from "../api/templatesApi";
 import { auth } from "../stores/auth";
+import {
+  canManageTemplate,
+  hasTemplateOwner,
+  isTemplateOwnedByUser,
+  templateOwnerLabel,
+} from "../utils/templateOwnership";
 
 const route = useRoute();
 const templateId = computed(() => {
@@ -101,6 +112,21 @@ const isLoading = ref(false);
 const isRequesting = ref(false);
 const requestError = ref("");
 const requestInfo = ref("");
+const currentTemplate = ref<Record<string, unknown> | null>(null);
+const canRestore = computed(() => canManageTemplate(currentTemplate.value, auth.state.user));
+const ownershipNotice = computed(() => {
+  if (!currentTemplate.value || !hasTemplateOwner(currentTemplate.value)) return "";
+  if (isTemplateOwnedByUser(currentTemplate.value, auth.state.user)) {
+    return "You can restore versions because this template belongs to your account.";
+  }
+  const owner = templateOwnerLabel(currentTemplate.value);
+  return owner
+    ? `This template is shared by ${owner}. You can inspect versions, but only the owner can restore them.`
+    : "This shared template can be inspected, but only the owner can restore versions.";
+});
+const restoreBlockedTitle = computed(() =>
+  canRestore.value ? "" : "Only the template owner can restore versions.",
+);
 
 const selectedLayoutText = computed(() => {
   const layout = selectedVersion.value?.layout;
@@ -137,6 +163,8 @@ async function loadVersions() {
 
   isLoading.value = true;
   try {
+    const templateRes = await templatesApi.getTemplate(token, templateId.value);
+    currentTemplate.value = templateRes.data;
     versions.value = await templateDesignerApi.getVersions(
       templateId.value,
       token,
@@ -186,6 +214,10 @@ async function restoreVersion(versionId: string) {
   }
   if (!token) {
     requestError.value = "Unauthorized. Please login again.";
+    return;
+  }
+  if (!canRestore.value) {
+    requestError.value = "Only the template owner can restore versions.";
     return;
   }
 
@@ -242,6 +274,11 @@ onMounted(() => {
 .btn--small {
   padding: 6px 10px;
   font-size: 12px;
+}
+
+.btn--small:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .error-text {

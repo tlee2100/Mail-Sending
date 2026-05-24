@@ -10,6 +10,9 @@
       <div class="designer-meta">
         <span class="meta-pill">{{ templateDisplayName }}</span>
         <span class="meta-pill meta-pill--soft">Layout-driven rendering</span>
+        <span v-if="ownershipNotice" class="meta-pill meta-pill--soft">
+          {{ ownershipNotice }}
+        </span>
       </div>
       <p v-if="requestError" class="notice notice--error header-notice">
         {{ requestError }}
@@ -37,7 +40,7 @@
         @click="saveDraft"
         :disabled="isRequesting || !authToken"
       >
-        Save Draft
+        {{ saveDraftLabel }}
       </button>
       <button
         type="button"
@@ -45,7 +48,7 @@
         @click="publishDraft"
         :disabled="isRequesting || !authToken"
       >
-        Publish
+        {{ publishDraftLabel }}
       </button>
       <RouterLink
         :to="`/templates/${route.params.id}/designer/versions`"
@@ -445,6 +448,12 @@ import {
 } from "../api/templateDesignerApi";
 import { templatesApi } from "../api/templatesApi";
 import AIMediaGenerator from "../components/AIMediaGenerator.vue";
+import {
+  canManageTemplate,
+  hasTemplateOwner,
+  isTemplateOwnedByUser,
+  templateOwnerLabel,
+} from "../utils/templateOwnership";
 
 const route = useRoute();
 const router = useRouter();
@@ -481,10 +490,14 @@ type DesignerBlock = {
 };
 
 type TemplateContent = {
+  id?: unknown;
   template_name?: unknown;
   subject?: unknown;
+  preview_text?: unknown;
   content_html?: unknown;
   content_text?: unknown;
+  is_active?: unknown;
+  [key: string]: unknown;
 };
 
 type AiImageInsertPayload = AiImageResult & {
@@ -763,6 +776,7 @@ const historyIndex = ref(-1);
 const isRequesting = ref(false);
 const requestError = ref("");
 const requestInfo = ref("");
+const currentTemplate = ref<TemplateContent | null>(null);
 
 const templateId = computed(() => {
   const raw = Number(route.params.id);
@@ -774,6 +788,23 @@ const templateDisplayName = computed(() =>
 );
 const backLabel = computed(() =>
   route.query.from === "compose" ? "Back to Compose" : "Back to Templates",
+);
+const canManageCurrentTemplate = computed(() =>
+  canManageTemplate(currentTemplate.value, auth.state.user),
+);
+const ownershipNotice = computed(() => {
+  if (!currentTemplate.value || !hasTemplateOwner(currentTemplate.value)) return "";
+  if (isTemplateOwnedByUser(currentTemplate.value, auth.state.user)) {
+    return "Owned by you";
+  }
+  const owner = templateOwnerLabel(currentTemplate.value);
+  return owner ? `Shared by ${owner}` : "Shared template";
+});
+const saveDraftLabel = computed(() =>
+  canManageCurrentTemplate.value ? "Save Draft" : "Save As New",
+);
+const publishDraftLabel = computed(() =>
+  canManageCurrentTemplate.value ? "Publish" : "Publish As New",
 );
 
 const selectedBlock = computed(() => {
@@ -1181,7 +1212,7 @@ function buildLayoutFromTemplateContent(template: TemplateContent) {
   return "";
 }
 
-function normalizeLayout(raw: TemplateLayout | string | undefined): string {
+function normalizeLayout(raw: TemplateLayout | string | null | undefined): string {
   if (!raw) return "";
   if (typeof raw === "string") return raw;
   if ("root" in raw && raw.root) {
@@ -1217,6 +1248,70 @@ function setRequestError(err: unknown) {
   requestError.value = "Request failed";
 }
 
+function stringOrUndefined(value: unknown) {
+  const text = String(value || "").trim();
+  return text || undefined;
+}
+
+function buildCopyName(value: unknown) {
+  const name = String(value || `Template ${templateId.value}`).trim() || "Template";
+  return name.toLowerCase().endsWith("(copy)") ? name : `${name} (Copy)`;
+}
+
+function extractTemplateId(template: Record<string, unknown>) {
+  const id = template.id ?? template.template_id ?? template.templateId;
+  return id === undefined || id === null ? "" : String(id);
+}
+
+async function ensureCurrentTemplate(token: string) {
+  if (currentTemplate.value) return currentTemplate.value;
+  if (!templateId.value) return null;
+
+  const response = await templatesApi.getTemplate(token, templateId.value);
+  currentTemplate.value = response.data as TemplateContent;
+  return currentTemplate.value;
+}
+
+async function saveAsNewTemplate(token: string, shouldPublish: boolean) {
+  const sourceTemplate = await ensureCurrentTemplate(token);
+  const createResponse = await templatesApi.createTemplate(token, {
+    templateName: buildCopyName(sourceTemplate?.template_name),
+    subject: stringOrUndefined(sourceTemplate?.subject),
+    previewText: stringOrUndefined(sourceTemplate?.preview_text),
+    contentHtml: renderedHtml.value,
+    contentText: renderedText.value,
+    isActive: sourceTemplate?.is_active === false ? false : true,
+  });
+  const createdTemplate = createResponse.data as TemplateContent;
+  const newTemplateId = extractTemplateId(createdTemplate);
+
+  if (!newTemplateId) {
+    requestInfo.value =
+      "Template copy was created, but the API did not return its ID.";
+    return;
+  }
+
+  await templateDesignerApi.saveDraft(newTemplateId, token, {
+    layout: parsedLayout.value as TemplateLayout,
+    renderedHtml: renderedHtml.value,
+    renderedText: renderedText.value,
+  });
+
+  if (shouldPublish) {
+    await templateDesignerApi.publishDraft(newTemplateId, token, {
+      layout: parsedLayout.value as TemplateLayout,
+      renderedHtml: renderedHtml.value,
+      renderedText: renderedText.value,
+    });
+  }
+
+  currentTemplate.value = createdTemplate;
+  await router.replace({ name: "template-designer", params: { id: newTemplateId } });
+  requestInfo.value = shouldPublish
+    ? "This shared template was published as your new template copy."
+    : "This shared template was saved as your new template copy.";
+}
+
 async function saveDraft() {
   const token = authToken.value;
   requestError.value = "";
@@ -1236,6 +1331,12 @@ async function saveDraft() {
 
   isRequesting.value = true;
   try {
+    await ensureCurrentTemplate(token);
+    if (!canManageCurrentTemplate.value) {
+      await saveAsNewTemplate(token, false);
+      return;
+    }
+
     const saved = await templateDesignerApi.saveDraft(templateId.value, token, {
       layout: parsedLayout.value as TemplateLayout,
       renderedHtml: renderedHtml.value,
@@ -1266,8 +1367,18 @@ async function loadDraft() {
 
   isRequesting.value = true;
   try {
-    const res = await templateDesignerApi.getDesigner(templateId.value, token);
-    const source = res.draft || res.published;
+    const templateRes = await templatesApi.getTemplate(token, templateId.value);
+    currentTemplate.value = templateRes.data as TemplateContent;
+
+    let res = null;
+    let designerError: unknown = null;
+    try {
+      res = await templateDesignerApi.getDesigner(templateId.value, token);
+    } catch (err) {
+      designerError = err;
+    }
+
+    const source = res?.draft || res?.published || res;
     let nextLayout = normalizeLayout(source?.layout);
     if (nextLayout && !isValidLayoutString(nextLayout)) {
       nextLayout = source?.renderedHtml
@@ -1277,9 +1388,11 @@ async function loadDraft() {
           : "";
     }
     if (!nextLayout) {
-      const templateRes = await templatesApi.getTemplate(token, templateId.value);
-      nextLayout = buildLayoutFromTemplateContent(templateRes.data as TemplateContent);
+      nextLayout = buildLayoutFromTemplateContent(currentTemplate.value);
       if (!nextLayout) {
+        if (designerError) {
+          throw designerError;
+        }
         requestInfo.value = "No draft/published designer data or template content found.";
         return;
       }
@@ -1287,9 +1400,12 @@ async function loadDraft() {
     layout.value = nextLayout;
     applyJsonToCanvas();
     pushHistory();
+    const accessNote = canManageCurrentTemplate.value
+      ? ""
+      : " You can use it, but saving will create a new template under your account.";
     requestInfo.value = source
-      ? "Designer data loaded."
-      : "Template content loaded into designer.";
+      ? `Designer data loaded.${accessNote}`
+      : `Template content loaded into designer.${accessNote}`;
   } catch (err) {
     setRequestError(err);
   } finally {
@@ -1316,6 +1432,12 @@ async function publishDraft() {
 
   isRequesting.value = true;
   try {
+    await ensureCurrentTemplate(token);
+    if (!canManageCurrentTemplate.value) {
+      await saveAsNewTemplate(token, true);
+      return;
+    }
+
     const res = await templateDesignerApi.publishDraft(templateId.value, token, {
       layout: parsedLayout.value as TemplateLayout,
       renderedHtml: renderedHtml.value,

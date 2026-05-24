@@ -51,7 +51,13 @@
           >
             Load Template
           </button>
-          <button type="button" class="btn btn--primary" @click="useEditorStarter">
+          <button
+            type="button"
+            class="btn btn--primary"
+            :disabled="isEditorStarterDisabled"
+            :title="editorStarterTitle"
+            @click="useEditorStarter"
+          >
             Use Email Editor
           </button>
         </div>
@@ -173,6 +179,7 @@ import {
   resetIndividualEmailDraft,
   writeIndividualEmailDraft,
 } from "../utils/individualEmailDraft";
+import { canManageTemplate } from "../utils/templateOwnership";
 
 const notice = useNotice();
 const router = useRouter();
@@ -216,6 +223,21 @@ const recipientCount = computed(() =>
     .split(/[\n,;]/)
     .map((value) => value.trim())
     .filter(Boolean).length,
+);
+const selectedTemplate = computed(() =>
+  templates.value.find((template) => String(template.id || "") === selectedTemplateId.value) ||
+  null,
+);
+const canEditSelectedTemplate = computed(() =>
+  !selectedTemplate.value || canManageTemplate(selectedTemplate.value, auth.state.user),
+);
+const isEditorStarterDisabled = computed(
+  () => !!selectedTemplateId.value && !canEditSelectedTemplate.value,
+);
+const editorStarterTitle = computed(() =>
+  isEditorStarterDisabled.value
+    ? "Only the template owner can edit this template."
+    : "",
 );
 
 function getApiErrorMessage(error: unknown, fallback: string) {
@@ -417,6 +439,10 @@ function buildDesignerLayoutFromComposeBody(body: string): TemplateLayout {
 
 async function useEditorStarter() {
   if (!auth.state.token) return;
+  if (isEditorStarterDisabled.value) {
+    notice.show("Only the template owner can edit this template.", "error");
+    return;
+  }
 
   const token = auth.state.token;
 

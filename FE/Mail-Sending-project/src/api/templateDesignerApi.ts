@@ -39,7 +39,10 @@ export type DesignerPublished = {
   createdAt?: string;
 };
 
-export type DesignerLoadResponse = DesignerState;
+export type DesignerLoadResponse = DesignerState & {
+  draft?: DesignerState | null;
+  published?: DesignerPublished | null;
+};
 
 export type DesignerVersionItem = {
   id: string;
