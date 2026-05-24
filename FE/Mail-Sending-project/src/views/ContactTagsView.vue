@@ -136,8 +136,14 @@ const editingTag = ref<TagRow | null>(null);
 const deleteTarget = ref<TagRow | null>(null);
 const form = reactive({
   tagName: "",
-  color: "#4f46e5",
+  color: "",
 });
+
+function defaultTagColor() {
+  return getComputedStyle(document.documentElement)
+    .getPropertyValue("--color-primary")
+    .trim();
+}
 
 function formatDate(value: string) {
   return new Date(value).toLocaleDateString();
@@ -145,7 +151,7 @@ function formatDate(value: string) {
 
 function resetForm() {
   form.tagName = "";
-  form.color = "#4f46e5";
+  form.color = defaultTagColor();
 }
 
 async function loadTags() {
@@ -169,7 +175,7 @@ function openCreateModal() {
 function openEditModal(tag: TagRow) {
   editingTag.value = tag;
   form.tagName = tag.tag_name;
-  form.color = tag.color || "#4f46e5";
+  form.color = tag.color || defaultTagColor();
   isFormOpen.value = true;
 }
 
@@ -283,7 +289,7 @@ onMounted(() => {
   width: 18px;
   height: 18px;
   border-radius: 999px;
-  box-shadow: 0 0 0 4px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 0 0 4px var(--color-focus-ring);
 }
 
 .tag-title {
@@ -359,21 +365,21 @@ onMounted(() => {
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgba(15, 23, 42, 0.56);
+  background: var(--color-overlay);
   backdrop-filter: blur(8px);
 }
 
 .modal-card {
   width: min(640px, 100%);
   padding: 26px;
-  border: 1px solid rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--color-modal-border);
   border-radius: 26px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 249, 0.96));
-  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.3);
+  background: linear-gradient(135deg, var(--color-surface-glass), var(--color-surface-glass-muted));
+  box-shadow: 0 28px 80px var(--shadow-modal-color);
 }
 
 .modal-card--danger {
-  border-color: rgba(239, 68, 68, 0.25);
+  border-color: var(--color-border-danger-muted);
 }
 
 .modal-title {
@@ -386,7 +392,7 @@ onMounted(() => {
   height: 38px;
   border: 1px solid var(--color-border-subtle);
   border-radius: 12px;
-  background: white;
+  background: var(--color-white);
   color: var(--color-text-main);
   cursor: pointer;
 }
@@ -410,7 +416,7 @@ onMounted(() => {
   box-sizing: border-box;
   border: 1px solid var(--color-border-subtle);
   border-radius: 14px;
-  background: white;
+  background: var(--color-white);
   color: var(--color-text-main);
   font: inherit;
 }
@@ -428,7 +434,7 @@ onMounted(() => {
   padding: 16px;
   border: 1px dashed var(--color-border-subtle);
   border-radius: 18px;
-  background: white;
+  background: var(--color-white);
 }
 
 .modal-actions {

@@ -155,9 +155,9 @@ async function updatePassword() {
 }
 
 .badge--yellow {
-  background: #fef3c7;
-  border: 1px solid #fcd34d;
-  color: #92400e;
+  background: var(--color-chip-yellow-bg);
+  border: 1px solid var(--color-chip-yellow-border);
+  color: var(--color-chip-yellow-text);
   padding: 8px 14px;
   border-radius: 8px;
   font-size: 13px;
@@ -176,7 +176,7 @@ async function updatePassword() {
 
 .card__sub {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--color-text-muted);
   margin: 0 0 20px;
 }
 
@@ -227,13 +227,13 @@ async function updatePassword() {
 
 .link-back {
   font-size: 14px;
-  color: #4f46e5;
+  color: var(--color-primary);
   text-decoration: none;
 }
 
 .btn--warning {
-  background: #f59e0b;
-  color: #422006;
+  background: var(--color-warning);
+  color: var(--color-warning-text-strong);
 }
 
 .grid--tips {
@@ -246,18 +246,18 @@ async function updatePassword() {
 }
 
 .card--tip-green {
-  background: #f0fdf4;
-  border-left: 4px solid #22c55e;
+  background: var(--color-success-bg-muted);
+  border-left: 4px solid var(--color-success);
 }
 
 .card--tip-yellow {
-  background: #fffbeb;
-  border-left: 4px solid #f59e0b;
+  background: var(--color-warning-bg-muted);
+  border-left: 4px solid var(--color-warning);
 }
 
 .card--tip-purple {
-  background: #f5f3ff;
-  border-left: 4px solid #8b5cf6;
+  background: var(--color-primary-bg-muted);
+  border-left: 4px solid var(--color-purple);
 }
 
 .tip-icon {
@@ -271,12 +271,12 @@ async function updatePassword() {
   font-size: 14px;
   font-weight: 600;
   margin: 0 0 6px;
-  color: #111827;
+  color: var(--color-text-strong);
 }
 
 .tip-desc {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--color-text-muted);
   margin: 0;
   line-height: 1.4;
 }

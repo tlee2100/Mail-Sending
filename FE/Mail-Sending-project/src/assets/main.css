@@ -131,25 +131,25 @@ body {
   padding: 10px 12px;
   border-radius: 10px;
   font-size: 13px;
-  border: 1px solid transparent;
+  border: 1px solid var(--color-transparent);
 }
 
 .notice--info {
-  background: rgba(59, 130, 246, 0.08);
-  border-color: rgba(59, 130, 246, 0.18);
-  color: #1d4ed8;
+  background: var(--color-info-bg-subtle);
+  border-color: var(--color-info-border-soft);
+  color: var(--color-info-text);
 }
 
 .notice--success {
-  background: rgba(34, 197, 94, 0.1);
-  border-color: rgba(34, 197, 94, 0.18);
-  color: #15803d;
+  background: var(--color-success-bg-faint);
+  border-color: var(--color-success-border-muted);
+  color: var(--color-success-text);
 }
 
 .notice--error {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.18);
-  color: #b91c1c;
+  background: var(--color-danger-bg-subtle);
+  border-color: var(--color-danger-border-muted);
+  color: var(--color-danger-text);
 }
 
 @media (max-width: 768px) {

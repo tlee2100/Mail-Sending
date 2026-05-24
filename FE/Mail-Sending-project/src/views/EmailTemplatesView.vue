@@ -410,14 +410,14 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  color: white;
+  color: var(--color-white);
   padding: 20px;
   border: none;
 }
 
-.card--blue { background: linear-gradient(135deg, #2563eb, #60a5fa); }
-.card--green { background: linear-gradient(135deg, #059669, #5eead4); color: #ecfeff; }
-.card--cyan { background: linear-gradient(135deg, #0891b2, #67e8f9); color: #ecfeff; }
+.card--blue { background: linear-gradient(135deg, var(--color-info), var(--color-info-light)); }
+.card--green { background: linear-gradient(135deg, var(--color-success-teal), var(--color-success-cyan)); color: var(--color-cyan-text-on-solid); }
+.card--cyan { background: linear-gradient(135deg, var(--color-cyan), var(--color-cyan-soft)); color: var(--color-cyan-text-on-solid); }
 
 .card--stat-tpl .card__icon { font-size: 18px; font-weight: 700; }
 .card--stat-tpl .card__value { font-size: 28px; font-weight: 800; }
@@ -447,15 +447,15 @@ onMounted(() => {
 .sample-card__title { margin: 0; font-size: 16px; font-weight: 800; }
 .sample-card__badge {
   border-radius: 999px;
-  background: #dcfce7;
-  color: #166534;
+  background: var(--color-success-bg);
+  color: var(--color-success-text-strong);
   font-size: 11px;
   font-weight: 800;
   padding: 5px 9px;
 }
 .sample-card__badge--off {
-  background: #e5e7eb;
-  color: #475569;
+  background: var(--color-border-subtle);
+  color: var(--color-text-subtle);
 }
 .sample-card__subject { margin: 0 0 8px; font-weight: 700; }
 .sample-card__owner {
@@ -494,7 +494,7 @@ onMounted(() => {
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgba(15, 23, 42, 0.56);
+  background: var(--color-overlay);
   backdrop-filter: blur(8px);
 }
 
@@ -503,15 +503,15 @@ onMounted(() => {
   max-height: calc(100vh - 48px);
   overflow: auto;
   padding: 26px;
-  border: 1px solid rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--color-modal-border);
   border-radius: 26px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 249, 0.96));
-  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.3);
+  background: linear-gradient(135deg, var(--color-surface-glass), var(--color-surface-glass-muted));
+  box-shadow: 0 28px 80px var(--shadow-modal-color);
 }
 
 .modal-card--danger {
   width: min(620px, 100%);
-  border-color: rgba(239, 68, 68, 0.25);
+  border-color: var(--color-border-danger-muted);
 }
 
 .modal-title {
@@ -524,7 +524,7 @@ onMounted(() => {
   height: 38px;
   border: 1px solid var(--color-border-subtle);
   border-radius: 12px;
-  background: white;
+  background: var(--color-white);
   color: var(--color-text-main);
   cursor: pointer;
 }
@@ -554,7 +554,7 @@ onMounted(() => {
   box-sizing: border-box;
   border: 1px solid var(--color-border-subtle);
   border-radius: 14px;
-  background: white;
+  background: var(--color-white);
   color: var(--color-text-main);
   font: inherit;
 }

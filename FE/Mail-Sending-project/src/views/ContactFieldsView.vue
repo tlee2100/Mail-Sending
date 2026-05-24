@@ -295,9 +295,9 @@ onMounted(() => {
   font-size: 34px;
 }
 
-.stat-card--blue { border-top: 3px solid #3b82f6; }
-.stat-card--green { border-top: 3px solid #22c55e; }
-.stat-card--purple { border-top: 3px solid #635bff; }
+.stat-card--blue { border-top: 3px solid var(--color-info-soft); }
+.stat-card--green { border-top: 3px solid var(--color-success); }
+.stat-card--purple { border-top: 3px solid var(--color-primary-soft); }
 
 .field-board {
   display: grid;
@@ -336,18 +336,18 @@ onMounted(() => {
 }
 
 .type-pill {
-  background: #eef2ff;
-  color: #4338ca;
+  background: var(--color-primary-bg-soft);
+  color: var(--color-primary-text);
 }
 
 .required-badge {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--color-success-bg);
+  color: var(--color-success-text-strong);
 }
 
 .required-badge--off {
-  background: #e5e7eb;
-  color: #475569;
+  background: var(--color-border-subtle);
+  color: var(--color-text-subtle);
 }
 
 .field-actions {
@@ -387,22 +387,22 @@ onMounted(() => {
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgba(15, 23, 42, 0.56);
+  background: var(--color-overlay);
   backdrop-filter: blur(8px);
 }
 
 .modal-card {
   width: min(760px, 100%);
   padding: 26px;
-  border: 1px solid rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--color-modal-border);
   border-radius: 26px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 249, 0.96));
-  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.3);
+  background: linear-gradient(135deg, var(--color-surface-glass), var(--color-surface-glass-muted));
+  box-shadow: 0 28px 80px var(--shadow-modal-color);
 }
 
 .modal-card--danger {
   width: min(620px, 100%);
-  border-color: rgba(239, 68, 68, 0.25);
+  border-color: var(--color-border-danger-muted);
 }
 
 .modal-title {
@@ -415,7 +415,7 @@ onMounted(() => {
   height: 38px;
   border: 1px solid var(--color-border-subtle);
   border-radius: 12px;
-  background: white;
+  background: var(--color-white);
   color: var(--color-text-main);
   cursor: pointer;
 }
@@ -441,7 +441,7 @@ onMounted(() => {
   padding: 0 14px;
   border: 1px solid var(--color-border-subtle);
   border-radius: 14px;
-  background: white;
+  background: var(--color-white);
   color: var(--color-text-main);
   font: inherit;
 }

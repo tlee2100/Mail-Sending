@@ -273,14 +273,14 @@ async function handleLogout() {
   padding: 6px 10px;
   border-radius: 999px;
   border: 1px solid var(--color-border-subtle);
-  background: transparent;
+  background: var(--color-transparent);
   color: var(--color-text-muted);
   font-size: 12px;
   cursor: pointer;
 }
 
 .theme-toggle:hover {
-  background: rgba(148, 163, 184, 0.12);
+  background: var(--color-sidebar-hover);
 }
 </style>
 
@@ -312,7 +312,7 @@ async function handleLogout() {
   align-items: center;
   gap: 12px;
   padding: 8px 10px 18px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+  border-bottom: 1px solid var(--color-sidebar-border);
   margin-bottom: 16px;
 }
 
@@ -320,7 +320,7 @@ async function handleLogout() {
   width: 34px;
   height: 34px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #4f46e5, #06b6d4);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-accent));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -373,7 +373,7 @@ async function handleLogout() {
   padding: 8px 10px;
   border-radius: 10px;
   border: none;
-  background: transparent;
+  background: var(--color-transparent);
   color: inherit;
   font-size: 13px;
   cursor: pointer;
@@ -386,7 +386,7 @@ async function handleLogout() {
 }
 
 .nav__item:hover {
-  background: rgba(30, 64, 175, 0.8);
+  background: var(--color-sidebar-active);
 }
 
 .nav__item--active {
@@ -399,7 +399,7 @@ async function handleLogout() {
 }
 
 .nav__item--active .nav__icon {
-  background: rgba(15, 23, 42, 0.14);
+  background: var(--color-control-hover-dark);
 }
 
 .nav__icon {
@@ -410,7 +410,7 @@ async function handleLogout() {
   align-items: center;
   justify-content: center;
   font-size: 14px;
-  background: rgba(15, 23, 42, 0.4);
+  background: var(--color-overlay-soft);
   flex-shrink: 0;
 }
 
@@ -429,7 +429,7 @@ async function handleLogout() {
 }
 
 .sidebar__logout:hover {
-  background: rgba(248, 113, 113, 0.18);
+  background: var(--color-badge-error-bg-strong);
 }
 
 .main {
@@ -571,13 +571,13 @@ async function handleLogout() {
     padding: 8px;
     border: 1px solid var(--color-border-subtle);
     border-radius: 18px;
-    background: rgba(255, 255, 255, 0.94);
-    box-shadow: 0 18px 50px rgba(15, 23, 42, 0.18);
+    background: var(--color-surface-mobile);
+    box-shadow: 0 18px 50px var(--shadow-mobile-nav-color);
     backdrop-filter: blur(14px);
   }
 
   body.dark-mode .mobile-nav {
-    background: rgba(2, 6, 23, 0.92);
+    background: var(--color-bg-sidebar-soft);
   }
 
   .mobile-nav__item {
@@ -608,7 +608,7 @@ async function handleLogout() {
   }
 
   .mobile-nav__item--active {
-    background: rgba(79, 70, 229, 0.1);
+    background: var(--color-primary-bg-hover);
     color: var(--color-primary);
   }
 

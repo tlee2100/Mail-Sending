@@ -228,7 +228,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  color: #0f172a;
+  color: var(--color-text-main);
 }
 
 .page-subtitle--muted {
@@ -237,19 +237,19 @@ onMounted(() => {
 }
 
 .card--blue {
-  border-top: 3px solid #3b82f6;
+  border-top: 3px solid var(--color-info-soft);
 }
 
 .card--green {
-  border-top: 3px solid #22c55e;
+  border-top: 3px solid var(--color-success);
 }
 
 .card--indigo {
-  border-top: 3px solid #6366f1;
+  border-top: 3px solid var(--color-primary-soft);
 }
 
 .card--yellow {
-  border-top: 3px solid #facc15;
+  border-top: 3px solid var(--color-warning-soft);
 }
 
 .card__icon {
@@ -264,28 +264,28 @@ onMounted(() => {
 }
 
 .card--blue .card__icon {
-  background: rgba(59, 130, 246, 0.12);
-  color: #1d4ed8;
+  background: var(--color-info-bg-active);
+  color: var(--color-info-text);
 }
 
 .card--green .card__icon {
-  background: rgba(34, 197, 94, 0.12);
-  color: #15803d;
+  background: var(--color-success-bg-active);
+  color: var(--color-success-text);
 }
 
 .card--indigo .card__icon {
-  background: rgba(79, 70, 229, 0.14);
-  color: #4338ca;
+  background: var(--color-primary-bg-strong);
+  color: var(--color-primary-text);
 }
 
 .card--yellow .card__icon {
-  background: rgba(250, 204, 21, 0.16);
-  color: #a16207;
+  background: var(--color-warning-bg-active);
+  color: var(--color-warning-text);
 }
 
 .card__label {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--color-text-muted);
 }
 
 .card__value {
@@ -305,27 +305,27 @@ onMounted(() => {
 
 .card--action:hover {
   transform: translateY(-2px);
-  box-shadow: 0 22px 45px rgba(15, 23, 42, 0.12);
+  box-shadow: 0 22px 45px var(--shadow-card-strong-color);
 }
 
 .card__icon--purple {
-  background: rgba(168, 85, 247, 0.14);
-  color: #7c3aed;
+  background: var(--color-purple-bg-strong);
+  color: var(--color-purple-strong);
 }
 
 .card__icon--blue {
-  background: rgba(59, 130, 246, 0.12);
-  color: #2563eb;
+  background: var(--color-info-bg-active);
+  color: var(--color-info);
 }
 
 .card__icon--teal {
-  background: rgba(45, 212, 191, 0.14);
-  color: #0f766e;
+  background: var(--color-cyan-bg-strong);
+  color: var(--color-cyan-text);
 }
 
 .card__icon--green {
-  background: rgba(34, 197, 94, 0.14);
-  color: #15803d;
+  background: var(--color-success-bg-strong);
+  color: var(--color-success-text);
 }
 
 .card__title {
@@ -335,7 +335,7 @@ onMounted(() => {
 
 .card__text {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-text-muted);
 }
 
 .card--panel {
@@ -352,7 +352,7 @@ onMounted(() => {
 .link-button {
   border: none;
   background: none;
-  color: #4f46e5;
+  color: var(--color-primary);
   font-size: 12px;
   cursor: pointer;
   text-decoration: none;
@@ -387,8 +387,8 @@ onMounted(() => {
 }
 
 .activity__icon--blue {
-  background: rgba(59, 130, 246, 0.14);
-  color: #2563eb;
+  background: var(--color-info-bg-strong);
+  color: var(--color-info);
 }
 
 .activity__body {
@@ -402,17 +402,17 @@ onMounted(() => {
 
 .activity__desc {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-text-muted);
 }
 
 .activity__time {
   font-size: 11px;
-  color: #9ca3af;
+  color: var(--color-text-soft);
   white-space: nowrap;
 }
 
 .empty-text {
-  color: #6b7280;
+  color: var(--color-text-muted);
   font-size: 13px;
 }
 
@@ -431,19 +431,19 @@ onMounted(() => {
 }
 
 .performance__label {
-  color: #4b5563;
+  color: var(--color-text-subtle);
 }
 
 .performance__value {
   font-weight: 500;
-  color: #111827;
+  color: var(--color-text-strong);
 }
 
 .performance__bar {
   grid-column: 1 / -1;
   height: 6px;
   border-radius: 999px;
-  background: #e5e7eb;
+  background: var(--color-border-subtle);
   position: relative;
   overflow: hidden;
 }
@@ -455,19 +455,19 @@ onMounted(() => {
 }
 
 .performance__bar--blue span {
-  background: linear-gradient(90deg, #38bdf8, #6366f1);
+  background: linear-gradient(90deg, var(--color-info-accent), var(--color-primary-soft));
 }
 
 .performance__bar--green span {
-  background: linear-gradient(90deg, #22c55e, #16a34a);
+  background: linear-gradient(90deg, var(--color-success), var(--color-success-strong));
 }
 
 .performance__bar--orange span {
-  background: linear-gradient(90deg, #fb923c, #f97316);
+  background: linear-gradient(90deg, var(--color-orange-soft), var(--color-orange));
 }
 
 .performance__bar--red span {
-  background: linear-gradient(90deg, #f97373, #ef4444);
+  background: linear-gradient(90deg, var(--color-danger-muted), var(--color-danger-soft));
 }
 
 @media (max-width: 1024px) {

@@ -282,13 +282,13 @@ onMounted(() => {
 }
 
 .alert--danger {
-  background: #dc2626;
-  color: white;
+  background: var(--color-danger);
+  color: var(--color-white);
 }
 
 .alert--success {
-  background: rgba(34, 197, 94, 0.12);
-  color: #166534;
+  background: var(--color-success-bg-active);
+  color: var(--color-success-text-strong);
 }
 
 .alert__body {
@@ -319,16 +319,16 @@ onMounted(() => {
   gap: 12px;
   padding: 16px;
   margin-bottom: 18px;
-  border: 1px solid rgba(99, 102, 241, 0.12);
+  border: 1px solid var(--color-primary-border-subtle);
   border-radius: 16px;
-  background: linear-gradient(180deg, rgba(238, 242, 255, 0.9), rgba(248, 250, 252, 0.9));
+  background: linear-gradient(180deg, var(--color-indigo-glass), var(--color-surface-glass-faint));
 }
 
 .import-panel__title {
   margin: 0;
   font-size: 14px;
   font-weight: 700;
-  color: #312e81;
+  color: var(--color-primary-text-strong);
 }
 
 .import-panel__copy,
@@ -336,7 +336,7 @@ onMounted(() => {
 .import-panel__summary {
   margin: 0;
   font-size: 13px;
-  color: #475569;
+  color: var(--color-text-subtle);
   line-height: 1.6;
 }
 
@@ -352,8 +352,8 @@ onMounted(() => {
 }
 
 .import-panel--tag {
-  background: linear-gradient(180deg, rgba(240, 253, 244, 0.92), rgba(248, 250, 252, 0.92));
-  border-color: rgba(34, 197, 94, 0.16);
+  background: linear-gradient(180deg, var(--color-success-glass), var(--color-surface-glass-light));
+  border-color: var(--color-success-border-soft);
 }
 
 .tag-select {
@@ -368,7 +368,7 @@ onMounted(() => {
 
 .input-hint {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-text-muted);
   margin-top: 6px;
 }
 
@@ -379,7 +379,7 @@ onMounted(() => {
   flex-direction: column;
   gap: 10px;
   font-size: 14px;
-  color: #374151;
+  color: var(--color-text-subtle);
 }
 
 @media (max-width: 900px) {

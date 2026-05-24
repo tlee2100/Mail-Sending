@@ -137,10 +137,10 @@ const statusBreakdown = computed(() => {
   const counts = campaign.value?.recipientsByStatus || {};
   const total = Math.max(1, totalRecipients.value);
   return [
-    { label: "Pending", key: "pending", color: "#6366f1" },
-    { label: "Sent", key: "sent", color: "#22c55e" },
-    { label: "Failed", key: "failed", color: "#ef4444" },
-    { label: "Bounced", key: "bounced", color: "#f97316" },
+    { label: "Pending", key: "pending", color: "var(--color-primary-soft)" },
+    { label: "Sent", key: "sent", color: "var(--color-success)" },
+    { label: "Failed", key: "failed", color: "var(--color-danger-soft)" },
+    { label: "Bounced", key: "bounced", color: "var(--color-orange)" },
   ].map((item) => {
     const count = Number(counts[item.key] || 0);
     return {
@@ -209,8 +209,8 @@ onMounted(() => {
   border: 1px solid var(--color-border-subtle);
   border-radius: 28px;
   background:
-    radial-gradient(circle at 12% 10%, rgba(99, 91, 255, 0.18), transparent 30%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(239, 246, 255, 0.86));
+    radial-gradient(circle at 12% 10%, var(--color-primary-glow-strong), var(--color-transparent) 30%),
+    linear-gradient(135deg, var(--color-surface-glass-soft), var(--color-info-glass));
   box-shadow: var(--shadow-elevated);
 }
 
@@ -270,10 +270,10 @@ onMounted(() => {
   font-weight: 800;
 }
 
-.badge--sent { background: #dcfce7; color: #166534; }
+.badge--sent { background: var(--color-success-bg); color: var(--color-success-text-strong); }
 .badge--sending,
-.badge--scheduled { background: #fef3c7; color: #92400e; }
-.badge--paused { background: #e2e8f0; color: #334155; }
+.badge--scheduled { background: var(--color-chip-yellow-bg); color: var(--color-chip-yellow-text); }
+.badge--paused { background: var(--color-slate-bg); color: var(--color-text-secondary); }
 
 .progress-ring {
   display: grid;
@@ -282,8 +282,8 @@ onMounted(() => {
   height: 170px;
   border-radius: 50%;
   background:
-    radial-gradient(circle, white 58%, transparent 59%),
-    conic-gradient(#635bff calc(var(--rate) * 1%), #e2e8f0 0);
+    radial-gradient(circle, var(--color-white) 58%, var(--color-transparent) 59%),
+    conic-gradient(var(--color-primary-soft) calc(var(--rate) * 1%), var(--color-slate-bg) 0);
   --rate: v-bind(sentRate);
 }
 
@@ -311,7 +311,7 @@ onMounted(() => {
 .metrics-grid div {
   padding: 18px;
   border-radius: 18px;
-  background: #f8fafc;
+  background: var(--color-bg-surface-soft);
 }
 
 .metrics-grid span,
@@ -372,7 +372,7 @@ onMounted(() => {
   height: 8px;
   overflow: hidden;
   border-radius: 999px;
-  background: #e5e7eb;
+  background: var(--color-border-subtle);
 }
 
 .bar span {

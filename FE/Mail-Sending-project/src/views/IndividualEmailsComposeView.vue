@@ -676,13 +676,13 @@ onMounted(() => {
 }
 
 .btn--yellow {
-  background: #facc15;
-  color: #422006;
+  background: var(--color-warning-soft);
+  color: var(--color-warning-text-strong);
 }
 
 .btn--green {
-  background: #22c55e;
-  color: white;
+  background: var(--color-success);
+  color: var(--color-white);
 }
 
 .full {
@@ -723,7 +723,7 @@ onMounted(() => {
 .editor-hint,
 .word-count {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-text-muted);
   margin-top: 6px;
 }
 
@@ -752,7 +752,7 @@ onMounted(() => {
 
 .sidebar-hint {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-text-muted);
   margin-top: 10px;
 }
 
@@ -761,7 +761,7 @@ onMounted(() => {
   margin: 0;
   padding: 0;
   font-size: 13px;
-  color: #374151;
+  color: var(--color-text-subtle);
 }
 
 .merge-tags li {
@@ -776,7 +776,7 @@ onMounted(() => {
 .merge-tag-btn {
   width: 100%;
   text-align: left;
-  background: transparent;
+  background: var(--color-transparent);
   border: none;
   padding: 0;
   color: inherit;
