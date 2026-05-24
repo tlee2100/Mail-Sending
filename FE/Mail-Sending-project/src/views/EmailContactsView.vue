@@ -637,7 +637,7 @@ onMounted(() => {
 }
 
 .muted {
-  color: #94a3b8;
+  color: var(--color-text-faint);
 }
 
 .modal-backdrop {
@@ -648,15 +648,15 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(15, 23, 42, 0.45);
+  background: var(--color-overlay-muted);
 }
 
 .modal-card {
   width: min(560px, 100%);
-  border: 1px solid rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--color-modal-border);
   border-radius: 24px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 249, 0.96));
-  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.3);
+  background: linear-gradient(135deg, var(--color-surface-glass), var(--color-surface-glass-muted));
+  box-shadow: 0 28px 80px var(--shadow-modal-color);
   padding: 24px;
 }
 
@@ -714,7 +714,7 @@ onMounted(() => {
   padding: 12px;
   border: 1px solid var(--color-border-subtle);
   border-radius: 10px;
-  background: #ffffff;
+  background: var(--color-white);
 }
 
 .tag-option__count {
@@ -753,7 +753,7 @@ onMounted(() => {
   padding: 0 12px;
   border: 1px solid var(--color-border-subtle);
   border-radius: 12px;
-  background: white;
+  background: var(--color-white);
   color: var(--color-text-main);
   font: inherit;
 }
@@ -774,12 +774,12 @@ onMounted(() => {
   font-size: 16px;
   font-weight: 600;
   margin: 0 0 6px;
-  color: #374151;
+  color: var(--color-text-subtle);
 }
 
 .empty-desc {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--color-text-muted);
   margin: 0;
 }
 
@@ -813,7 +813,7 @@ onMounted(() => {
 
   .card--table {
     padding: 0;
-    background: transparent;
+    background: var(--color-transparent);
     box-shadow: none;
   }
 

@@ -409,7 +409,7 @@ onMounted(() => {
 }
 
 .create-btn {
-  box-shadow: 0 14px 30px rgba(79, 70, 229, 0.24);
+  box-shadow: 0 14px 30px var(--shadow-primary-soft-color);
 }
 
 .campaign-stats {
@@ -440,9 +440,9 @@ onMounted(() => {
   color: var(--color-text-main);
 }
 
-.stat-card--blue { border-top: 3px solid #3b82f6; }
-.stat-card--green { border-top: 3px solid #22c55e; }
-.stat-card--purple { border-top: 3px solid #635bff; }
+.stat-card--blue { border-top: 3px solid var(--color-info-soft); }
+.stat-card--green { border-top: 3px solid var(--color-success); }
+.stat-card--purple { border-top: 3px solid var(--color-primary-soft); }
 
 .campaign-board {
   display: grid;
@@ -458,7 +458,7 @@ onMounted(() => {
   border: 1px solid var(--color-border-subtle);
   border-radius: 22px;
   background:
-    radial-gradient(circle at top left, rgba(99, 91, 255, 0.08), transparent 34%),
+    radial-gradient(circle at top left, var(--color-primary-glow), var(--color-transparent) 34%),
     var(--color-bg-surface-elevated);
   box-shadow: var(--shadow-elevated);
 }
@@ -494,14 +494,14 @@ onMounted(() => {
   width: 14px;
   height: 44px;
   border-radius: 999px;
-  background: #94a3b8;
+  background: var(--color-text-faint);
 }
 
-.status-dot--draft { background: linear-gradient(180deg, #a78bfa, #635bff); }
-.status-dot--scheduled { background: linear-gradient(180deg, #38bdf8, #2563eb); }
-.status-dot--sending { background: linear-gradient(180deg, #facc15, #f97316); }
-.status-dot--sent { background: linear-gradient(180deg, #4ade80, #16a34a); }
-.status-dot--paused { background: linear-gradient(180deg, #cbd5e1, #64748b); }
+.status-dot--draft { background: linear-gradient(180deg, var(--color-purple-soft), var(--color-primary-soft)); }
+.status-dot--scheduled { background: linear-gradient(180deg, var(--color-info-accent), var(--color-info)); }
+.status-dot--sending { background: linear-gradient(180deg, var(--color-warning-soft), var(--color-orange)); }
+.status-dot--sent { background: linear-gradient(180deg, var(--color-success-soft), var(--color-success-strong)); }
+.status-dot--paused { background: linear-gradient(180deg, var(--color-border-muted), var(--color-slate)); }
 
 .badge {
   display: inline-flex;
@@ -515,14 +515,14 @@ onMounted(() => {
 }
 
 .badge--sent {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--color-success-bg);
+  color: var(--color-success-text-strong);
 }
 
 .badge--sending,
 .badge--scheduled {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--color-chip-yellow-bg);
+  color: var(--color-chip-yellow-text);
 }
 
 .actions {
@@ -567,7 +567,7 @@ onMounted(() => {
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgba(15, 23, 42, 0.56);
+  background: var(--color-overlay);
   backdrop-filter: blur(8px);
 }
 
@@ -576,12 +576,12 @@ onMounted(() => {
   max-height: calc(100vh - 48px);
   overflow: auto;
   padding: 26px;
-  border: 1px solid rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--color-modal-border-muted);
   border-radius: 28px;
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 249, 0.96)),
+    linear-gradient(135deg, var(--color-surface-glass), var(--color-surface-glass-muted)),
     var(--color-bg-surface-elevated);
-  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.3);
+  box-shadow: 0 28px 80px var(--shadow-modal-color);
 }
 
 .modal-header,
@@ -640,7 +640,7 @@ onMounted(() => {
   box-sizing: border-box;
   border: 1px solid var(--color-border-subtle);
   border-radius: 14px;
-  background: white;
+  background: var(--color-white);
   color: var(--color-text-main);
   font: inherit;
 }
@@ -654,9 +654,9 @@ onMounted(() => {
 .recipient-panel {
   margin-top: 20px;
   padding: 18px;
-  border: 1px solid #bfdbfe;
+  border: 1px solid var(--color-border-info);
   border-radius: 20px;
-  background: linear-gradient(135deg, #eff6ff, #f8fafc);
+  background: linear-gradient(135deg, var(--color-info-bg), var(--color-bg-surface-soft));
 }
 
 .recipient-header h3 {
@@ -672,8 +672,8 @@ onMounted(() => {
   min-width: 132px;
   padding: 12px 16px;
   border-radius: 14px;
-  background: #1d4ed8;
-  color: white;
+  background: var(--color-info-text);
+  color: var(--color-white);
   font-weight: 800;
   cursor: pointer;
 }
@@ -697,7 +697,7 @@ onMounted(() => {
   justify-content: space-between;
   gap: 12px;
   margin-top: 10px;
-  color: #1d4ed8;
+  color: var(--color-info-text);
   font-size: 13px;
   font-weight: 700;
 }

@@ -29,7 +29,7 @@ import { RouterLink } from "vue-router";
 
 <style scoped>
 .muted {
-  color: #6b7280;
+  color: var(--color-text-muted);
   font-size: 14px;
 }
 

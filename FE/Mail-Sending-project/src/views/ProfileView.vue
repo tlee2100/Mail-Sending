@@ -143,8 +143,8 @@ async function saveProfile() {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: #4f46e5;
-  color: white;
+  background: var(--color-primary);
+  color: var(--color-white);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -161,7 +161,7 @@ async function saveProfile() {
 
 .profile-card-sub {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--color-text-muted);
   margin: 0;
 }
 
@@ -175,7 +175,7 @@ async function saveProfile() {
 .account-info {
   margin-bottom: 24px;
   padding-top: 20px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-border-subtle);
 }
 
 .info-title {
@@ -186,12 +186,12 @@ async function saveProfile() {
 
 .info-row {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--color-text-muted);
   margin: 0 0 6px;
 }
 
 .info-row span {
-  color: #111827;
+  color: var(--color-text-strong);
 }
 
 .profile-actions {
@@ -204,13 +204,13 @@ async function saveProfile() {
 
 .link-back {
   font-size: 14px;
-  color: #4f46e5;
+  color: var(--color-primary);
   text-decoration: none;
 }
 
 .btn--warning {
-  background: #f59e0b;
-  color: #422006;
+  background: var(--color-warning);
+  color: var(--color-warning-text-strong);
 }
 
 .card--security-preview {
@@ -219,14 +219,14 @@ async function saveProfile() {
   align-items: center;
   gap: 20px;
   flex-wrap: wrap;
-  border-left: 4px solid #f59e0b;
+  border-left: 4px solid var(--color-warning);
 }
 
 .security-preview-icon {
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  background: #fef3c7;
+  background: var(--color-chip-yellow-bg);
   display: flex;
   align-items: center;
   justify-content: center;

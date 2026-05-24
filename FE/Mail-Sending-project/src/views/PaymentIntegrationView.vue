@@ -228,16 +228,16 @@ function runPaymentDemo(method: string) {
   gap: 20px;
   padding: 28px;
   background:
-    radial-gradient(circle at top right, rgba(99, 102, 241, 0.08), transparent 34%),
-    linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+    radial-gradient(circle at top right, var(--color-primary-bg-subtle), var(--color-transparent) 34%),
+    linear-gradient(180deg, var(--color-white) 0%, var(--color-bg-surface-subtle) 100%);
 }
 
 .hero-kicker {
   display: inline-flex;
   padding: 6px 10px;
   border-radius: 999px;
-  background: rgba(79, 70, 229, 0.08);
-  color: #4338ca;
+  background: var(--color-primary-bg-subtle);
+  color: var(--color-primary-text);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -264,16 +264,16 @@ function runPaymentDemo(method: string) {
   justify-content: space-between;
   border-radius: 20px;
   padding: 20px;
-  background: linear-gradient(135deg, #eef2ff 0%, #f8fbff 100%);
-  border: 1px solid rgba(99, 102, 241, 0.14);
+  background: linear-gradient(135deg, var(--color-primary-bg-soft) 0%, var(--color-bg-surface-tinted) 100%);
+  border: 1px solid var(--color-primary-border-soft);
 }
 
 .summary-pill {
   align-self: flex-start;
   padding: 6px 10px;
   border-radius: 999px;
-  background: white;
-  color: #4f46e5;
+  background: var(--color-white);
+  color: var(--color-primary);
   font-size: 12px;
   font-weight: 700;
 }
@@ -282,7 +282,7 @@ function runPaymentDemo(method: string) {
   font-size: 34px;
   font-weight: 700;
   letter-spacing: -0.03em;
-  color: #111827;
+  color: var(--color-text-strong);
 }
 
 .summary-label {
@@ -297,9 +297,9 @@ function runPaymentDemo(method: string) {
 }
 
 .chip-btn {
-  border: 1px solid rgba(99, 102, 241, 0.18);
-  background: white;
-  color: #4338ca;
+  border: 1px solid var(--color-primary-border-muted);
+  background: var(--color-white);
+  color: var(--color-primary-text);
   border-radius: 999px;
   padding: 8px 12px;
   font-weight: 600;
@@ -308,20 +308,20 @@ function runPaymentDemo(method: string) {
 
 .card--guide {
   padding: 24px 28px;
-  border: 1px solid #bfdbfe;
-  background: linear-gradient(180deg, #eef4ff 0%, #eef2ff 100%);
+  border: 1px solid var(--color-border-info);
+  background: linear-gradient(180deg, var(--color-info-bg-muted) 0%, var(--color-primary-bg-soft) 100%);
 }
 
 .guide-title {
   margin: 0 0 14px;
   font-size: 18px;
-  color: #1d4ed8;
+  color: var(--color-info-text);
 }
 
 .guide-list {
   margin: 0;
   padding-left: 22px;
-  color: #1f3d9b;
+  color: var(--color-info-text-strong);
   line-height: 1.9;
 }
 
@@ -378,23 +378,23 @@ function runPaymentDemo(method: string) {
 }
 
 .payment-icon--blue {
-  background: #dbeafe;
-  color: #2563eb;
+  background: var(--color-info-bg-soft);
+  color: var(--color-info);
 }
 
 .payment-icon--violet {
-  background: #f3e8ff;
-  color: #9333ea;
+  background: var(--color-purple-bg);
+  color: var(--color-purple-text);
 }
 
 .payment-icon--green {
-  background: #dcfce7;
-  color: #16a34a;
+  background: var(--color-success-bg);
+  color: var(--color-success-strong);
 }
 
 .payment-icon--orange {
-  background: #ffedd5;
-  color: #ea580c;
+  background: var(--color-warning-bg-orange);
+  color: var(--color-orange-text);
 }
 
 .payment-title {
@@ -411,7 +411,7 @@ function runPaymentDemo(method: string) {
 
 .payment-desc {
   margin: 0 0 20px;
-  color: #475569;
+  color: var(--color-text-subtle);
   line-height: 1.7;
   min-height: 78px;
 }
@@ -423,16 +423,16 @@ function runPaymentDemo(method: string) {
   padding: 14px 18px;
   font-size: 16px;
   font-weight: 700;
-  color: white;
+  color: var(--color-white);
   cursor: pointer;
 }
 
 .demo-btn--blue {
-  background: linear-gradient(135deg, #2563eb, #2563eb);
+  background: linear-gradient(135deg, var(--color-info), var(--color-info));
 }
 
 .demo-btn--violet {
-  background: linear-gradient(135deg, #7c3aed, #c026d3);
+  background: linear-gradient(135deg, var(--color-purple-strong), var(--color-purple-accent));
 }
 
 .support-note {
@@ -443,15 +443,15 @@ function runPaymentDemo(method: string) {
 }
 
 .support-note--green {
-  background: #ecfdf3;
-  color: #15803d;
-  border: 1px solid #bbf7d0;
+  background: var(--color-success-bg-subtle);
+  color: var(--color-success-text);
+  border: 1px solid var(--color-success-border);
 }
 
 .support-note--blue {
-  background: #eff6ff;
-  color: #1d4ed8;
-  border: 1px solid #bfdbfe;
+  background: var(--color-info-bg);
+  color: var(--color-info-text);
+  border: 1px solid var(--color-border-info);
 }
 
 .feature-list {
@@ -465,12 +465,12 @@ function runPaymentDemo(method: string) {
   display: flex;
   gap: 10px;
   align-items: center;
-  color: #334155;
+  color: var(--color-text-secondary);
 }
 
 .feature-mark {
   font-weight: 700;
-  color: #6366f1;
+  color: var(--color-primary-soft);
 }
 
 .wallet-stack {
@@ -486,24 +486,24 @@ function runPaymentDemo(method: string) {
   font-size: 18px;
   font-weight: 600;
   cursor: pointer;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--color-border-muted);
 }
 
 .wallet-btn--apple {
-  background: #050505;
-  color: white;
-  border-color: #050505;
+  background: var(--color-black);
+  color: var(--color-white);
+  border-color: var(--color-black);
 }
 
 .wallet-btn--google {
-  background: white;
-  color: #111827;
+  background: var(--color-white);
+  color: var(--color-text-strong);
 }
 
 .wallet-btn--samsung {
-  background: #2563eb;
-  color: white;
-  border-color: #2563eb;
+  background: var(--color-info);
+  color: var(--color-white);
+  border-color: var(--color-info);
 }
 
 .installment-list {
@@ -515,8 +515,8 @@ function runPaymentDemo(method: string) {
 .installment-card {
   width: 100%;
   text-align: left;
-  border: 1px solid #dbe1ea;
-  background: white;
+  border: 1px solid var(--color-slate-border);
+  background: var(--color-white);
   border-radius: 16px;
   padding: 18px 20px;
   cursor: pointer;
@@ -528,12 +528,12 @@ function runPaymentDemo(method: string) {
 .installment-name {
   font-size: 18px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--color-text-main);
 }
 
 .installment-desc {
   grid-column: 1;
-  color: #475569;
+  color: var(--color-text-subtle);
   line-height: 1.6;
 }
 
@@ -543,21 +543,21 @@ function runPaymentDemo(method: string) {
 }
 
 .installment-badge--green {
-  color: #16a34a;
+  color: var(--color-success-strong);
 }
 
 .installment-badge--blue {
-  color: #2563eb;
+  color: var(--color-info);
 }
 
 .installment-badge--violet {
-  color: #9333ea;
+  color: var(--color-purple-text);
 }
 
 .card--integration-steps {
   padding: 26px 28px;
-  border: 1px solid #d8d7ff;
-  background: linear-gradient(180deg, #f3f2ff 0%, #efeefe 100%);
+  border: 1px solid var(--color-border-primary-muted);
+  background: linear-gradient(180deg, var(--color-primary-panel-start) 0%, var(--color-primary-panel-end) 100%);
 }
 
 .steps-header {
@@ -574,11 +574,11 @@ function runPaymentDemo(method: string) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: white;
-  color: #4f46e5;
+  background: var(--color-white);
+  color: var(--color-primary);
   font-size: 12px;
   font-weight: 800;
-  border: 2px solid #6366f1;
+  border: 2px solid var(--color-primary-soft);
 }
 
 .steps-title {
@@ -611,25 +611,25 @@ function runPaymentDemo(method: string) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #4f46e5;
-  color: white;
+  background: var(--color-primary);
+  color: var(--color-white);
   font-weight: 700;
 }
 
 .step-row code {
   padding: 4px 8px;
   border-radius: 8px;
-  background: white;
-  border: 1px solid #dbe1ea;
-  color: #334155;
+  background: var(--color-white);
+  border: 1px solid var(--color-slate-border);
+  color: var(--color-text-secondary);
 }
 
 .integration-note {
   margin-top: 22px;
   padding: 16px 18px;
   border-radius: 14px;
-  background: white;
-  border: 1px solid #c7d2fe;
+  background: var(--color-white);
+  border: 1px solid var(--color-border-primary-soft);
   line-height: 1.7;
 }
 
