@@ -1,6 +1,22 @@
 import { apiRequest, API_BASE_URL, ApiClientError } from "./http";
 
 export const individualEmailsApi = {
+  list(token: string, query?: { page?: number; pageSize?: number }) {
+    return apiRequest<{
+      items: Array<Record<string, any>>;
+      pagination: {
+        page: number;
+        pageSize: number;
+        total: number;
+        totalPages: number;
+      };
+    }>("/individual-emails", { token }, query);
+  },
+
+  get(token: string, id: string | number) {
+    return apiRequest<Record<string, any>>(`/individual-emails/${id}`, { token });
+  },
+
   async importRecipients(token: string, file: File) {
     const formData = new FormData();
     formData.append("file", file);

@@ -111,10 +111,114 @@
       </ul>
     </div>
   </div>
+
+  <section class="history-section">
+    <div class="section-heading">
+      <div>
+        <h2>Sent Email History</h2>
+        <p>Review delivered individual emails and live recipient tracking.</p>
+      </div>
+      <button type="button" class="btn btn--secondary" @click="loadSentEmails()">
+        Refresh
+      </button>
+    </div>
+    <div class="card card--table">
+      <table v-if="sentEmails.length" class="table">
+        <thead>
+          <tr>
+            <th>Recipient</th>
+            <th>Subject</th>
+            <th>Status</th>
+            <th>Sent</th>
+            <th>Opens</th>
+            <th>Clicks</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in sentEmails" :key="item.id">
+            <td>{{ item.email }}</td>
+            <td>{{ item.subject || "(No subject)" }}</td>
+            <td>{{ item.status }}</td>
+            <td>{{ formatDate(item.sent_time || item.created_at) }}</td>
+            <td>{{ item.open_count || 0 }}</td>
+            <td>{{ item.click_count || 0 }}</td>
+            <td>
+              <button type="button" class="link-action" @click="selectEmail(item.id)">
+                View email
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p v-else class="empty-text">No individual emails have been sent yet.</p>
+    </div>
+  </section>
+
+  <section v-if="selectedEmail" class="message-detail">
+    <article class="card message-card">
+      <div class="panel-title">
+        <div>
+          <p class="eyebrow">Sent Email</p>
+          <h2>{{ selectedEmail.subject || "(No subject)" }}</h2>
+          <p class="meta">
+            To: {{ selectedEmail.email }} - Sent: {{ formatDate(selectedEmail.sent_time) }}
+          </p>
+        </div>
+        <button type="button" class="btn btn--secondary" @click="selectedEmail = null">
+          Close
+        </button>
+      </div>
+      <p class="meta">
+        Preview is read-only. The tracking pixel and clickable links are disabled here.
+      </p>
+      <iframe
+        class="email-preview"
+        :srcdoc="previewHtml"
+        sandbox=""
+        tabindex="-1"
+        title="Individual email preview"
+      ></iframe>
+    </article>
+
+    <article class="card tracking-card">
+      <div class="panel-title">
+        <div>
+          <p class="eyebrow">Live Tracking</p>
+          <h2>Recipient Activity</h2>
+        </div>
+        <button type="button" class="btn btn--secondary" @click="refreshEmailDetail">
+          Refresh
+        </button>
+      </div>
+      <div class="tracking-metrics">
+        <div><strong>{{ selectedEmail.open_count || 0 }}</strong><span>Opens</span></div>
+        <div><strong>{{ selectedEmail.click_count || 0 }}</strong><span>Clicks</span></div>
+        <div><strong>{{ selectedEmail.status }}</strong><span>Status</span></div>
+      </div>
+      <div v-if="trackingEvents.length" class="timeline">
+        <div v-for="event in trackingEvents" :key="event.id" class="timeline-row">
+          <div>
+            <strong>{{ formatEvent(event.event_type) }}</strong>
+            <a
+              v-if="event.clicked_url"
+              :href="event.clicked_url"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {{ event.clicked_url }}
+            </a>
+          </div>
+          <span>{{ formatDate(event.event_time) }}</span>
+        </div>
+      </div>
+      <p v-else class="empty-text">No tracking activity recorded for this email yet.</p>
+    </article>
+  </section>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { RouterLink } from "vue-router";
 import { ApiClientError } from "../api/http";
 import { contactsApi } from "../api/contactsApi";
@@ -146,7 +250,23 @@ const isImporting = ref(false);
 const importSummary = ref("");
 const selectedTagId = ref("");
 const isLoadingTagRecipients = ref(false);
+const sentEmails = ref<Array<Record<string, any>>>([]);
+const selectedEmail = ref<Record<string, any> | null>(null);
+let historyTimer: number | undefined;
 const hasAccounts = computed(() => accountCount.value > 0);
+const trackingEvents = computed(
+  () => (selectedEmail.value?.trackingEvents || []) as Array<Record<string, any>>,
+);
+const previewHtml = computed(() => {
+  const html = String(selectedEmail.value?.content_html || "");
+  if (!html) {
+    return "<p style='font:14px Arial,sans-serif;color:#667085;padding:24px'>No rendered HTML was stored for this email.</p>";
+  }
+  return html.replace(
+    /<img\b(?=[^>]*\/api\/v1\/tracking\/open\/)[^>]*>/gi,
+    "",
+  );
+});
 
 watch(recipients, () => {
   writeIndividualEmailDraft({ recipients: recipients.value });
@@ -264,8 +384,65 @@ async function loadTags() {
   }
 }
 
+function formatDate(value?: string) {
+  return value ? new Date(value).toLocaleString() : "-";
+}
+
+function formatEvent(eventType?: string) {
+  const value = String(eventType || "");
+  return value ? `${value.charAt(0).toUpperCase()}${value.slice(1)}` : "Event";
+}
+
+async function loadSentEmails(silent = false) {
+  if (!auth.state.token) return;
+  try {
+    const response = await individualEmailsApi.list(auth.state.token, { pageSize: 50 });
+    sentEmails.value = response.data.items;
+  } catch (error) {
+    if (silent) return;
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to load sent emails";
+    notice.show(message, "error");
+  }
+}
+
+async function loadEmailDetail(emailId: string | number, silent = false) {
+  if (!auth.state.token) return;
+  try {
+    const response = await individualEmailsApi.get(auth.state.token, emailId);
+    selectedEmail.value = response.data;
+  } catch (error) {
+    if (silent) return;
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to load sent email";
+    notice.show(message, "error");
+  }
+}
+
+function selectEmail(emailId: string | number) {
+  void loadEmailDetail(emailId);
+}
+
+function refreshEmailDetail() {
+  if (selectedEmail.value) {
+    void loadEmailDetail(selectedEmail.value.id);
+  }
+}
+
 onMounted(() => {
-  void Promise.all([loadAccounts(), loadTags()]);
+  void Promise.all([loadAccounts(), loadTags(), loadSentEmails()]);
+  historyTimer = window.setInterval(() => {
+    void loadSentEmails(true);
+    if (selectedEmail.value) {
+      void loadEmailDetail(selectedEmail.value.id, true);
+    }
+  }, 5000);
+});
+
+onUnmounted(() => {
+  if (historyTimer !== undefined) {
+    window.clearInterval(historyTimer);
+  }
 });
 </script>
 
@@ -382,8 +559,105 @@ onMounted(() => {
   color: var(--color-text-subtle);
 }
 
+.history-section { margin-top: 30px; }
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.section-heading h2 { margin: 0 0 5px; color: var(--color-text-main); }
+.section-heading p,
+.meta { margin: 0; color: var(--color-text-muted); font-size: 13px; }
+.card--table { border: 1px solid var(--color-border-subtle); overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; }
+.table th,
+.table td {
+  text-align: left;
+  padding: 11px 8px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  font-size: 13px;
+  color: var(--color-text-main);
+}
+.table th { color: var(--color-text-muted); font-weight: 600; }
+.empty-text { padding: 18px; color: var(--color-text-muted); }
+.link-action {
+  border: 0;
+  background: transparent;
+  color: var(--color-accent-primary);
+  cursor: pointer;
+  font-weight: 700;
+}
+.message-detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.85fr);
+  gap: 18px;
+  margin-top: 20px;
+}
+.message-card,
+.tracking-card { border: 1px solid var(--color-border-subtle); }
+.panel-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.panel-title h2 { margin: 4px 0 6px; color: var(--color-text-main); }
+.eyebrow {
+  margin: 0;
+  color: var(--color-accent-primary);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.email-preview {
+  width: 100%;
+  min-height: 520px;
+  margin-top: 12px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 12px;
+  background: white;
+  pointer-events: none;
+}
+.tracking-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.tracking-metrics div {
+  padding: 12px 8px;
+  border-radius: 12px;
+  background: var(--color-bg-surface-soft);
+  text-align: center;
+}
+.tracking-metrics strong { display: block; color: var(--color-text-main); font-size: 20px; }
+.tracking-metrics span { color: var(--color-text-muted); font-size: 12px; }
+.timeline { display: grid; gap: 12px; }
+.timeline-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding-bottom: 12px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+.timeline-row strong { display: block; color: var(--color-text-main); }
+.timeline-row a {
+  display: block;
+  overflow-wrap: anywhere;
+  color: var(--color-accent-primary);
+}
+
 @media (max-width: 900px) {
   .grid--individual {
+    grid-template-columns: 1fr;
+  }
+
+  .message-detail {
     grid-template-columns: 1fr;
   }
 

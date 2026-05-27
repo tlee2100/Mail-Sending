@@ -201,6 +201,7 @@ const mergeTags = [
   { tag: "{{name}}", desc: "Customer Name" },
   { tag: "{{email}}", desc: "Email Address" },
   { tag: "{{phone}}", desc: "Phone Number" },
+  { tag: "{{unsubscribe_url}}", desc: "Unsubscribe Link" },
 ];
 
 type AiImageInsertPayload = AiImageResult & {
