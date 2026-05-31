@@ -307,6 +307,35 @@
             </div>
           </template>
 
+          <template v-if="selectedBlock.type === 'imageCard'">
+            <div class="input-wrap">
+              <label>Image src</label>
+              <input v-model="selectedBlock.props.imageSrc" type="text" />
+            </div>
+            <div class="input-wrap">
+              <label>Image alt</label>
+              <input v-model="selectedBlock.props.imageAlt" type="text" />
+            </div>
+            <div class="input-wrap">
+              <label>Title</label>
+              <input v-model="selectedBlock.props.title" type="text" />
+            </div>
+            <div class="input-wrap">
+              <label>Description</label>
+              <textarea v-model="selectedBlock.props.description" rows="4"></textarea>
+            </div>
+            <div class="style-grid">
+              <div class="input-wrap">
+                <label>CTA label</label>
+                <input v-model="selectedBlock.props.ctaLabel" type="text" />
+              </div>
+              <div class="input-wrap">
+                <label>CTA href</label>
+                <input v-model="selectedBlock.props.ctaHref" type="text" />
+              </div>
+            </div>
+          </template>
+
           <template v-if="selectedBlock.type === 'html'">
             <div class="input-wrap">
               <label>HTML</label>
@@ -356,6 +385,67 @@
               <div class="input-wrap">
                 <label>Text color</label>
                 <input v-model="selectedBlock.props.color" type="color" />
+              </div>
+            </div>
+          </template>
+
+          <template v-if="selectedBlock.type === 'twoColumnGrid'">
+            <p class="inspector-type">Left card</p>
+            <div class="input-wrap">
+              <label>Left image src</label>
+              <input v-model="selectedBlock.props.leftImageSrc" type="text" />
+            </div>
+            <div class="input-wrap">
+              <label>Left title</label>
+              <input v-model="selectedBlock.props.leftTitle" type="text" />
+            </div>
+            <div class="input-wrap">
+              <label>Left description</label>
+              <textarea v-model="selectedBlock.props.leftDescription" rows="3"></textarea>
+            </div>
+            <div class="style-grid">
+              <div class="input-wrap">
+                <label>Left CTA label</label>
+                <input v-model="selectedBlock.props.leftCtaLabel" type="text" />
+              </div>
+              <div class="input-wrap">
+                <label>Left CTA href</label>
+                <input v-model="selectedBlock.props.leftCtaHref" type="text" />
+              </div>
+            </div>
+
+            <p class="inspector-type inspector-type--spaced">Right card</p>
+            <div class="input-wrap">
+              <label>Right image src</label>
+              <input v-model="selectedBlock.props.rightImageSrc" type="text" />
+            </div>
+            <div class="input-wrap">
+              <label>Right title</label>
+              <input v-model="selectedBlock.props.rightTitle" type="text" />
+            </div>
+            <div class="input-wrap">
+              <label>Right description</label>
+              <textarea v-model="selectedBlock.props.rightDescription" rows="3"></textarea>
+            </div>
+            <div class="style-grid">
+              <div class="input-wrap">
+                <label>Right CTA label</label>
+                <input v-model="selectedBlock.props.rightCtaLabel" type="text" />
+              </div>
+              <div class="input-wrap">
+                <label>Right CTA href</label>
+                <input v-model="selectedBlock.props.rightCtaHref" type="text" />
+              </div>
+            </div>
+
+            <div class="style-grid">
+              <div class="input-wrap">
+                <label>Gap (px)</label>
+                <input v-model="selectedBlock.props.gap" type="number" min="0" max="80" />
+              </div>
+              <div class="input-wrap">
+                <label>Image height (px)</label>
+                <input v-model="selectedBlock.props.imageHeight" type="number" min="120" max="420" />
               </div>
             </div>
           </template>
@@ -467,7 +557,9 @@ type LayoutNode = {
     | "button"
     | "divider"
     | "image"
+    | "imageCard"
     | "columns"
+    | "twoColumnGrid"
     | "qrcode"
     | "html";
   props?: Record<string, BlockPropValue>;
@@ -479,7 +571,9 @@ type BlockType =
   | "button"
   | "divider"
   | "image"
+  | "imageCard"
   | "columns"
+  | "twoColumnGrid"
   | "qrcode"
   | "html";
 
@@ -516,6 +610,7 @@ type DragPayload =
   | null;
 
 const sampleOptions = [
+  { key: "aiShowcase", label: "AI Product Showcase" },
   { key: "welcome", label: "Welcome Email" },
   { key: "promo", label: "Promo Campaign" },
   { key: "invoice", label: "Billing Reminder" },
@@ -543,6 +638,92 @@ function isSampleKey(value: string): value is SampleKey {
 }
 
 const samples: Record<SampleKey, { root: LayoutNode }> = {
+  aiShowcase: {
+    root: {
+      type: "section",
+      children: [
+        {
+          type: "text",
+          props: {
+            content: "Welcome to your AI Pro workspace",
+            fontSize: "28",
+            color: "#202124",
+            align: "left",
+          },
+        },
+        {
+          type: "text",
+          props: {
+            content:
+              "Explore the tools included in your plan, from writing assistance to research, video, and coding workflows.",
+            fontSize: "16",
+            color: "#5f6368",
+            align: "left",
+          },
+        },
+        {
+          type: "twoColumnGrid",
+          props: {
+            leftImageSrc:
+              "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=900&q=80",
+            leftImageAlt: "AI assistant on a phone",
+            leftTitle: "Gemini app",
+            leftDescription:
+              "Chat with a personal AI assistant to understand complex topics, supercharge ideas, and simplify everyday tasks.",
+            leftCtaLabel: "Try the Gemini app in Pro",
+            leftCtaHref: "https://example.com/gemini",
+            rightImageSrc:
+              "https://images.unsplash.com/photo-1535223289827-42f1e9919769?auto=format&fit=crop&w=900&q=80",
+            rightImageAlt: "Creative video editing workspace",
+            rightTitle: "Flow",
+            rightDescription:
+              "Create cinematic clips, scenes, and stories with consistent visual style for your campaign assets.",
+            rightCtaLabel: "Try Flow in Pro",
+            rightCtaHref: "https://example.com/flow",
+            gap: "28",
+            imageHeight: "178",
+          },
+        },
+        {
+          type: "twoColumnGrid",
+          props: {
+            leftImageSrc:
+              "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=900&q=80",
+            leftImageAlt: "Research notes and audio",
+            leftTitle: "NotebookLM",
+            leftDescription:
+              "Upload your sources to get instant summaries, study guides, and grounded answers from your own material.",
+            leftCtaLabel: "Open NotebookLM",
+            leftCtaHref: "https://example.com/notebooklm",
+            rightImageSrc:
+              "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=900&q=80",
+            rightImageAlt: "Workspace apps",
+            rightTitle: "Gemini in Gmail, Docs, Vids, and more",
+            rightDescription:
+              "Use AI across workspace apps to summarize emails, find files, draft content, and polish meetings.",
+            rightCtaLabel: "Try it in Gmail",
+            rightCtaHref: "https://example.com/gmail",
+            gap: "28",
+            imageHeight: "178",
+          },
+        },
+        {
+          type: "imageCard",
+          props: {
+            imageSrc:
+              "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=1200&q=80",
+            imageAlt: "Coding workspace",
+            title: "Jules",
+            description:
+              "Ask an asynchronous coding agent to read your code, understand your intent, and work on tasks while you stay focused.",
+            ctaLabel: "Try Jules",
+            ctaHref: "https://example.com/jules",
+            imageHeight: "220",
+          },
+        },
+      ],
+    },
+  },
   welcome: {
     root: {
       type: "section",
@@ -749,10 +930,10 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
   },
 };
 
-const sampleFromQuery = String(route.query.sample || "welcome");
+const sampleFromQuery = String(route.query.sample || "aiShowcase");
 const initialSample: SampleKey = isSampleKey(sampleFromQuery)
   ? sampleFromQuery
-  : "welcome";
+  : "aiShowcase";
 
 const selectedSample = ref<SampleKey>(initialSample);
 const previewMode = ref<"email" | "html" | "text">("email");
@@ -762,9 +943,11 @@ const palette: BlockType[] = [
   "text",
   "button",
   "image",
+  "imageCard",
   "html",
   "qrcode",
   "columns",
+  "twoColumnGrid",
   "divider",
 ];
 const canvasBlocks = ref<DesignerBlock[]>([]);
@@ -817,8 +1000,10 @@ function prettyType(type: BlockType) {
     text: "Text",
     button: "Button",
     image: "Image",
+    imageCard: "Image Card",
     qrcode: "QR Code",
     columns: "Columns",
+    twoColumnGrid: "2 Column Grid",
     divider: "Divider",
     html: "HTML",
   };
@@ -830,8 +1015,10 @@ function blockShort(type: BlockType) {
     text: "Tx",
     button: "Bt",
     image: "Im",
+    imageCard: "IC",
     qrcode: "QR",
     columns: "Co",
+    twoColumnGrid: "2C",
     divider: "Dv",
     html: "HT",
   };
@@ -876,6 +1063,18 @@ function defaultProps(type: BlockType): Record<string, BlockPropValue> {
       width: 600,
     };
   }
+  if (type === "imageCard") {
+    return {
+      imageSrc: "https://dummyimage.com/640x260/e8f0fe/1967d2&text=Image+Card",
+      imageAlt: "Card image",
+      title: "Feature title",
+      description:
+        "Use this card for product highlights, event sections, content recommendations, or rich email modules.",
+      ctaLabel: "Learn more",
+      ctaHref: "https://example.com",
+      imageHeight: "220",
+    };
+  }
   if (type === "html") {
     return {
       html: '<a href="https://example.com" style="display:inline-block;padding:10px 16px;background:#4f46e5;color:#ffffff;border-radius:8px;text-decoration:none;font-weight:600;">Open link</a>',
@@ -897,6 +1096,24 @@ function defaultProps(type: BlockType): Record<string, BlockPropValue> {
       color: "#334155",
     };
   }
+  if (type === "twoColumnGrid") {
+    return {
+      leftImageSrc: "https://dummyimage.com/600x340/e8f0fe/1967d2&text=Left+Card",
+      leftImageAlt: "Left card image",
+      leftTitle: "Left feature",
+      leftDescription: "Describe the first product, article, or offer.",
+      leftCtaLabel: "Open left",
+      leftCtaHref: "https://example.com/left",
+      rightImageSrc: "https://dummyimage.com/600x340/f1f3f4/3c4043&text=Right+Card",
+      rightImageAlt: "Right card image",
+      rightTitle: "Right feature",
+      rightDescription: "Describe the second product, article, or offer.",
+      rightCtaLabel: "Open right",
+      rightCtaHref: "https://example.com/right",
+      gap: "24",
+      imageHeight: "180",
+    };
+  }
   return {};
 }
 
@@ -908,6 +1125,9 @@ function blockSummary(block: DesignerBlock): string {
   if (block.type === "image") {
     return `${block.props.alt || "Image"} -> ${block.props.src || ""}`;
   }
+  if (block.type === "imageCard") {
+    return `${block.props.title || "Image card"} -> ${block.props.ctaHref || ""}`;
+  }
   if (block.type === "html") {
     return String(block.props.html || "Raw HTML block").replace(/\s+/g, " ");
   }
@@ -916,6 +1136,9 @@ function blockSummary(block: DesignerBlock): string {
   }
   if (block.type === "columns") {
     return `${block.props.leftContent || ""} | ${block.props.rightContent || ""}`;
+  }
+  if (block.type === "twoColumnGrid") {
+    return `${block.props.leftTitle || "Left"} | ${block.props.rightTitle || "Right"}`;
   }
   return "Horizontal divider";
 }
@@ -1121,9 +1344,11 @@ function nodeToBlock(node: LayoutNode): DesignerBlock | null {
     node.type === "button" ||
     node.type === "divider" ||
     node.type === "image" ||
+    node.type === "imageCard" ||
     node.type === "html" ||
     node.type === "qrcode" ||
-    node.type === "columns"
+    node.type === "columns" ||
+    node.type === "twoColumnGrid"
   ) {
     return {
       id: uid(),
@@ -1468,6 +1693,14 @@ function insertVariable(token: string) {
     block.props.leftContent = `${String(block.props.leftContent || "")} ${token}`.trim();
     return;
   }
+  if (block.type === "imageCard") {
+    block.props.description = `${String(block.props.description || "")} ${token}`.trim();
+    return;
+  }
+  if (block.type === "twoColumnGrid") {
+    block.props.leftDescription = `${String(block.props.leftDescription || "")} ${token}`.trim();
+    return;
+  }
   if (block.type === "qrcode") {
     block.props.value = `${String(block.props.value || "")}${token}`;
   }
@@ -1505,9 +1738,11 @@ function validateNodeSchema(node: LayoutNode, path: string, errors: string[]) {
     "button",
     "divider",
     "image",
+    "imageCard",
     "html",
     "qrcode",
     "columns",
+    "twoColumnGrid",
   ];
   if (!allowedTypes.includes(node.type)) {
     errors.push(`${path}: unknown type ${String(node.type)}`);
@@ -1530,6 +1765,16 @@ function validateNodeSchema(node: LayoutNode, path: string, errors: string[]) {
   if (node.type === "image" && !node.props?.src) {
     errors.push(`${path}: image.src is required`);
   }
+  if (node.type === "imageCard") {
+    if (!node.props?.imageSrc) errors.push(`${path}: imageCard.imageSrc is required`);
+    if (!node.props?.title) errors.push(`${path}: imageCard.title is required`);
+    if (!node.props?.description) {
+      errors.push(`${path}: imageCard.description is required`);
+    }
+    if (hasUnknownVariable(String(node.props?.description || ""))) {
+      errors.push(`${path}: image card description contains unknown variable token`);
+    }
+  }
   if (node.type === "html" && !node.props?.html) {
     errors.push(`${path}: html.html is required`);
   }
@@ -1547,6 +1792,20 @@ function validateNodeSchema(node: LayoutNode, path: string, errors: string[]) {
     }
     if (!node.props?.rightContent) {
       errors.push(`${path}: columns.rightContent is required`);
+    }
+  }
+  if (node.type === "twoColumnGrid") {
+    if (!node.props?.leftImageSrc) {
+      errors.push(`${path}: twoColumnGrid.leftImageSrc is required`);
+    }
+    if (!node.props?.rightImageSrc) {
+      errors.push(`${path}: twoColumnGrid.rightImageSrc is required`);
+    }
+    if (!node.props?.leftTitle) {
+      errors.push(`${path}: twoColumnGrid.leftTitle is required`);
+    }
+    if (!node.props?.rightTitle) {
+      errors.push(`${path}: twoColumnGrid.rightTitle is required`);
     }
   }
 
@@ -1584,6 +1843,12 @@ function px(value: BlockPropValue | undefined, fallback: number) {
   return `${Math.max(0, n)}px`;
 }
 
+function clampNumber(value: BlockPropValue | undefined, fallback: number, min: number, max: number) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(min, Math.min(max, Math.round(n)));
+}
+
 function clampQrSize(value: BlockPropValue | undefined, fallback: number) {
   const n = Number(value);
   if (!Number.isFinite(n)) return fallback;
@@ -1610,6 +1875,59 @@ function stripHtmlText(value: string) {
     .replace(/<[^>]+>/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function renderCardImage(srcValue: BlockPropValue | undefined, altValue: BlockPropValue | undefined, heightValue: BlockPropValue | undefined) {
+  const src = escapeHtml(
+    String(srcValue || "https://dummyimage.com/600x340/e8f0fe/1967d2&text=Email+Image"),
+  );
+  const alt = escapeHtml(String(altValue || "Email image"));
+  const height = clampNumber(heightValue, 180, 120, 420);
+  return `<img src="${src}" alt="${alt}" width="280" height="${height}" style="display:block;width:100%;max-width:100%;height:${height}px;object-fit:cover;border:0;border-radius:18px;" />`;
+}
+
+function renderCardBody(props: {
+  title?: BlockPropValue;
+  description?: BlockPropValue;
+  ctaLabel?: BlockPropValue;
+  ctaHref?: BlockPropValue;
+}) {
+  const title = escapeHtml(String(props.title || "Feature title"));
+  const description = escapeHtml(String(props.description || ""));
+  const ctaLabel = escapeHtml(String(props.ctaLabel || ""));
+  const ctaHref = escapeHtml(String(props.ctaHref || "#"));
+  return `<h3 style="margin:22px 0 8px;color:#202124;font-size:22px;line-height:1.3;font-weight:500;">${title}</h3><p style="margin:0;color:#5f6368;font-size:16px;line-height:1.55;">${description}</p>${ctaLabel ? `<p style="margin:18px 0 0;"><a href="${ctaHref}" style="color:#0b57d0;font-size:16px;line-height:1.4;text-decoration:none;font-weight:500;">${ctaLabel} &rsaquo;</a></p>` : ""}`;
+}
+
+function renderImageCardHtml(node: LayoutNode) {
+  const image = renderCardImage(
+    node.props?.imageSrc,
+    node.props?.imageAlt,
+    node.props?.imageHeight,
+  );
+  const body = renderCardBody({
+    title: node.props?.title,
+    description: node.props?.description,
+    ctaLabel: node.props?.ctaLabel,
+    ctaHref: node.props?.ctaHref,
+  });
+  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 30px;border-collapse:collapse;"><tr><td style="padding:0;">${image}${body}</td></tr></table>`;
+}
+
+function renderGridCardHtml(node: LayoutNode, side: "left" | "right") {
+  const prefix = side === "left" ? "left" : "right";
+  const image = renderCardImage(
+    node.props?.[`${prefix}ImageSrc`],
+    node.props?.[`${prefix}ImageAlt`],
+    node.props?.imageHeight,
+  );
+  const body = renderCardBody({
+    title: node.props?.[`${prefix}Title`],
+    description: node.props?.[`${prefix}Description`],
+    ctaLabel: node.props?.[`${prefix}CtaLabel`],
+    ctaHref: node.props?.[`${prefix}CtaHref`],
+  });
+  return `${image}${body}`;
 }
 
 function renderNode(node: LayoutNode): string {
@@ -1648,6 +1966,9 @@ function renderNode(node: LayoutNode): string {
       : 600;
     return `<img src="${src}" alt="${alt}" width="${width}" style="display:block;width:${width}px;max-width:100%;height:auto;border-radius:8px;margin:0 0 12px;" />`;
   }
+  if (node.type === "imageCard") {
+    return renderImageCardHtml(node);
+  }
   if (node.type === "html") {
     return String(node.props?.html || "");
   }
@@ -1666,6 +1987,12 @@ function renderNode(node: LayoutNode): string {
     const right = escapeHtml(String(node.props?.rightContent || ""));
     return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 12px;border-collapse:separate;border-spacing:${gap} 0;"><tr><td valign="top" width="50%" style="color:${color};line-height:1.5;">${left}</td><td valign="top" width="50%" style="color:${color};line-height:1.5;">${right}</td></tr></table>`;
   }
+  if (node.type === "twoColumnGrid") {
+    const gap = clampNumber(node.props?.gap, 24, 0, 80);
+    const left = renderGridCardHtml(node, "left");
+    const right = renderGridCardHtml(node, "right");
+    return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 34px;border-collapse:collapse;"><tr><td class="stack-column" valign="top" width="50%" style="width:50%;padding:0 ${Math.ceil(gap / 2)}px 0 0;">${left}</td><td class="stack-column stack-column--last" valign="top" width="50%" style="width:50%;padding:0 0 0 ${Math.floor(gap / 2)}px;">${right}</td></tr></table>`;
+  }
   const children = (node.children || []).map((child) => renderNode(child)).join("");
   return `<section style="padding:12px 0;">${children}</section>`;
 }
@@ -1675,7 +2002,7 @@ const renderedHtml = computed(() => {
     return "<html><body><p>Invalid layout JSON</p></body></html>";
   }
   const body = renderNode(parsedLayout.value.root);
-  return `<!doctype html><html><body style="margin:0;padding:24px;background:#f1f5f9;font-family:Arial,sans-serif;"><div style="max-width:620px;margin:0 auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:22px;">${body}</div></body></html>`;
+  return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>@media only screen and (max-width:640px){.email-container{width:100% !important;}.email-inner{padding:28px 20px !important;}.stack-column{display:block !important;width:100% !important;padding:0 0 30px 0 !important;}.stack-column--last{padding-bottom:0 !important;}}</style></head><body style="margin:0;padding:0;background:#f8fafc;font-family:Arial,Helvetica,sans-serif;"><center style="width:100%;background:#f8fafc;"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;"><tr><td align="center" style="padding:36px 16px;"><table role="presentation" class="email-container" width="720" cellspacing="0" cellpadding="0" style="width:720px;max-width:720px;background:#ffffff;border-left:1px solid #e0e3eb;border-right:1px solid #e0e3eb;border-collapse:collapse;"><tr><td class="email-inner" style="padding:32px 34px 54px;">${body}</td></tr></table></td></tr></table></center></body></html>`;
 });
 
 function renderTextNode(node: LayoutNode): string {
@@ -1685,12 +2012,27 @@ function renderTextNode(node: LayoutNode): string {
   }
   if (node.type === "divider") return "------------------------------";
   if (node.type === "image") return `[Image] ${node.props?.alt || ""}`;
+  if (node.type === "imageCard") {
+    return `${node.props?.title || ""}\n${node.props?.description || ""}\n${node.props?.ctaHref || ""}`.trim();
+  }
   if (node.type === "html") return stripHtmlText(String(node.props?.html || ""));
   if (node.type === "qrcode") {
     return `[QR Code] ${node.props?.title || ""} ${node.props?.value || ""}`.trim();
   }
   if (node.type === "columns") {
     return `${node.props?.leftContent || ""}\n${node.props?.rightContent || ""}`;
+  }
+  if (node.type === "twoColumnGrid") {
+    return [
+      node.props?.leftTitle || "",
+      node.props?.leftDescription || "",
+      node.props?.leftCtaHref || "",
+      node.props?.rightTitle || "",
+      node.props?.rightDescription || "",
+      node.props?.rightCtaHref || "",
+    ]
+      .filter(Boolean)
+      .join("\n");
   }
   return (node.children || []).map((child) => renderTextNode(child)).join("\n");
 }
@@ -1842,6 +2184,10 @@ onMounted(() => {
   background: var(--color-success-bg-soft);
 }
 
+.toolbox-item--imageCard {
+  background: var(--color-primary-bg-muted);
+}
+
 .toolbox-item--html {
   background: var(--color-bg-surface-soft);
 }
@@ -1852,6 +2198,10 @@ onMounted(() => {
 
 .toolbox-item--columns {
   background: var(--color-primary-bg-muted);
+}
+
+.toolbox-item--twoColumnGrid {
+  background: var(--color-info-bg);
 }
 
 .toolbox-item--divider {
@@ -2096,6 +2446,10 @@ onMounted(() => {
   margin: 0 0 14px;
   font-weight: 700;
   color: var(--color-primary-text);
+}
+
+.inspector-type--spaced {
+  margin-top: 20px;
 }
 
 .style-grid {
