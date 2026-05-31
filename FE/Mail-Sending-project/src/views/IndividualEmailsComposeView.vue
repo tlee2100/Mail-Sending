@@ -159,6 +159,24 @@
       </div>
     </aside>
   </div>
+
+  <div
+    v-if="sendSuccessPopup.visible"
+    class="success-popup-backdrop"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="send-success-title"
+    @click.self="closeSendSuccessPopup"
+  >
+    <div class="success-popup-card">
+      <div class="success-popup-icon">✓</div>
+      <h2 id="send-success-title">Sending Successful</h2>
+      <p>{{ sendSuccessPopup.message }}</p>
+      <button type="button" class="btn btn--primary" @click="closeSendSuccessPopup">
+        OK
+      </button>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -196,6 +214,10 @@ const templates = ref<Array<Record<string, unknown>>>([]);
 const isSending = ref(false);
 const isPreviewing = ref(false);
 const templateHtmlContent = ref("");
+const sendSuccessPopup = ref({
+  visible: false,
+  message: "",
+});
 
 const mergeTags = [
   { tag: "{{name}}", desc: "Customer Name" },
@@ -565,6 +587,17 @@ function resetForm() {
   notice.show("Compose form reset.", "info");
 }
 
+function closeSendSuccessPopup() {
+  sendSuccessPopup.value.visible = false;
+}
+
+function showSendSuccessPopup(sentCount: number) {
+  sendSuccessPopup.value = {
+    visible: true,
+    message: `${sentCount} email${sentCount === 1 ? "" : "s"} sent successfully.`,
+  };
+}
+
 async function sendEmails() {
   if (!auth.state.token) return;
   if (!subject.value.trim() || !content.value.trim()) {
@@ -596,10 +629,18 @@ async function sendEmails() {
       htmlContent,
       emailAccountId: Number(selectedAccountId.value),
     });
-    notice.show(
-      `Sent ${response.data.sentCount}/${response.data.requestedCount} emails via backend SMTP.`,
-      response.data.failedCount > 0 ? "info" : "success",
-    );
+    const sentCount = Number(response.data.sentCount || 0);
+    const requestedCount = Number(response.data.requestedCount || parsedRecipients.length);
+    const failedCount = Number(response.data.failedCount || 0);
+
+    if (failedCount === 0 && sentCount > 0) {
+      showSendSuccessPopup(sentCount);
+    } else {
+      notice.show(
+        `Sent ${sentCount}/${requestedCount} emails via backend SMTP. Failed: ${failedCount}.`,
+        "info",
+      );
+    }
   } catch (error) {
     notice.show(getApiErrorMessage(error, "Failed to send emails"), "error");
   } finally {
@@ -789,6 +830,51 @@ onMounted(() => {
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 12px;
+}
+
+.success-popup-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.48);
+  backdrop-filter: blur(6px);
+}
+
+.success-popup-card {
+  width: min(420px, 100%);
+  padding: 28px;
+  border: 1px solid var(--color-success-border);
+  border-radius: 22px;
+  background: var(--color-card-bg);
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22);
+  text-align: center;
+}
+
+.success-popup-icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 16px;
+  border-radius: 999px;
+  background: var(--color-success-bg);
+  color: var(--color-success-text-strong);
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.success-popup-card h2 {
+  margin: 0;
+  color: var(--color-text-main);
+  font-size: 24px;
+}
+
+.success-popup-card p {
+  margin: 10px 0 22px;
+  color: var(--color-text-muted);
 }
 
 @media (max-width: 900px) {
