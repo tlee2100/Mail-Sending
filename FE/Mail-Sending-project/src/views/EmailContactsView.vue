@@ -11,7 +11,7 @@
       <RouterLink to="/contacts/import-export" class="btn btn--secondary">
         Import / Export
       </RouterLink>
-      <RouterLink to="/contacts/fields" class="btn btn--secondary">
+      <RouterLink v-if="isAdmin" to="/contacts/fields" class="btn btn--secondary">
         Fields
       </RouterLink>
       <button type="button" class="btn btn--primary" @click="openCreateContactModal">
@@ -69,6 +69,7 @@
             <th>Name</th>
             <th>Email</th>
             <th>Status</th>
+            <th v-if="isAdmin">Owner</th>
             <th>Tags</th>
             <th>Company</th>
             <th>City</th>
@@ -80,6 +81,7 @@
             <td>{{ fullName(contact) }}</td>
             <td data-label="Email">{{ contact.email }}</td>
             <td data-label="Status">{{ contact.email_status || "active" }}</td>
+            <td v-if="isAdmin" data-label="Owner">{{ ownerText(contact) || "-" }}</td>
             <td data-label="Tags">
               <div class="tag-stack" v-if="contact.tags?.length">
                 <span
@@ -99,6 +101,8 @@
               <button
                 type="button"
                 class="btn btn--secondary btn--sm"
+                :disabled="!canManageContact(contact)"
+                :title="manageBlockedTitle(contact)"
                 @click="openEditContactModal(contact)"
               >
                 Edit
@@ -106,16 +110,27 @@
               <button
                 type="button"
                 class="btn btn--secondary btn--sm"
+                :disabled="!canManageContact(contact)"
+                :title="manageBlockedTitle(contact)"
                 @click="openTagManager(contact)"
               >
                 Tags
               </button>
-              <RouterLink :to="`/contacts/${contact.id}/fields`" class="btn btn--secondary btn--sm">
+              <RouterLink
+                v-if="canManageContact(contact)"
+                :to="`/contacts/${contact.id}/fields`"
+                class="btn btn--secondary btn--sm"
+              >
                 Fields
               </RouterLink>
+              <button v-else type="button" class="btn btn--secondary btn--sm" disabled>
+                Fields
+              </button>
               <button
                 type="button"
                 class="btn btn--danger btn--sm"
+                :disabled="!canManageContact(contact)"
+                :title="manageBlockedTitle(contact)"
                 @click="openDeleteContactModal(contact)"
               >
                 Delete
@@ -271,12 +286,16 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { RouterLink, useRoute } from "vue-router";
 import { contactsApi } from "../api/contactsApi";
 import { ApiClientError } from "../api/http";
 import { useNotice } from "../composables/useNotice";
 import { auth } from "../stores/auth";
+import {
+  canManageOwnRecord,
+  recordOwnerLabel,
+} from "../utils/recordOwnership";
 
 type ContactRow = {
   id: number;
@@ -290,6 +309,7 @@ type ContactRow = {
   email_status?: string | null;
   source?: string | null;
   tags?: TagRow[];
+  [key: string]: unknown;
 };
 
 type TagRow = {
@@ -332,6 +352,21 @@ const pagination = reactive({
   total: 0,
   totalPages: 1,
 });
+const isAdmin = computed(() => auth.state.user?.role === "admin");
+
+function canManageContact(contact: ContactRow | null) {
+  return canManageOwnRecord(contact, auth.state.user);
+}
+
+function ownerText(contact: ContactRow) {
+  return recordOwnerLabel(contact);
+}
+
+function manageBlockedTitle(contact: ContactRow) {
+  return canManageContact(contact)
+    ? ""
+    : "Admin can view this contact here, but should not edit another user's contact in the normal route.";
+}
 
 function fullName(contact: ContactRow) {
   const name = [contact.first_name, contact.last_name].filter(Boolean).join(" ");
@@ -394,6 +429,13 @@ function openCreateContactModal() {
 }
 
 function openEditContactModal(contact: ContactRow) {
+  if (!canManageContact(contact)) {
+    notice.show(
+      "Admin should not edit another user's contact from the normal contacts route.",
+      "error",
+    );
+    return;
+  }
   editingContact.value = contact;
   contactForm.email = contact.email || "";
   contactForm.firstName = contact.first_name || "";
@@ -456,6 +498,13 @@ async function saveContact() {
 }
 
 function openDeleteContactModal(contact: ContactRow) {
+  if (!canManageContact(contact)) {
+    notice.show(
+      "Admin should not delete another user's contact from the normal contacts route.",
+      "error",
+    );
+    return;
+  }
   deleteContactTarget.value = contact;
 }
 
@@ -486,6 +535,13 @@ function clearFilters() {
 }
 
 function openTagManager(contact: ContactRow) {
+  if (!canManageContact(contact)) {
+    notice.show(
+      "Admin should not edit another user's contact tags from the normal contacts route.",
+      "error",
+    );
+    return;
+  }
   tagDialogContact.value = contact;
   selectedTagIds.value = (contact.tags || []).map((tag) => tag.id);
 }

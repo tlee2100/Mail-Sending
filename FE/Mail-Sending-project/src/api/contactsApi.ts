@@ -10,6 +10,7 @@ export const contactsApi = {
       status?: string;
       city?: string;
       tagId?: number;
+      userId?: number;
     },
   ) {
     return apiRequest<{
@@ -210,6 +211,7 @@ export const contactsApi = {
       status?: string;
       city?: string;
       tagId?: number;
+      userId?: number;
     },
   ) {
     return apiDownload("/contacts/export", { token }, query);

@@ -3,7 +3,7 @@ import { apiRequest } from "./http";
 export const campaignsApi = {
   list(
     token: string,
-    query?: { page?: number; pageSize?: number; status?: string },
+    query?: { page?: number; pageSize?: number; status?: string; userId?: number },
   ) {
     return apiRequest<{
       items: Array<Record<string, unknown>>;

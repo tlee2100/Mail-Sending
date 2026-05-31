@@ -1,8 +1,8 @@
 import { apiRequest } from "./http";
 
 export const emailAccountsApi = {
-  list(token: string) {
-    return apiRequest<Array<Record<string, unknown>>>("/email-accounts", { token });
+  list(token: string, query?: { userId?: number }) {
+    return apiRequest<Array<Record<string, unknown>>>("/email-accounts", { token }, query);
   },
 
   create(

@@ -132,12 +132,15 @@
           <div class="account-meta">
             {{ account.email_address }} · {{ account.smtp_host || "No SMTP host" }} ·
             {{ account.status || "active" }}
+            <span v-if="isAdmin && ownerText(account)"> · {{ ownerText(account) }}</span>
           </div>
         </div>
         <div class="account-actions">
           <button
             type="button"
             class="btn btn--secondary btn--small"
+            :disabled="!canManageAccount(account)"
+            :title="manageBlockedTitle(account)"
             @click="openEditForm(account)"
           >
             Edit
@@ -145,7 +148,8 @@
           <button
             type="button"
             class="btn btn--secondary btn--small"
-            :disabled="account.is_default"
+            :disabled="account.is_default || !canManageAccount(account)"
+            :title="manageBlockedTitle(account)"
             @click="setDefault(account.id)"
           >
             Set Default
@@ -153,6 +157,8 @@
           <button
             type="button"
             class="btn btn--secondary btn--small"
+            :disabled="!canManageAccount(account)"
+            :title="manageBlockedTitle(account)"
             @click="toggleStatus(account)"
           >
             {{ account.status === "active" ? "Pause" : "Activate" }}
@@ -176,6 +182,10 @@ import { emailAccountsApi } from "../api/emailAccountsApi";
 import { ApiClientError } from "../api/http";
 import { useNotice } from "../composables/useNotice";
 import { auth } from "../stores/auth";
+import {
+  canManageOwnRecord,
+  recordOwnerLabel,
+} from "../utils/recordOwnership";
 
 type AccountRow = {
   id: number;
@@ -189,6 +199,7 @@ type AccountRow = {
   is_default?: boolean;
   daily_limit?: number | null;
   sent_today?: number | null;
+  [key: string]: unknown;
 };
 
 const notice = useNotice();
@@ -219,6 +230,21 @@ const defaultAccounts = computed(
 const sentToday = computed(() =>
   accounts.value.reduce((sum, item) => sum + Number(item.sent_today || 0), 0),
 );
+const isAdmin = computed(() => auth.state.user?.role === "admin");
+
+function canManageAccount(account: AccountRow | null) {
+  return canManageOwnRecord(account, auth.state.user);
+}
+
+function ownerText(account: AccountRow) {
+  return recordOwnerLabel(account);
+}
+
+function manageBlockedTitle(account: AccountRow) {
+  return canManageAccount(account)
+    ? ""
+    : "Admin can view this sender account here, but should not edit another user's account in the normal route.";
+}
 
 function resetForm() {
   form.emailAddress = "";
@@ -241,6 +267,13 @@ function openCreateForm() {
 }
 
 function openEditForm(account: AccountRow) {
+  if (!canManageAccount(account)) {
+    notice.show(
+      "Admin should not edit another user's sender account from the normal route.",
+      "error",
+    );
+    return;
+  }
   editingId.value = account.id;
   form.emailAddress = account.email_address || "";
   form.displayName = account.display_name || "";
@@ -384,6 +417,14 @@ async function testConnection() {
 
 async function setDefault(id: number) {
   if (!auth.state.token) return;
+  const account = accounts.value.find((item) => item.id === id);
+  if (account && !canManageAccount(account)) {
+    notice.show(
+      "Admin should not update another user's sender account from the normal route.",
+      "error",
+    );
+    return;
+  }
   try {
     await emailAccountsApi.setDefault(auth.state.token, id);
     notice.show("Default account updated.", "success");
@@ -397,6 +438,13 @@ async function setDefault(id: number) {
 
 async function toggleStatus(account: AccountRow) {
   if (!auth.state.token) return;
+  if (!canManageAccount(account)) {
+    notice.show(
+      "Admin should not update another user's sender account from the normal route.",
+      "error",
+    );
+    return;
+  }
   try {
     await emailAccountsApi.update(auth.state.token, account.id, {
       status: account.status === "active" ? "inactive" : "active",

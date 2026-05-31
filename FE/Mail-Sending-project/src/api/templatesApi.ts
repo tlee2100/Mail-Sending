@@ -3,7 +3,7 @@ import { apiRequest } from "./http";
 export const templatesApi = {
   listTemplates(
     token: string,
-    query?: { page?: number; pageSize?: number; isActive?: boolean },
+    query?: { page?: number; pageSize?: number; isActive?: boolean; userId?: number },
   ) {
     return apiRequest<{
       items: Array<Record<string, unknown>>;

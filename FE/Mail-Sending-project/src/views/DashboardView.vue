@@ -3,7 +3,7 @@
     <h1 class="page-title">Dashboard</h1>
     <p class="page-subtitle">Live overview loaded from backend services</p>
     <p class="page-subtitle page-subtitle--muted">
-      Counts only include records that belong to the currently logged-in backend user.
+      {{ scopeText }}
     </p>
     <p v-if="notice.message" class="notice" :class="`notice--${notice.tone}`">
       {{ notice.message }}
@@ -163,6 +163,11 @@ const defaultAccountCount = ref(0);
 
 const bounceRate = computed(() => 0);
 const unsubscribeRate = computed(() => 0);
+const scopeText = computed(() =>
+  auth.state.user?.role === "admin"
+    ? "Admin token: backend returns system-wide data on the same API URLs."
+    : "User token: backend returns only records owned by the logged-in user.",
+);
 
 function formatRelativeTime(value: unknown) {
   if (!value) return "N/A";

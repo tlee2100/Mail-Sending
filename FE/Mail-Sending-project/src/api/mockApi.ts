@@ -2,6 +2,8 @@ export type MockUser = {
   id: string;
   name: string;
   email: string;
+  role: "admin" | "user";
+  isActive: boolean;
 };
 
 export type AuthResponse = {
@@ -38,13 +40,25 @@ function writeJson(key: string, value: unknown) {
 
 function ensureSeed() {
   const users = readJson<StoredUser[]>(LS_USERS, []);
-  if (users.length > 0) return;
+  if (users.length > 0) {
+    const migrated = users.map((user) => ({
+      ...user,
+      role:
+        user.role ||
+        (normalizeEmail(user.email) === "frontend.demo@email.com" ? "admin" : "user"),
+      isActive: user.isActive !== false,
+    }));
+    writeJson(LS_USERS, migrated);
+    return;
+  }
 
   const admin: StoredUser = {
     id: uid(),
     name: "Frontend Demo",
     email: "frontend.demo@email.com",
     password: "Demo@123456",
+    role: "admin",
+    isActive: true,
   };
   writeJson(LS_USERS, [admin]);
   writeJson(LS_SESSIONS, {} as Record<string, string>);
@@ -75,6 +89,7 @@ export const mockApi = {
     name: string;
     email: string;
     password: string;
+    role?: "admin" | "user";
   }): Promise<AuthResponse> {
     ensureSeed();
     await sleep(450);
@@ -93,7 +108,14 @@ export const mockApi = {
       throw new MockApiError("Email already exists", 409);
     }
 
-    const user: StoredUser = { id: uid(), name, email, password };
+    const user: StoredUser = {
+      id: uid(),
+      name,
+      email,
+      password,
+      role: payload.role === "admin" ? "admin" : "user",
+      isActive: true,
+    };
     users.push(user);
     writeJson(LS_USERS, users);
 
@@ -122,6 +144,7 @@ export const mockApi = {
     const user = users.find((u) => normalizeEmail(u.email) === email);
     if (!user || user.password !== password)
       throw new MockApiError("Invalid email or password", 401);
+    if (user.isActive === false) throw new MockApiError("Account is disabled", 403);
 
     const token = `mock.${user.id}.${Date.now()}`;
     const sessions = readJson<Record<string, string>>(LS_SESSIONS, {});

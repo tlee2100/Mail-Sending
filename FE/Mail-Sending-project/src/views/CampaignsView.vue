@@ -45,11 +45,18 @@
         </div>
         <div class="campaign-meta">
           <span class="badge" :class="`badge--${item.status || 'draft'}`">{{ item.status }}</span>
+          <span v-if="isAdmin && ownerText(item)">{{ ownerText(item) }}</span>
           <span>{{ item.total_recipients || 0 }} recipients</span>
           <span>{{ formatDate(item.updated_at || item.created_at) }}</span>
         </div>
         <div class="actions">
-          <button type="button" class="btn btn--secondary btn--small" @click="openEditModal(item)">
+          <button
+            type="button"
+            class="btn btn--secondary btn--small"
+            :disabled="!canManageCampaign(item)"
+            :title="manageBlockedTitle(item)"
+            @click="openEditModal(item)"
+          >
             Edit
           </button>
           <RouterLink :to="`/campaigns/${item.id}`" class="btn btn--secondary btn--small">
@@ -58,6 +65,22 @@
           <RouterLink :to="`/campaigns/${item.id}/recipients`" class="btn btn--secondary btn--small">
             Recipients
           </RouterLink>
+          <button
+            v-if="isAdmin"
+            type="button"
+            class="btn btn--secondary btn--small"
+            @click="pauseCampaignAsAdmin(item)"
+          >
+            Pause
+          </button>
+          <button
+            v-if="isAdmin"
+            type="button"
+            class="btn btn--danger btn--small"
+            @click="deleteCampaignAsAdmin(item)"
+          >
+            Delete
+          </button>
         </div>
       </article>
     </div>
@@ -168,12 +191,17 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
 import { RouterLink } from "vue-router";
+import { adminApi } from "../api/adminApi";
 import { campaignsApi } from "../api/campaignsApi";
 import { emailAccountsApi } from "../api/emailAccountsApi";
 import { templatesApi } from "../api/templatesApi";
 import { ApiClientError } from "../api/http";
 import { useNotice } from "../composables/useNotice";
 import { auth } from "../stores/auth";
+import {
+  canManageOwnRecord,
+  recordOwnerLabel,
+} from "../utils/recordOwnership";
 
 type CampaignRow = Record<string, any>;
 
@@ -212,9 +240,24 @@ const sentCampaigns = computed(
   () => campaigns.value.filter((item) => item.status === "sent").length,
 );
 const parsedRecipients = computed(() => parseRecipientInput(form.recipientsText));
+const isAdmin = computed(() => auth.state.user?.role === "admin");
 
 function formatDate(value?: string) {
   return value ? new Date(value).toLocaleString() : "-";
+}
+
+function canManageCampaign(item: CampaignRow | null) {
+  return canManageOwnRecord(item, auth.state.user);
+}
+
+function ownerText(item: CampaignRow) {
+  return recordOwnerLabel(item);
+}
+
+function manageBlockedTitle(item: CampaignRow) {
+  return canManageCampaign(item)
+    ? ""
+    : "Admin can inspect this campaign here, but should not edit another user's campaign in the normal route.";
 }
 
 function parseRecipientInput(value: string) {
@@ -294,6 +337,13 @@ async function openCreateModal() {
 }
 
 async function openEditModal(item: CampaignRow) {
+  if (!canManageCampaign(item)) {
+    notice.show(
+      "Admin should not edit another user's campaign from the normal campaign route.",
+      "error",
+    );
+    return;
+  }
   if (["sending", "sent"].includes(String(item.status))) {
     notice.show("Only draft, scheduled or paused campaigns can be edited.", "error");
     return;
@@ -314,6 +364,33 @@ async function openEditModal(item: CampaignRow) {
   } catch (error) {
     const message =
       error instanceof ApiClientError ? error.message : "Failed to load campaign options";
+    notice.show(message, "error");
+  }
+}
+
+async function pauseCampaignAsAdmin(item: CampaignRow) {
+  if (!auth.state.token) return;
+  try {
+    await adminApi.pauseCampaign(auth.state.token, item.id);
+    notice.show("Campaign paused.", "success");
+    await loadCampaigns();
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to pause campaign";
+    notice.show(message, "error");
+  }
+}
+
+async function deleteCampaignAsAdmin(item: CampaignRow) {
+  if (!auth.state.token) return;
+  if (!window.confirm(`Delete campaign ${item.campaign_name || item.id}?`)) return;
+  try {
+    await adminApi.deleteCampaign(auth.state.token, item.id);
+    notice.show("Campaign deleted.", "success");
+    await loadCampaigns();
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to delete campaign";
     notice.show(message, "error");
   }
 }

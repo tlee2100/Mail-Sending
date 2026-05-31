@@ -1,18 +1,18 @@
 <template>
   <div class="layout">
     <aside class="sidebar">
-      <div class="sidebar__brand">
+      <RouterLink to="/" class="sidebar__brand">
         <div class="brand__logo">CM</div>
         <div class="brand__text">
           <div class="brand__name">ChadMailer</div>
           <div class="brand__subtitle">Professional Email Marketing</div>
         </div>
-      </div>
+      </RouterLink>
 
       <nav class="sidebar__nav">
         <div class="nav__section">
           <div class="nav__title">Main Menu</div>
-          <RouterLink to="/" class="nav__item" active-class="nav__item--active">
+          <RouterLink to="/" class="nav__item" exact-active-class="nav__item--active">
             <span class="nav__icon">📊</span>
             <span>Dashboard</span>
           </RouterLink>
@@ -77,6 +77,7 @@
             <span>Import / Export</span>
           </RouterLink>
           <RouterLink
+            v-if="isAdmin"
             to="/contacts/fields"
             class="nav__item"
             active-class="nav__item--active"
@@ -105,6 +106,7 @@
             <span>Email Accounts</span>
           </RouterLink>
           <RouterLink
+            v-if="isAdmin"
             to="/payment"
             class="nav__item"
             active-class="nav__item--active"
@@ -114,8 +116,52 @@
           </RouterLink>
         </div>
 
+        <div v-if="isAdmin" class="nav__section">
+          <div class="nav__title">Admin</div>
+          <RouterLink
+            to="/admin/dashboard"
+            class="nav__item"
+            active-class="nav__item--active"
+          >
+            <span class="nav__icon">AD</span>
+            <span>Admin Dashboard</span>
+          </RouterLink>
+          <RouterLink
+            to="/admin/users"
+            class="nav__item"
+            active-class="nav__item--active"
+          >
+            <span class="nav__icon">US</span>
+            <span>User Management</span>
+          </RouterLink>
+          <RouterLink
+            to="/admin/audit-logs"
+            class="nav__item"
+            active-class="nav__item--active"
+          >
+            <span class="nav__icon">LG</span>
+            <span>Audit Logs</span>
+          </RouterLink>
+          <RouterLink
+            to="/admin/settings"
+            class="nav__item"
+            active-class="nav__item--active"
+          >
+            <span class="nav__icon">ST</span>
+            <span>System Settings</span>
+          </RouterLink>
+        </div>
+
         <div class="nav__section">
           <div class="nav__title">Account</div>
+          <RouterLink
+            to="/usage"
+            class="nav__item"
+            active-class="nav__item--active"
+          >
+            <span class="nav__icon">QT</span>
+            <span>Usage & Limits</span>
+          </RouterLink>
           <RouterLink
             to="/profile"
             class="nav__item"
@@ -143,10 +189,10 @@
 
     <div class="main">
       <header class="topbar">
-        <div class="topbar__mobile-brand">
+        <RouterLink to="/" class="topbar__mobile-brand">
           <div class="brand__logo brand__logo--small">CM</div>
           <span>ChadMailer</span>
-        </div>
+        </RouterLink>
         <div class="topbar__breadcrumb">
           <span class="muted">{{ breadcrumb }}</span>
         </div>
@@ -158,6 +204,7 @@
           <span class="topbar__welcome">Welcome back</span>
           <div class="topbar__avatar">{{ userInitial }}</div>
           <span class="topbar__name">{{ displayName }}</span>
+          <span class="topbar__role">{{ roleLabel }}</span>
         </div>
       </header>
 
@@ -166,7 +213,7 @@
       </main>
 
       <nav class="mobile-nav" aria-label="Mobile navigation">
-        <RouterLink to="/" class="mobile-nav__item" active-class="mobile-nav__item--active">
+        <RouterLink to="/" class="mobile-nav__item" exact-active-class="mobile-nav__item--active">
           <span class="mobile-nav__icon">DB</span>
           <span>Home</span>
         </RouterLink>
@@ -195,6 +242,15 @@
           <span>Contacts</span>
         </RouterLink>
         <RouterLink
+          v-if="isAdmin"
+          to="/admin/dashboard"
+          class="mobile-nav__item"
+          active-class="mobile-nav__item--active"
+        >
+          <span class="mobile-nav__icon">AD</span>
+          <span>Admin</span>
+        </RouterLink>
+        <RouterLink
           to="/contact-tags"
           class="mobile-nav__item"
           active-class="mobile-nav__item--active"
@@ -217,10 +273,12 @@ const router = useRouter();
 const breadcrumb = computed(
   () => (route.meta.breadcrumb as string) || "Dashboard",
 );
-const displayName = computed(() => auth.state.user?.name || "Admin");
+const displayName = computed(() => auth.state.user?.name || "User");
 const userInitial = computed(() =>
   displayName.value.trim().slice(0, 1).toUpperCase(),
 );
+const isAdmin = computed(() => auth.state.user?.role === "admin");
+const roleLabel = computed(() => (isAdmin.value ? "Admin" : "User"));
 
 const isDark = ref(false);
 
@@ -314,6 +372,8 @@ async function handleLogout() {
   padding: 8px 10px 18px;
   border-bottom: 1px solid var(--color-sidebar-border);
   margin-bottom: 16px;
+  color: inherit;
+  text-decoration: none;
 }
 
 .brand__logo {
@@ -395,7 +455,7 @@ async function handleLogout() {
     var(--color-primary),
     var(--color-primary-soft)
   );
-  box-shadow: var(--shadow-primary);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.18);
 }
 
 .nav__item--active .nav__icon {
@@ -456,6 +516,7 @@ async function handleLogout() {
   color: var(--color-text-main);
   font-size: 14px;
   font-weight: 700;
+  text-decoration: none;
 }
 
 .topbar__right {
@@ -485,6 +546,15 @@ async function handleLogout() {
 .topbar__name {
   font-size: 13px;
   color: var(--color-text-main);
+}
+
+.topbar__role {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--color-primary-bg-active);
+  color: var(--color-primary-text);
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .muted {
@@ -536,7 +606,8 @@ async function handleLogout() {
 
   .topbar__breadcrumb,
   .topbar__welcome,
-  .topbar__name {
+  .topbar__name,
+  .topbar__role {
     display: none;
   }
 
@@ -566,7 +637,7 @@ async function handleLogout() {
     bottom: 10px;
     z-index: 30;
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(54px, 1fr));
     gap: 4px;
     padding: 8px;
     border: 1px solid var(--color-border-subtle);
