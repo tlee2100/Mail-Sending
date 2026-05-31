@@ -166,6 +166,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
 import { RouterLink } from "vue-router";
+import { adminApi } from "../api/adminApi";
 import { templatesApi } from "../api/templatesApi";
 import { ApiClientError } from "../api/http";
 import { useNotice } from "../composables/useNotice";
@@ -174,6 +175,7 @@ import {
   canDeleteTemplate,
   canManageTemplate,
   hasTemplateOwner,
+  isAdminUser,
   isTemplateOwnedByUser,
   templateOwnerLabel,
 } from "../utils/templateOwnership";
@@ -363,7 +365,14 @@ async function deleteTemplate() {
   }
   saving.value = true;
   try {
-    await templatesApi.deleteTemplate(auth.state.token, deleteTarget.value.id);
+    if (
+      isAdminUser(auth.state.user) &&
+      !isTemplateOwnedByUser(deleteTarget.value, auth.state.user)
+    ) {
+      await adminApi.deleteTemplate(auth.state.token, deleteTarget.value.id);
+    } else {
+      await templatesApi.deleteTemplate(auth.state.token, deleteTarget.value.id);
+    }
     notice.show("Template deleted.", "success");
     deleteTarget.value = null;
     await loadTemplates();

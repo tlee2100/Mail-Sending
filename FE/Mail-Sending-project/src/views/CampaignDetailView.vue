@@ -7,16 +7,27 @@
         ID #{{ route.params.id }} - {{ campaign.template_name || "No template" }} -
         {{ campaign.sender_email || "No sender" }}
       </p>
+      <p v-if="isAdmin && ownerText" class="page-subtitle">
+        Owner: {{ ownerText }}
+      </p>
       <p v-if="notice.message" class="notice" :class="`notice--${notice.tone}`">
         {{ notice.message }}
       </p>
     </div>
     <div class="hero-actions">
-      <button type="button" class="btn btn--primary" @click="startCampaign">
+      <button
+        type="button"
+        class="btn btn--primary"
+        :disabled="!canManageCampaign"
+        @click="startCampaign"
+      >
         Start
       </button>
       <button type="button" class="btn btn--secondary" @click="pauseCampaign">
         Pause
+      </button>
+      <button v-if="isAdmin" type="button" class="btn btn--danger" @click="deleteCampaign">
+        Delete
       </button>
     </div>
   </section>
@@ -129,13 +140,19 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
-import { useRoute, RouterLink } from "vue-router";
+import { useRoute, useRouter, RouterLink } from "vue-router";
+import { adminApi } from "../api/adminApi";
 import { campaignsApi } from "../api/campaignsApi";
 import { ApiClientError } from "../api/http";
 import { useNotice } from "../composables/useNotice";
 import { auth } from "../stores/auth";
+import {
+  canManageOwnRecord,
+  recordOwnerLabel,
+} from "../utils/recordOwnership";
 
 const route = useRoute();
+const router = useRouter();
 const notice = useNotice();
 const campaign = ref<Record<string, any> | null>(null);
 let refreshTimer: number | undefined;
@@ -145,6 +162,13 @@ const sentRate = computed(() => {
   if (!totalRecipients.value) return 0;
   return Math.round((Number(campaign.value?.sent_count || 0) / totalRecipients.value) * 100);
 });
+
+const isAdmin = computed(() => auth.state.user?.role === "admin");
+const canManageCampaign = computed(() =>
+  canManageOwnRecord(campaign.value, auth.state.user),
+);
+const ownerText = computed(() => recordOwnerLabel(campaign.value));
+
 const sentCount = computed(() => Number(campaign.value?.sent_count || 0));
 const openRate = computed(() => {
   if (!sentCount.value) return 0;
@@ -154,7 +178,6 @@ const clickRate = computed(() => {
   if (!sentCount.value) return 0;
   return Math.round((Number(campaign.value?.click_count || 0) / sentCount.value) * 100);
 });
-
 const statusBreakdown = computed(() => {
   const counts = campaign.value?.recipientsByStatus || {};
   const total = Math.max(1, totalRecipients.value);
@@ -193,6 +216,10 @@ async function loadCampaign(silent = false) {
 
 async function startCampaign() {
   if (!auth.state.token) return;
+  if (!canManageCampaign.value) {
+    notice.show("Admin should not start another user's campaign from the normal route.", "error");
+    return;
+  }
   try {
     await campaignsApi.start(auth.state.token, String(route.params.id));
     notice.show("Campaign started.", "success");
@@ -207,12 +234,30 @@ async function startCampaign() {
 async function pauseCampaign() {
   if (!auth.state.token) return;
   try {
-    await campaignsApi.pause(auth.state.token, String(route.params.id));
+    if (isAdmin.value && !canManageCampaign.value) {
+      await adminApi.pauseCampaign(auth.state.token, String(route.params.id));
+    } else {
+      await campaignsApi.pause(auth.state.token, String(route.params.id));
+    }
     notice.show("Campaign paused.", "success");
     await loadCampaign();
   } catch (error) {
     const message =
       error instanceof ApiClientError ? error.message : "Failed to pause campaign";
+    notice.show(message, "error");
+  }
+}
+
+async function deleteCampaign() {
+  if (!auth.state.token || !isAdmin.value) return;
+  if (!window.confirm("Delete this campaign?")) return;
+  try {
+    await adminApi.deleteCampaign(auth.state.token, String(route.params.id));
+    notice.show("Campaign deleted.", "success");
+    router.push({ name: "campaigns" });
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to delete campaign";
     notice.show(message, "error");
   }
 }

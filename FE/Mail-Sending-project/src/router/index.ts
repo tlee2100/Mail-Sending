@@ -26,6 +26,12 @@ const routes = [
         component: () => import("../views/DashboardView.vue"),
       },
       {
+        path: "403",
+        name: "access-denied",
+        meta: { title: "Access Denied", breadcrumb: "Access Denied" },
+        component: () => import("../views/AccessDeniedView.vue"),
+      },
+      {
         path: "instant-campaign",
         name: "instant-campaign",
         meta: {
@@ -85,6 +91,7 @@ const routes = [
         meta: {
           title: "Contact Fields",
           breadcrumb: "Dashboard > Email Contacts > Fields",
+          roles: ["admin"],
         },
         component: () => import("../views/ContactFieldsView.vue"),
       },
@@ -118,6 +125,7 @@ const routes = [
         meta: {
           title: "Payment Integration",
           breadcrumb: "Dashboard > Payment",
+          roles: ["admin"],
         },
         component: () => import("../views/PaymentIntegrationView.vue"),
       },
@@ -175,6 +183,57 @@ const routes = [
         meta: { title: "Security", breadcrumb: "Dashboard > Security" },
         component: () => import("../views/SecurityView.vue"),
       },
+      {
+        path: "usage",
+        name: "usage",
+        meta: { title: "Usage & Limits", breadcrumb: "Dashboard > Usage" },
+        component: () => import("../views/UsageLimitsView.vue"),
+      },
+      {
+        path: "admin",
+        redirect: { name: "admin-dashboard" },
+        meta: { roles: ["admin"] },
+      },
+      {
+        path: "admin/dashboard",
+        name: "admin-dashboard",
+        meta: {
+          title: "Admin Dashboard",
+          breadcrumb: "Admin > Dashboard",
+          roles: ["admin"],
+        },
+        component: () => import("../views/AdminDashboardView.vue"),
+      },
+      {
+        path: "admin/users",
+        name: "admin-users",
+        meta: {
+          title: "User Management",
+          breadcrumb: "Admin > Users",
+          roles: ["admin"],
+        },
+        component: () => import("../views/AdminUsersView.vue"),
+      },
+      {
+        path: "admin/audit-logs",
+        name: "admin-audit-logs",
+        meta: {
+          title: "Audit Logs",
+          breadcrumb: "Admin > Audit Logs",
+          roles: ["admin"],
+        },
+        component: () => import("../views/AdminAuditLogsView.vue"),
+      },
+      {
+        path: "admin/settings",
+        name: "admin-settings",
+        meta: {
+          title: "System Settings",
+          breadcrumb: "Admin > Settings",
+          roles: ["admin"],
+        },
+        component: () => import("../views/AdminSettingsView.vue"),
+      },
     ],
   },
   {
@@ -204,6 +263,12 @@ router.beforeEach(async (to, from, next) => {
 
   if (!auth.isAuthenticated.value) {
     next({ name: "login", query: { redirect: to.fullPath } });
+    return;
+  }
+
+  const allowedRoles = to.meta.roles as string[] | undefined;
+  if (allowedRoles?.length && !allowedRoles.includes(auth.state.user?.role || "")) {
+    next({ name: "access-denied" });
     return;
   }
 

@@ -11,11 +11,13 @@ type AuthState = {
   mode: "api" | "mock" | null;
 };
 
-type AuthUser = {
+export type AuthRole = "admin" | "user";
+
+export type AuthUser = {
   id: number;
   name: string;
   email: string;
-  role: string;
+  role: AuthRole;
   isActive: boolean;
 };
 
@@ -165,17 +167,37 @@ function syncProfileShadow(user: AuthUser | null) {
   mockWorkspace.syncProfile(user.name, user.email);
 }
 
+function normalizeRole(value: unknown): AuthRole {
+  return String(value || "").trim().toLowerCase() === "admin" ? "admin" : "user";
+}
+
+function normalizeAuthUser(user: Partial<AuthUser> & { id: string | number }): AuthUser {
+  return {
+    id: Number(user.id),
+    name: String(user.name || ""),
+    email: String(user.email || ""),
+    role: normalizeRole(user.role),
+    isActive: user.isActive !== false,
+  };
+}
+
 function normalizeMockUser(
-  user: { id: string; name: string; email: string },
-  role = "admin",
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    role?: string;
+    isActive?: boolean;
+  },
+  role?: AuthRole,
 ): AuthUser {
   const numericId = Number.parseInt(user.id.replace(/\D/g, "").slice(0, 9), 10);
   return {
     id: Number.isFinite(numericId) ? numericId : Date.now(),
     name: user.name,
     email: user.email,
-    role,
-    isActive: true,
+    role: role || normalizeRole(user.role),
+    isActive: user.isActive !== false,
   };
 }
 
@@ -200,6 +222,7 @@ const state = reactive<AuthState>({
 });
 
 const isAuthenticated = computed(() => !!state.token && !!state.user);
+const isAdmin = computed(() => state.user?.role === "admin");
 
 async function restore() {
   state.isLoading = true;
@@ -220,7 +243,7 @@ async function restore() {
         method: "GET",
         token,
       });
-      state.user = applyProfileOverride(res.data);
+      state.user = applyProfileOverride(normalizeAuthUser(res.data));
     }
     syncProfileShadow(state.user);
   } catch (e) {
@@ -246,12 +269,12 @@ async function login(payload: { email: string; password: string }) {
         body: payload,
       });
       state.token = res.data.token;
-      state.user = applyProfileOverride(res.data.user);
+      state.user = applyProfileOverride(normalizeAuthUser(res.data.user));
       state.mode = "api";
       writeToken(res.data.token);
       writeMode("api");
       syncProfileShadow(state.user);
-      return res.data.user;
+      return state.user;
     } catch (error) {
       if (!shouldFallbackToMock(error)) {
         throw error;
@@ -289,16 +312,16 @@ async function register(payload: {
         method: "POST",
         body: {
           ...payload,
-          role: payload.role || "admin",
+          role: normalizeRole(payload.role),
         },
       });
       state.token = res.data.token;
-      state.user = applyProfileOverride(res.data.user);
+      state.user = applyProfileOverride(normalizeAuthUser(res.data.user));
       state.mode = "api";
       writeToken(res.data.token);
       writeMode("api");
       syncProfileShadow(state.user);
-      return res.data.user;
+      return state.user;
     } catch (error) {
       if (!shouldFallbackToMock(error)) {
         throw error;
@@ -308,11 +331,10 @@ async function register(payload: {
         name: payload.name,
         email: payload.email,
         password: payload.password,
+        role: normalizeRole(payload.role),
       });
       state.token = res.token;
-      state.user = applyProfileOverride(
-        normalizeMockUser(res.user, payload.role || "admin"),
-      );
+      state.user = applyProfileOverride(normalizeMockUser(res.user));
       state.mode = "mock";
       writeToken(res.token);
       writeMode("mock");
@@ -403,6 +425,7 @@ async function updateProfile(payload: { name: string; email?: string }) {
 export const auth = {
   state,
   isAuthenticated,
+  isAdmin,
   restore,
   login,
   register,

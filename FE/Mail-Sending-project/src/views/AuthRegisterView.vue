@@ -87,7 +87,7 @@ async function handleSubmit() {
       name: name.value,
       email: email.value,
       password: password.value,
-      role: "admin",
+      role: "user",
     });
     router.push("/");
   } finally {
