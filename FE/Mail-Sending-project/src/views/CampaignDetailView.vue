@@ -65,6 +65,18 @@
           <span>Clicked</span>
           <strong>{{ campaign.click_count || 0 }}</strong>
         </div>
+        <div>
+          <span>Open rate</span>
+          <strong>{{ openRate }}%</strong>
+        </div>
+        <div>
+          <span>Click rate</span>
+          <strong>{{ clickRate }}%</strong>
+        </div>
+        <div>
+          <span>Unsubscribed</span>
+          <strong>{{ campaign.unsubscribe_count || 0 }}</strong>
+        </div>
       </div>
     </article>
 
@@ -107,7 +119,7 @@
       <h2 class="section-title">Actions</h2>
       <p>Refresh live data or inspect every recipient in this campaign.</p>
       <div class="stack">
-        <button type="button" class="btn btn--secondary" @click="loadCampaign">
+        <button type="button" class="btn btn--secondary" @click="loadCampaign()">
           Refresh
         </button>
         <RouterLink :to="`/campaigns/${route.params.id}/recipients`" class="btn btn--secondary">
@@ -127,7 +139,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRoute, useRouter, RouterLink } from "vue-router";
 import { adminApi } from "../api/adminApi";
 import { campaignsApi } from "../api/campaignsApi";
@@ -143,18 +155,29 @@ const route = useRoute();
 const router = useRouter();
 const notice = useNotice();
 const campaign = ref<Record<string, any> | null>(null);
+let refreshTimer: number | undefined;
 
 const totalRecipients = computed(() => Number(campaign.value?.total_recipients || 0));
 const sentRate = computed(() => {
   if (!totalRecipients.value) return 0;
   return Math.round((Number(campaign.value?.sent_count || 0) / totalRecipients.value) * 100);
 });
+
 const isAdmin = computed(() => auth.state.user?.role === "admin");
 const canManageCampaign = computed(() =>
   canManageOwnRecord(campaign.value, auth.state.user),
 );
 const ownerText = computed(() => recordOwnerLabel(campaign.value));
 
+const sentCount = computed(() => Number(campaign.value?.sent_count || 0));
+const openRate = computed(() => {
+  if (!sentCount.value) return 0;
+  return Math.round((Number(campaign.value?.open_count || 0) / sentCount.value) * 100);
+});
+const clickRate = computed(() => {
+  if (!sentCount.value) return 0;
+  return Math.round((Number(campaign.value?.click_count || 0) / sentCount.value) * 100);
+});
 const statusBreakdown = computed(() => {
   const counts = campaign.value?.recipientsByStatus || {};
   const total = Math.max(1, totalRecipients.value);
@@ -163,6 +186,7 @@ const statusBreakdown = computed(() => {
     { label: "Sent", key: "sent", color: "var(--color-success)" },
     { label: "Failed", key: "failed", color: "var(--color-danger-soft)" },
     { label: "Bounced", key: "bounced", color: "var(--color-orange)" },
+    { label: "Unsubscribed", key: "unsubscribed", color: "var(--color-text-muted)" },
   ].map((item) => {
     const count = Number(counts[item.key] || 0);
     return {
@@ -177,12 +201,13 @@ function formatDate(value?: string) {
   return value ? new Date(value).toLocaleString() : "-";
 }
 
-async function loadCampaign() {
+async function loadCampaign(silent = false) {
   if (!auth.state.token) return;
   try {
     const response = await campaignsApi.get(auth.state.token, String(route.params.id));
     campaign.value = response.data;
   } catch (error) {
+    if (silent) return;
     const message =
       error instanceof ApiClientError ? error.message : "Failed to load campaign";
     notice.show(message, "error");
@@ -239,6 +264,15 @@ async function deleteCampaign() {
 
 onMounted(() => {
   void loadCampaign();
+  refreshTimer = window.setInterval(() => {
+    void loadCampaign(true);
+  }, 5000);
+});
+
+onUnmounted(() => {
+  if (refreshTimer !== undefined) {
+    window.clearInterval(refreshTimer);
+  }
 });
 </script>
 

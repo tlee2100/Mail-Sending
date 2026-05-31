@@ -36,6 +36,17 @@ export const campaignsApi = {
     }>(`/campaigns/${id}/recipients`, { token }, query);
   },
 
+  recipientDetail(
+    token: string,
+    campaignId: string | number,
+    recipientId: string | number,
+  ) {
+    return apiRequest<Record<string, any>>(
+      `/campaigns/${campaignId}/recipients/${recipientId}`,
+      { token },
+    );
+  },
+
   create(
     token: string,
     body: {
