@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "ChadMailer",
+    "slug": "chadmailer-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.chadmailer.mobile"
+    },
+    "android": {
+      "package": "com.chadmailer.mobile",
+      "usesCleartextTraffic": true,
+      "permissions": ["INTERNET"]
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
