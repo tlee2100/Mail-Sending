@@ -20,6 +20,9 @@ export function LoginScreen({ onAuthenticated }: LoginScreenProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("frontend.demo@email.com");
   const [password, setPassword] = useState("Demo@123456");
+  const [otp, setOtp] = useState("");
+  const [otpEmail, setOtpEmail] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   async function submit() {
@@ -31,11 +34,20 @@ export function LoginScreen({ onAuthenticated }: LoginScreenProps) {
       Alert.alert("Missing info", "API URL, email and password are required.");
       return;
     }
+    if (registerMode && otpSent && !/^\d{6}$/.test(otp.trim())) {
+      Alert.alert("Missing OTP", "Enter the 6-digit OTP sent to your email.");
+      return;
+    }
 
     setSubmitting(true);
     try {
       const data = registerMode
-        ? await authApi.register(nextBaseUrl, {
+        ? otpSent
+          ? await authApi.verifyRegisterOtp(nextBaseUrl, {
+              email: otpEmail || trimmedEmail,
+              otp: otp.trim(),
+            })
+          : await authApi.register(nextBaseUrl, {
             name: name.trim() || trimmedEmail.split("@")[0],
             email: trimmedEmail,
             password: trimmedPassword,
@@ -46,7 +58,15 @@ export function LoginScreen({ onAuthenticated }: LoginScreenProps) {
             password: trimmedPassword,
           });
 
-      if (!data.token) {
+      if (registerMode && !otpSent) {
+        const targetEmail = "email" in data ? data.email : trimmedEmail;
+        setOtpEmail(targetEmail);
+        setOtpSent(true);
+        Alert.alert("OTP sent", `Enter the 6-digit OTP sent to ${targetEmail}.`);
+        return;
+      }
+
+      if (!("token" in data) || !data.token) {
         throw new Error("Login response did not include token.");
       }
 
@@ -110,10 +130,20 @@ export function LoginScreen({ onAuthenticated }: LoginScreenProps) {
                 value={password}
               />
 
+              {registerMode && otpSent ? (
+                <TextField
+                  keyboardType="number-pad"
+                  label="Email OTP"
+                  maxLength={6}
+                  onChangeText={setOtp}
+                  value={otp}
+                />
+              ) : null}
+
               <AppButton
                 loading={submitting}
                 onPress={submit}
-                title={registerMode ? "Create account" : "Sign in"}
+                title={registerMode ? (otpSent ? "Verify & Create" : "Send OTP") : "Sign in"}
               />
             </View>
 
