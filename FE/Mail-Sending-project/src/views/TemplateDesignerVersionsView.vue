@@ -82,8 +82,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
-import { useRoute } from "vue-router";
+import { computed, onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import {
   TemplateDesignerApiError,
   templateDesignerApi,
@@ -100,6 +100,7 @@ import {
 } from "../utils/templateOwnership";
 
 const route = useRoute();
+const router = useRouter();
 const templateId = computed(() => {
   const raw = Number(route.params.id);
   return Number.isFinite(raw) ? String(raw) : "";
@@ -148,6 +149,37 @@ function setRequestError(err: unknown) {
   requestError.value = "Request failed";
 }
 
+function extractTemplateId(template: Record<string, unknown>) {
+  const id = template.id ?? template.template_id ?? template.templateId;
+  return id === undefined || id === null ? "" : String(id);
+}
+
+async function validateRouteTemplateId(token: string) {
+  const [privateResponse, sharedResponse] = await Promise.all([
+    templatesApi.listTemplates(token, { pageSize: 100 }),
+    templatesApi.listSharedTemplates(token, { pageSize: 100 }),
+  ]);
+  const ids = [...privateResponse.data.items, ...sharedResponse.data.items]
+    .map((item) => extractTemplateId(item))
+    .filter(Boolean);
+
+  if (ids.includes(templateId.value)) {
+    return true;
+  }
+
+  const fallbackId = ids[0];
+  if (!fallbackId) {
+    requestError.value = "No templates found for your account. Create a template first.";
+    return false;
+  }
+
+  await router.replace({
+    name: "template-designer-versions",
+    params: { id: fallbackId },
+  });
+  return false;
+}
+
 async function loadVersions() {
   const token = authToken.value;
   requestError.value = "";
@@ -163,6 +195,9 @@ async function loadVersions() {
 
   isLoading.value = true;
   try {
+    const isValidRouteTemplate = await validateRouteTemplateId(token);
+    if (!isValidRouteTemplate) return;
+
     const templateRes = await templatesApi.getTemplate(token, templateId.value);
     currentTemplate.value = templateRes.data;
     versions.value = await templateDesignerApi.getVersions(
@@ -238,6 +273,13 @@ async function restoreVersion(versionId: string) {
 }
 
 onMounted(() => {
+  void loadVersions();
+});
+
+watch(templateId, (nextId, previousId) => {
+  if (!previousId || nextId === previousId) return;
+  currentTemplate.value = null;
+  selectedVersion.value = null;
   void loadVersions();
 });
 </script>

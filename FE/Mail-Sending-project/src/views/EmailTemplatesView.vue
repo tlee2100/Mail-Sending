@@ -9,7 +9,7 @@
       </p>
     </div>
     <button type="button" class="btn btn--primary" @click="openCreateModal">
-      + Create Template
+      + Create in Designer
     </button>
   </section>
 
@@ -89,7 +89,7 @@
       <h3>No templates found.</h3>
       <p>Create a template, then open it in Designer for drag-and-drop editing.</p>
       <button type="button" class="btn btn--primary" @click="openCreateModal">
-        Create Template
+        Create in Designer
       </button>
     </div>
   </section>
@@ -100,8 +100,8 @@
         <header class="modal-head">
           <div>
             <p class="eyebrow">{{ editingTemplate ? "Edit template" : "New template" }}</p>
-            <h2 class="modal-title">{{ editingTemplate ? "Update email template" : "Create email template" }}</h2>
-            <p class="modal-subtitle">Set base content here, then refine the layout in Template Designer.</p>
+            <h2 class="modal-title">{{ editingTemplate ? "Update template details" : "Create template for Designer" }}</h2>
+            <p class="modal-subtitle">Set the template details, then continue designing it in Template Designer.</p>
           </div>
           <button type="button" class="modal-close" @click="closeModal">x</button>
         </header>
@@ -123,20 +123,12 @@
             <input v-model="form.isActive" type="checkbox" />
             <span>Active template</span>
           </label>
-          <label class="field">
-            <span>Text content</span>
-            <textarea v-model="form.contentText" rows="7" placeholder="Hello {{name}},"></textarea>
-          </label>
-          <label class="field">
-            <span>HTML content</span>
-            <textarea v-model="form.contentHtml" rows="7" placeholder="<p>Hello {{name}}</p>"></textarea>
-          </label>
         </div>
 
         <footer class="modal-actions">
           <button type="button" class="btn btn--secondary" @click="closeModal">Cancel</button>
           <button type="submit" class="btn btn--primary" :disabled="saving">
-            {{ saving ? "Saving..." : editingTemplate ? "Save changes" : "Create template" }}
+            {{ saving ? "Saving..." : editingTemplate ? "Save changes" : "Create and design" }}
           </button>
         </footer>
       </form>
@@ -165,7 +157,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
-import { RouterLink } from "vue-router";
+import { RouterLink, useRouter } from "vue-router";
 import { adminApi } from "../api/adminApi";
 import { templatesApi } from "../api/templatesApi";
 import { ApiClientError } from "../api/http";
@@ -192,6 +184,7 @@ type TemplateRow = {
 };
 
 const notice = useNotice();
+const router = useRouter();
 const templates = ref<TemplateRow[]>([]);
 const searchQuery = ref("");
 const isModalOpen = ref(false);
@@ -221,21 +214,18 @@ const filteredTemplates = computed(() => {
 
 const activeCount = computed(() => templates.value.filter((item) => item.is_active).length);
 const latestTemplateName = computed(() => templates.value[0]?.template_name || "None");
-const designerTarget = computed(() => {
-  const current = templates.value[0];
-  return current ? `/templates/${current.id}/designer` : "/templates/1/designer";
-});
+const designerTarget = computed(() => "/templates/designer");
 const versionsTarget = computed(() => {
   const current = templates.value[0];
-  return current ? `/templates/${current.id}/designer/versions` : "/templates/1/designer/versions";
+  return current ? `/templates/${current.id}/designer/versions` : "/templates/designer";
 });
 
 function resetForm() {
   form.templateName = "";
   form.subject = "";
   form.previewText = "";
-  form.contentHtml = "<p>Hello {{name}},</p>";
-  form.contentText = "Hello {{name}},";
+  form.contentHtml = "";
+  form.contentText = "";
   form.isActive = true;
 }
 
@@ -313,6 +303,32 @@ function closeModal() {
   isModalOpen.value = false;
 }
 
+function extractTemplateId(template: Record<string, unknown>) {
+  const nestedTemplate =
+    template.template && typeof template.template === "object"
+      ? (template.template as Record<string, unknown>)
+      : null;
+  const nestedItem =
+    template.item && typeof template.item === "object"
+      ? (template.item as Record<string, unknown>)
+      : null;
+  const nestedRecord =
+    template.record && typeof template.record === "object"
+      ? (template.record as Record<string, unknown>)
+      : null;
+  const source = nestedTemplate || nestedItem || nestedRecord || template;
+  const id = source.id ?? source.template_id ?? source.templateId;
+  return id === undefined || id === null ? "" : String(id);
+}
+
+function findCreatedTemplateId(templateName: string) {
+  const normalizedName = templateName.trim().toLowerCase();
+  const match = templates.value.find(
+    (template) => template.template_name.trim().toLowerCase() === normalizedName,
+  );
+  return match ? extractTemplateId(match) : "";
+}
+
 function openDeleteModal(item: TemplateRow) {
   if (!canDelete(item)) {
     notice.show("Only the owner or an admin can delete this template.", "error");
@@ -325,28 +341,36 @@ async function submitTemplate() {
   if (!auth.state.token || saving.value) return;
   saving.value = true;
   try {
+    const defaultText = `Hello {{name}},`;
     const body = {
       templateName: form.templateName,
       subject: form.subject || undefined,
       previewText: form.previewText || undefined,
-      contentHtml: form.contentHtml || undefined,
-      contentText: form.contentText || undefined,
+      contentHtml: editingTemplate.value ? undefined : `<p>${defaultText}</p>`,
+      contentText: editingTemplate.value ? undefined : defaultText,
       isActive: form.isActive,
     };
 
     if (editingTemplate.value && canManage(editingTemplate.value)) {
       await templatesApi.updateTemplate(auth.state.token, editingTemplate.value.id, body);
       notice.show("Template updated.", "success");
+      closeModal();
+      await loadTemplates();
     } else {
-      await templatesApi.createTemplate(auth.state.token, body);
-      notice.show(
-        editingTemplate.value ? "Template copy created." : "Template created.",
-        "success",
-      );
+      const response = await templatesApi.createTemplate(auth.state.token, body);
+      let templateId = extractTemplateId(response.data);
+      closeModal();
+      await loadTemplates();
+      if (!templateId) {
+        templateId = findCreatedTemplateId(form.templateName);
+      }
+      if (templateId) {
+        notice.show("Template created. Opening Designer.", "success");
+        await router.push({ name: "template-designer", params: { id: templateId } });
+      } else {
+        notice.show("Template created, but the API did not return its ID.", "success");
+      }
     }
-
-    closeModal();
-    await loadTemplates();
   } catch (error) {
     const message =
       error instanceof ApiClientError ? error.message : "Failed to save template";

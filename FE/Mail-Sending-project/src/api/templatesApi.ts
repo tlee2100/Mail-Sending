@@ -1,19 +1,29 @@
 import { apiRequest } from "./http";
 
+type TemplateListQuery = {
+  page?: number;
+  pageSize?: number;
+  isActive?: boolean;
+  userId?: number;
+};
+
+type TemplateListResponse = {
+  items: Array<Record<string, unknown>>;
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+};
+
 export const templatesApi = {
-  listTemplates(
-    token: string,
-    query?: { page?: number; pageSize?: number; isActive?: boolean; userId?: number },
-  ) {
-    return apiRequest<{
-      items: Array<Record<string, unknown>>;
-      pagination: {
-        page: number;
-        pageSize: number;
-        total: number;
-        totalPages: number;
-      };
-    }>("/templates", { token }, query);
+  listTemplates(token: string, query?: TemplateListQuery) {
+    return apiRequest<TemplateListResponse>("/templates", { token }, query);
+  },
+
+  listSharedTemplates(token: string, query?: TemplateListQuery) {
+    return apiRequest<TemplateListResponse>("/templates/shared", { token }, query);
   },
 
   createTemplate(
