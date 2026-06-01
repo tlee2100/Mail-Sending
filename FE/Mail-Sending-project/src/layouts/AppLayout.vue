@@ -86,7 +86,7 @@
             <span>Contact Fields</span>
           </RouterLink>
           <RouterLink
-            to="/templates/1/designer"
+            to="/templates/designer"
             class="nav__item"
             active-class="nav__item--active"
           >

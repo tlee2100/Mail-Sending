@@ -154,6 +154,15 @@ const routes = [
         component: () => import("../views/CampaignRecipientsView.vue"),
       },
       {
+        path: "templates/designer",
+        name: "template-designer-entry",
+        meta: {
+          title: "Template Designer",
+          breadcrumb: "Dashboard > Email Templates > Designer",
+        },
+        component: () => import("../views/TemplateDesignerEntryView.vue"),
+      },
+      {
         path: "templates/:id/designer",
         name: "template-designer",
         meta: {

@@ -637,27 +637,115 @@ function isSampleKey(value: string): value is SampleKey {
   return sampleOptions.some((option) => option.key === value);
 }
 
+function sampleHtmlBlock(html: string): LayoutNode {
+  return {
+    type: "html",
+    props: { html },
+  };
+}
+
+function gradientBanner(
+  eyebrow: string,
+  title: string,
+  copy: string,
+  from: string,
+  to: string,
+  accent: string,
+): LayoutNode {
+  return sampleHtmlBlock(
+    `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 26px;border-collapse:collapse;"><tr><td style="padding:30px 28px;border-radius:24px;background:linear-gradient(135deg,${from},${to});color:#ffffff;"><div style="display:inline-block;margin:0 0 14px;padding:7px 12px;border-radius:999px;background:rgba(255,255,255,0.18);color:${accent};font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:800;">${eyebrow}</div><h2 style="margin:0 0 10px;color:#ffffff;font-size:34px;line-height:1.14;font-weight:800;">${title}</h2><p style="margin:0;color:rgba(255,255,255,0.88);font-size:16px;line-height:1.6;">${copy}</p></td></tr></table>`,
+  );
+}
+
+function statStrip(
+  left: string,
+  center: string,
+  right: string,
+  bg: string,
+  border: string,
+): LayoutNode {
+  return sampleHtmlBlock(
+    `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 28px;border-collapse:separate;border-spacing:10px 0;"><tr><td width="33.33%" style="padding:16px;border:1px solid ${border};border-radius:18px;background:${bg};color:#111827;font-size:14px;line-height:1.5;"><strong style="display:block;margin-bottom:5px;font-size:18px;">${left.split("|")[0]}</strong>${left.split("|")[1] || ""}</td><td width="33.33%" style="padding:16px;border:1px solid ${border};border-radius:18px;background:${bg};color:#111827;font-size:14px;line-height:1.5;"><strong style="display:block;margin-bottom:5px;font-size:18px;">${center.split("|")[0]}</strong>${center.split("|")[1] || ""}</td><td width="33.33%" style="padding:16px;border:1px solid ${border};border-radius:18px;background:${bg};color:#111827;font-size:14px;line-height:1.5;"><strong style="display:block;margin-bottom:5px;font-size:18px;">${right.split("|")[0]}</strong>${right.split("|")[1] || ""}</td></tr></table>`,
+  );
+}
+
+function colorCallout(
+  title: string,
+  copy: string,
+  bg: string,
+  border: string,
+  color = "#111827",
+): LayoutNode {
+  return sampleHtmlBlock(
+    `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 24px;border-collapse:collapse;"><tr><td style="padding:20px 22px;border-radius:20px;border:1px solid ${border};background:${bg};"><h3 style="margin:0 0 8px;color:${color};font-size:20px;line-height:1.25;">${title}</h3><p style="margin:0;color:${color};opacity:.82;font-size:15px;line-height:1.6;">${copy}</p></td></tr></table>`,
+  );
+}
+
 const samples: Record<SampleKey, { root: LayoutNode }> = {
   aiShowcase: {
     root: {
       type: "section",
       children: [
+        gradientBanner(
+          "AI launch kit",
+          "Create smarter campaigns in minutes",
+          "A colorful starter email for teams using AI to plan, write, design, and review campaign performance.",
+          "#2563eb",
+          "#9333ea",
+          "#dbeafe",
+        ),
+        {
+          type: "image",
+          props: {
+            src: "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=1400&q=80",
+            alt: "AI workspace dashboard with automation insights",
+            width: "720",
+          },
+        },
         {
           type: "text",
           props: {
-            content: "Welcome to your AI Pro workspace",
-            fontSize: "28",
+            content: "Your AI-powered workspace is ready, {{name}}",
+            fontSize: "32",
             color: "#202124",
-            align: "left",
+            align: "center",
           },
         },
         {
           type: "text",
           props: {
             content:
-              "Explore the tools included in your plan, from writing assistance to research, video, and coding workflows.",
-            fontSize: "16",
+              "Bring campaign planning, content drafting, visual generation, and performance review into one faster workflow built for {{company}}.",
+            fontSize: "17",
             color: "#5f6368",
+            align: "center",
+          },
+        },
+        {
+          type: "button",
+          props: {
+            label: "Open AI Workspace",
+            href: "https://example.com/ai-workspace",
+            backgroundColor: "#1a73e8",
+            textColor: "#ffffff",
+            borderRadius: "999",
+            padding: "13px 24px",
+          },
+        },
+        statStrip(
+          "4x|Faster campaign planning",
+          "12+|Reusable AI prompts",
+          "1 place|Brief, assets, and review",
+          "#eef2ff",
+          "#c7d2fe",
+        ),
+        { type: "divider" },
+        {
+          type: "text",
+          props: {
+            content: "What you can build this week",
+            fontSize: "22",
+            color: "#202124",
             align: "left",
           },
         },
@@ -721,6 +809,31 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
             imageHeight: "220",
           },
         },
+        {
+          type: "columns",
+          props: {
+            leftContent: "Included in your workspace: brand-safe prompts, reusable email blocks, campaign summaries, and AI image assets.",
+            rightContent: "Recommended next step: create one product announcement, one nurture email, and one social teaser from the same brief.",
+            gap: "24",
+            color: "#3c4043",
+          },
+        },
+        colorCallout(
+          "Designer tip",
+          "Swap the images, update the benefit cards, and keep the final footer for compliance.",
+          "#f5f3ff",
+          "#ddd6fe",
+          "#4c1d95",
+        ),
+        {
+          type: "text",
+          props: {
+            content: "You are receiving this because {{email}} is connected to {{company}}. Unsubscribe: {{unsubscribe_url}}",
+            fontSize: "12",
+            color: "#80868b",
+            align: "center",
+          },
+        },
       ],
     },
   },
@@ -728,21 +841,103 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
     root: {
       type: "section",
       children: [
+        gradientBanner(
+          "Welcome sequence",
+          "A polished first impression",
+          "Use a warm hero, a clear setup checklist, and one primary action to guide new users.",
+          "#0891b2",
+          "#2563eb",
+          "#cffafe",
+        ),
         {
-          type: "text",
-          props: { content: "Hello {{name}}, welcome to ChadMailer." },
+          type: "image",
+          props: {
+            src: "https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=1400&q=80",
+            alt: "Team planning a customer onboarding workflow",
+            width: "720",
+          },
         },
         {
           type: "text",
           props: {
-            content: "Your workspace is ready. Start your first campaign now.",
+            content: "Welcome to ChadMailer, {{name}}",
+            fontSize: "32",
+            color: "#111827",
+            align: "center",
+          },
+        },
+        {
+          type: "text",
+          props: {
+            content:
+              "Your workspace is ready. Use this short checklist to send your first polished campaign with confidence.",
+            fontSize: "16",
+            color: "#4b5563",
+            align: "center",
+          },
+        },
+        {
+          type: "twoColumnGrid",
+          props: {
+            leftImageSrc:
+              "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=900&q=80",
+            leftImageAlt: "People organizing contacts",
+            leftTitle: "1. Import contacts",
+            leftDescription:
+              "Upload your list, map custom fields, and organize recipients with tags for more relevant targeting.",
+            leftCtaLabel: "Import contacts",
+            leftCtaHref: "https://example.com/contacts",
+            rightImageSrc:
+              "https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&w=900&q=80",
+            rightImageAlt: "Email template design on a laptop",
+            rightTitle: "2. Design your email",
+            rightDescription:
+              "Start from a shared template, personalize copy, and preview desktop and mobile output before sending.",
+            rightCtaLabel: "Open designer",
+            rightCtaHref: "https://example.com/templates",
+            gap: "26",
+            imageHeight: "170",
+          },
+        },
+        statStrip(
+          "Step 1|Import contacts",
+          "Step 2|Choose a design",
+          "Step 3|Send and learn",
+          "#ecfeff",
+          "#a5f3fc",
+        ),
+        {
+          type: "imageCard",
+          props: {
+            imageSrc:
+              "https://images.unsplash.com/photo-1553877522-43269d4ea984?auto=format&fit=crop&w=1200&q=80",
+            imageAlt: "Campaign analytics dashboard",
+            title: "3. Track every result",
+            description:
+              "Review delivery, opens, clicks, replies, and unsubscribes from a single campaign dashboard after launch.",
+            ctaLabel: "View dashboard",
+            ctaHref: "https://example.com/dashboard",
+            imageHeight: "210",
           },
         },
         {
           type: "button",
           props: {
-            label: "Open Dashboard",
+            label: "Start My First Campaign",
             href: "https://example.com/dashboard",
+            backgroundColor: "#2563eb",
+            textColor: "#ffffff",
+            borderRadius: "10",
+            padding: "13px 22px",
+          },
+        },
+        {
+          type: "text",
+          props: {
+            content: "Need help? Reply to this email and our onboarding team will guide you through setup.",
+            fontSize: "13",
+            color: "#6b7280",
+            align: "center",
           },
         },
       ],
@@ -752,15 +947,89 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
     root: {
       type: "section",
       children: [
+        gradientBanner(
+          "Limited-time deal",
+          "A bolder promotion layout",
+          "High contrast colors, a clear discount, and scannable benefits make the offer easier to act on.",
+          "#dc2626",
+          "#f97316",
+          "#fee2e2",
+        ),
         {
           type: "text",
-          props: { content: "Spring Promo: save 30% this week only." },
+          props: {
+            content: "Private offer for {{name}}",
+            fontSize: "16",
+            color: "#dc2626",
+            align: "center",
+          },
         },
-        { type: "divider" },
-        { type: "text", props: { content: "Use code SPRING30 at checkout." } },
+        {
+          type: "text",
+          props: {
+            content: "Save 30% on your next upgrade this week only",
+            fontSize: "34",
+            color: "#111827",
+            align: "center",
+          },
+        },
+        {
+          type: "image",
+          props: {
+            src: "https://images.unsplash.com/photo-1607082349566-187342175e2f?auto=format&fit=crop&w=1400&q=80",
+            alt: "Limited time online promotion",
+            width: "720",
+          },
+        },
+        {
+          type: "columns",
+          props: {
+            leftContent: "Use code SPRING30 at checkout. Valid until Sunday at 11:59 PM.",
+            rightContent: "Your current plan keeps working as usual. Upgrade only when you are ready.",
+            gap: "24",
+            color: "#374151",
+          },
+        },
+        statStrip(
+          "30%|This week only",
+          "SPRING30|Use at checkout",
+          "Sunday|Offer deadline",
+          "#fff7ed",
+          "#fed7aa",
+        ),
+        {
+          type: "twoColumnGrid",
+          props: {
+            leftImageSrc:
+              "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=900&q=80",
+            leftImageAlt: "Analytics charts",
+            leftTitle: "More campaign analytics",
+            leftDescription:
+              "Understand opens, clicks, engagement trends, and delivery quality across every send.",
+            leftCtaLabel: "Compare plans",
+            leftCtaHref: "https://example.com/plans",
+            rightImageSrc:
+              "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=900&q=80",
+            rightImageAlt: "Marketing team collaboration",
+            rightTitle: "Better team workflows",
+            rightDescription:
+              "Share templates, approve content, and reuse high-performing blocks across campaigns.",
+            rightCtaLabel: "See team features",
+            rightCtaHref: "https://example.com/team",
+            gap: "26",
+            imageHeight: "170",
+          },
+        },
         {
           type: "button",
-          props: { label: "Claim Discount", href: "https://example.com/promo" },
+          props: {
+            label: "Claim 30% Discount",
+            href: "https://example.com/promo",
+            backgroundColor: "#dc2626",
+            textColor: "#ffffff",
+            borderRadius: "999",
+            padding: "14px 26px",
+          },
         },
       ],
     },
@@ -769,22 +1038,78 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
     root: {
       type: "section",
       children: [
+        gradientBanner(
+          "Billing reminder",
+          "Keep service active",
+          "A calm payment email with clear invoice details, secure payment options, and a QR shortcut.",
+          "#0f766e",
+          "#14b8a6",
+          "#ccfbf1",
+        ),
         {
           type: "text",
           props: {
-            content: "Hi {{name}}, your invoice INV-2026-042 is due in 2 days.",
+            content: "Payment reminder for invoice {{orderId}}",
+            fontSize: "28",
+            color: "#111827",
+            align: "left",
           },
         },
         {
           type: "text",
           props: {
             content:
-              "Amount: {{amount}}. Please complete payment to avoid interruption.",
+              "Hi {{name}}, this is a friendly reminder that your invoice for {{amount}} is due soon. Paying on time keeps your account active without interruption.",
+            fontSize: "16",
+            color: "#4b5563",
+            align: "left",
+          },
+        },
+        {
+          type: "columns",
+          props: {
+            leftContent: "Invoice: {{orderId}}\nAmount due: {{amount}}\nBilling email: {{email}}",
+            rightContent: "Due date: In 2 days\nStatus: Awaiting payment\nSupport: billing@example.com",
+            gap: "30",
+            color: "#374151",
+          },
+        },
+        colorCallout(
+          "Payment summary",
+          "Invoice {{orderId}} is linked to {{email}}. Complete payment before the due date to avoid service interruption.",
+          "#ecfdf5",
+          "#99f6e4",
+          "#064e3b",
+        ),
+        {
+          type: "qrcode",
+          props: {
+            value: "https://example.com/billing/pay?invoice={{orderId}}&email={{email}}",
+            title: "Scan to pay securely",
+            caption: "You can also use the payment button below.",
+            size: "190",
           },
         },
         {
           type: "button",
-          props: { label: "Pay Invoice", href: "https://example.com/billing" },
+          props: {
+            label: "Pay Invoice",
+            href: "https://example.com/billing",
+            backgroundColor: "#0f766e",
+            textColor: "#ffffff",
+            borderRadius: "10",
+            padding: "13px 22px",
+          },
+        },
+        {
+          type: "text",
+          props: {
+            content:
+              "If you already paid, thank you. This message may have been sent before the payment finished processing.",
+            fontSize: "13",
+            color: "#6b7280",
+            align: "left",
+          },
         },
       ],
     },
@@ -793,18 +1118,83 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
     root: {
       type: "section",
       children: [
+        gradientBanner(
+          "Weekly digest",
+          "Ideas worth saving",
+          "A magazine-style newsletter with a featured story, quick reads, and a bright editorial rhythm.",
+          "#4f46e5",
+          "#06b6d4",
+          "#e0e7ff",
+        ),
         {
           type: "image",
           props: {
-            src: "https://dummyimage.com/640x220/c7d2fe/1e1b4b&text=Weekly+News",
-            alt: "Weekly newsletter cover",
+            src: "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1400&q=80",
+            alt: "Curated weekly newsletter reading desk",
+            width: "720",
+          },
+        },
+        {
+          type: "text",
+          props: {
+            content: "This week in growth marketing",
+            fontSize: "32",
+            color: "#111827",
+            align: "left",
           },
         },
         {
           type: "text",
           props: {
             content:
-              "Top stories this week: product updates, growth tips, and customer spotlight.",
+              "A short, useful roundup for {{company}}: deliverability shifts, campaign ideas, and customer lifecycle examples worth saving.",
+            fontSize: "16",
+            color: "#4b5563",
+            align: "left",
+          },
+        },
+        {
+          type: "imageCard",
+          props: {
+            imageSrc:
+              "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80",
+            imageAlt: "Marketing analytics dashboard",
+            title: "Feature story: the 3 metrics worth checking before every send",
+            description:
+              "Open rate alone is not enough. This guide shows how delivery rate, click distribution, and reply quality help you improve the next campaign.",
+            ctaLabel: "Read the guide",
+            ctaHref: "https://example.com/newsletter/metrics",
+            imageHeight: "220",
+          },
+        },
+        statStrip(
+          "1 guide|Better metrics",
+          "2 ideas|Lifecycle plays",
+          "1 story|Customer spotlight",
+          "#eef2ff",
+          "#c7d2fe",
+        ),
+        {
+          type: "twoColumnGrid",
+          props: {
+            leftImageSrc:
+              "https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=900&q=80",
+            leftImageAlt: "Team discussing customer lifecycle",
+            leftTitle: "Lifecycle idea",
+            leftDescription:
+              "Send a 3-part onboarding sequence that teaches one product outcome per email instead of listing features.",
+            leftCtaLabel: "See sequence",
+            leftCtaHref: "https://example.com/newsletter/lifecycle",
+            rightImageSrc:
+              "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80",
+            rightImageAlt: "Customer story workspace",
+            rightTitle: "Customer spotlight",
+            rightDescription:
+              "How a small SaaS team reduced manual follow-up by pairing tags with reusable email templates.",
+            rightCtaLabel: "Read story",
+            rightCtaHref: "https://example.com/newsletter/customer",
+            gap: "26",
+            imageHeight: "170",
           },
         },
         {
@@ -812,6 +1202,19 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
           props: {
             label: "Read Full Newsletter",
             href: "https://example.com/news",
+            backgroundColor: "#4f46e5",
+            textColor: "#ffffff",
+            borderRadius: "10",
+            padding: "13px 22px",
+          },
+        },
+        {
+          type: "text",
+          props: {
+            content: "You are subscribed as {{email}}. Manage preferences or unsubscribe: {{unsubscribe_url}}",
+            fontSize: "12",
+            color: "#6b7280",
+            align: "center",
           },
         },
       ],
@@ -821,26 +1224,95 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
     root: {
       type: "section",
       children: [
+        gradientBanner(
+          "Product launch",
+          "Make the announcement feel premium",
+          "A colorful launch email with hero media, feature cards, social proof, and one focused CTA.",
+          "#0f172a",
+          "#7c3aed",
+          "#ede9fe",
+        ),
         {
           type: "image",
           props: {
-            src: "https://dummyimage.com/640x220/bae6fd/082f49&text=New+Product+Launch",
-            alt: "Product launch hero",
+            src: "https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=1400&q=80",
+            alt: "Modern product launch scene",
+            width: "720",
+          },
+        },
+        {
+          type: "text",
+          props: {
+            content: "Introducing NovaSend 2.0",
+            fontSize: "34",
+            color: "#0f172a",
+            align: "center",
           },
         },
         {
           type: "text",
           props: {
             content:
-              "Introducing NovaSend 2.0 with smarter automation and better analytics.",
+              "A faster way for {{company}} to design, approve, send, and learn from every customer email.",
+            fontSize: "17",
+            color: "#475569",
+            align: "center",
           },
         },
         { type: "divider" },
+        {
+          type: "twoColumnGrid",
+          props: {
+            leftImageSrc:
+              "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=900&q=80",
+            leftImageAlt: "Automation dashboard",
+            leftTitle: "Visual automations",
+            leftDescription:
+              "Build welcome, win-back, billing, and announcement flows with fewer manual steps.",
+            leftCtaLabel: "Explore automations",
+            leftCtaHref: "https://example.com/launch/automations",
+            rightImageSrc:
+              "https://images.unsplash.com/photo-1556155092-490a1ba16284?auto=format&fit=crop&w=900&q=80",
+            rightImageAlt: "Content approval board",
+            rightTitle: "Approval workflows",
+            rightDescription:
+              "Keep brand, legal, and marketing teams aligned before the email reaches customers.",
+            rightCtaLabel: "See approvals",
+            rightCtaHref: "https://example.com/launch/approvals",
+            gap: "26",
+            imageHeight: "170",
+          },
+        },
+        statStrip(
+          "New|Visual automations",
+          "Faster|Approval flows",
+          "Live|Campaign insights",
+          "#f8fafc",
+          "#cbd5e1",
+        ),
+        {
+          type: "imageCard",
+          props: {
+            imageSrc:
+              "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1200&q=80",
+            imageAlt: "Product launch team presentation",
+            title: "Built for faster campaign teams",
+            description:
+              "Reusable blocks, shared templates, version history, and live previews help your team move from idea to published campaign faster.",
+            ctaLabel: "Watch launch demo",
+            ctaHref: "https://example.com/launch/demo",
+            imageHeight: "220",
+          },
+        },
         {
           type: "button",
           props: {
             label: "See New Features",
             href: "https://example.com/launch",
+            backgroundColor: "#0f172a",
+            textColor: "#ffffff",
+            borderRadius: "999",
+            padding: "14px 26px",
           },
         },
       ],
@@ -850,18 +1322,65 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
     root: {
       type: "section",
       children: [
+        gradientBanner(
+          "Live event",
+          "Reserve your seat",
+          "A vivid invitation layout with a strong agenda, QR registration, and clear attendance details.",
+          "#7c3aed",
+          "#ec4899",
+          "#fce7f3",
+        ),
         {
-          type: "text",
+          type: "image",
           props: {
-            content:
-              "You are invited: Growth Marketing Webinar - April 12, 10:00 AM.",
+            src: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&w=1400&q=80",
+            alt: "Live marketing webinar audience",
+            width: "720",
           },
         },
         {
           type: "text",
           props: {
             content:
-              "Join experts sharing practical email strategies for 2026.",
+              "You are invited: Growth Marketing Webinar",
+            fontSize: "32",
+            color: "#111827",
+            align: "center",
+          },
+        },
+        {
+          type: "text",
+          props: {
+            content:
+              "Join us on April 12 at 10:00 AM for practical email strategies your team can apply the same day.",
+            fontSize: "16",
+            color: "#4b5563",
+            align: "center",
+          },
+        },
+        {
+          type: "columns",
+          props: {
+            leftContent: "Session 1: Improve inbox placement\nSession 2: Design better lifecycle emails",
+            rightContent: "Session 3: Measure campaign quality\nLive Q&A: Ask the panel your questions",
+            gap: "28",
+            color: "#374151",
+          },
+        },
+        statStrip(
+          "60 min|Practical sessions",
+          "Live Q&A|Ask experts",
+          "Replay|Sent after event",
+          "#fdf2f8",
+          "#fbcfe8",
+        ),
+        {
+          type: "qrcode",
+          props: {
+            value: "https://example.com/events/register?email={{email}}",
+            title: "Scan to reserve your seat",
+            caption: "Registration is free for ChadMailer users.",
+            size: "180",
           },
         },
         {
@@ -869,6 +1388,19 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
           props: {
             label: "Reserve Your Seat",
             href: "https://example.com/events",
+            backgroundColor: "#7c3aed",
+            textColor: "#ffffff",
+            borderRadius: "10",
+            padding: "13px 22px",
+          },
+        },
+        {
+          type: "text",
+          props: {
+            content: "Can not attend live? Register anyway and we will send the recording to {{email}}.",
+            fontSize: "13",
+            color: "#6b7280",
+            align: "center",
           },
         },
       ],
@@ -878,25 +1410,90 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
     root: {
       type: "section",
       children: [
+        gradientBanner(
+          "Win-back campaign",
+          "Bring customers back with color",
+          "A warm re-engagement email with saved-workspace reassurance and a time-limited comeback offer.",
+          "#ea580c",
+          "#facc15",
+          "#ffedd5",
+        ),
+        {
+          type: "image",
+          props: {
+            src: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1400&q=80",
+            alt: "Warm customer return offer",
+            width: "720",
+          },
+        },
         {
           type: "text",
           props: {
             content:
-              "We miss you, {{name}}. Here is a special offer to come back.",
+              "We saved your workspace, {{name}}",
+            fontSize: "32",
+            color: "#111827",
+            align: "center",
           },
         },
-        { type: "divider" },
         {
           type: "text",
           props: {
-            content: "Use code COMEBACK20 and save 20% on your next plan.",
+            content:
+              "Your previous templates, tags, and campaign history are still here. Come back this week and save 20% on your next plan.",
+            fontSize: "16",
+            color: "#4b5563",
+            align: "center",
           },
         },
+        {
+          type: "twoColumnGrid",
+          props: {
+            leftImageSrc:
+              "https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=900&q=80",
+            leftImageAlt: "Saved marketing workspace",
+            leftTitle: "Pick up where you left off",
+            leftDescription:
+              "Continue editing saved templates and reuse the recipient tags you already created.",
+            leftCtaLabel: "Open workspace",
+            leftCtaHref: "https://example.com/workspace",
+            rightImageSrc:
+              "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=900&q=80",
+            rightImageAlt: "Discount checkout",
+            rightTitle: "Comeback offer",
+            rightDescription:
+              "Use code COMEBACK20 before Sunday to save 20% on your next billing cycle.",
+            rightCtaLabel: "Apply discount",
+            rightCtaHref: "https://example.com/reactivate",
+            gap: "26",
+            imageHeight: "170",
+          },
+        },
+        colorCallout(
+          "Comeback code",
+          "Use COMEBACK20 before Sunday and save 20% on your next billing cycle.",
+          "#fff7ed",
+          "#fdba74",
+          "#7c2d12",
+        ),
         {
           type: "button",
           props: {
             label: "Reactivate Now",
             href: "https://example.com/reactivate",
+            backgroundColor: "#ea580c",
+            textColor: "#ffffff",
+            borderRadius: "999",
+            padding: "14px 26px",
+          },
+        },
+        {
+          type: "text",
+          props: {
+            content: "Not ready yet? Update your email preferences here: {{unsubscribe_url}}",
+            fontSize: "12",
+            color: "#6b7280",
+            align: "center",
           },
         },
       ],
@@ -906,23 +1503,76 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
     root: {
       type: "section",
       children: [
+        gradientBanner(
+          "Customer research",
+          "Make feedback feel valuable",
+          "A friendly survey email with a clear reason, colorful context, and a low-friction CTA.",
+          "#2563eb",
+          "#14b8a6",
+          "#dbeafe",
+        ),
         {
           type: "text",
           props: {
-            content: "Hi {{name}}, thank you for using ChadMailer this month.",
+            content: "How was your experience, {{name}}?",
+            fontSize: "30",
+            color: "#111827",
+            align: "center",
           },
         },
         {
           type: "text",
           props: {
-            content: "Can you share a 2-minute feedback to help us improve?",
+            content:
+              "Your feedback helps us improve the features your team uses most. The survey takes about two minutes.",
+            fontSize: "16",
+            color: "#4b5563",
+            align: "center",
           },
         },
+        {
+          type: "image",
+          props: {
+            src: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1400&q=80",
+            alt: "Customer feedback notes and survey planning",
+            width: "720",
+          },
+        },
+        {
+          type: "columns",
+          props: {
+            leftContent: "Tell us what worked: template design, sending workflows, analytics, or contact management.",
+            rightContent: "Tell us what felt slow: setup, approval, importing, previewing, or reporting.",
+            gap: "28",
+            color: "#374151",
+          },
+        },
+        statStrip(
+          "2 min|Short survey",
+          "5 questions|Focused feedback",
+          "Next month|Improvement summary",
+          "#eff6ff",
+          "#bfdbfe",
+        ),
         {
           type: "button",
           props: {
             label: "Give Feedback",
             href: "https://example.com/feedback",
+            backgroundColor: "#2563eb",
+            textColor: "#ffffff",
+            borderRadius: "10",
+            padding: "13px 22px",
+          },
+        },
+        {
+          type: "text",
+          props: {
+            content:
+              "As a thank you, we will send a summary of the most requested improvements to {{email}} next month.",
+            fontSize: "13",
+            color: "#6b7280",
+            align: "center",
           },
         },
       ],
@@ -1488,9 +2138,35 @@ function extractTemplateId(template: Record<string, unknown>) {
   return id === undefined || id === null ? "" : String(id);
 }
 
+async function validateRouteTemplateId(token: string) {
+  const [privateResponse, sharedResponse] = await Promise.all([
+    templatesApi.listTemplates(token, { pageSize: 100 }),
+    templatesApi.listSharedTemplates(token, { pageSize: 100 }),
+  ]);
+  const ids = [...privateResponse.data.items, ...sharedResponse.data.items]
+    .map((item) => extractTemplateId(item))
+    .filter(Boolean);
+
+  if (ids.includes(templateId.value)) {
+    return true;
+  }
+
+  const fallbackId = ids[0];
+  if (!fallbackId) {
+    requestError.value = "No templates found for your account. Create a template first.";
+    return false;
+  }
+
+  await router.replace({ name: "template-designer", params: { id: fallbackId } });
+  return false;
+}
+
 async function ensureCurrentTemplate(token: string) {
   if (currentTemplate.value) return currentTemplate.value;
   if (!templateId.value) return null;
+
+  const isValidRouteTemplate = await validateRouteTemplateId(token);
+  if (!isValidRouteTemplate) return null;
 
   const response = await templatesApi.getTemplate(token, templateId.value);
   currentTemplate.value = response.data as TemplateContent;
@@ -1592,6 +2268,9 @@ async function loadDraft() {
 
   isRequesting.value = true;
   try {
+    const isValidRouteTemplate = await validateRouteTemplateId(token);
+    if (!isValidRouteTemplate) return;
+
     const templateRes = await templatesApi.getTemplate(token, templateId.value);
     currentTemplate.value = templateRes.data as TemplateContent;
 
@@ -2051,6 +2730,12 @@ watch(
   },
   { deep: true },
 );
+
+watch(templateId, (nextId, previousId) => {
+  if (!previousId || nextId === previousId) return;
+  currentTemplate.value = null;
+  void loadDraft();
+});
 
 applyJsonToCanvas();
 pushHistory();
