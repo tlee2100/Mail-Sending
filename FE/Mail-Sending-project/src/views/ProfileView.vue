@@ -25,28 +25,72 @@
     <div class="profile-fields">
       <div class="input-wrap">
         <label>Full Name</label>
-        <input v-model="fullName" type="text" />
+        <input v-model="fullName" type="text" :disabled="auth.state.isLoading" />
       </div>
       <div class="input-wrap">
         <label>Email Address</label>
-        <input v-model="email" type="email" />
+        <input v-model="email" type="email" :disabled="auth.state.isLoading" />
+      </div>
+    </div>
+    <div v-if="pendingEmail" class="otp-panel">
+      <div>
+        <h3 class="otp-title">Confirm New Email</h3>
+        <p class="otp-copy">
+          We sent a 6-digit OTP to <strong>{{ pendingEmail }}</strong>. Enter it
+          below to finish updating your account email.
+        </p>
+        <p v-if="debugOtp" class="otp-debug">Demo OTP: {{ debugOtp }}</p>
+      </div>
+      <div class="otp-form">
+        <div class="input-wrap">
+          <label>Email OTP</label>
+          <input
+            v-model="otp"
+            type="text"
+            inputmode="numeric"
+            maxlength="6"
+            placeholder="123456"
+            :disabled="auth.state.isLoading"
+          />
+        </div>
+        <button
+          type="button"
+          class="btn btn--primary"
+          :disabled="auth.state.isLoading"
+          @click="verifyEmailOtp"
+        >
+          Verify Email
+        </button>
+        <button
+          type="button"
+          class="btn btn--secondary"
+          :disabled="auth.state.isLoading"
+          @click="cancelEmailOtp"
+        >
+          Cancel
+        </button>
       </div>
     </div>
     <div class="account-info">
       <h3 class="info-title">Account Information</h3>
       <p class="info-row">
         Account Created:
-        <span>{{ new Date(mockWorkspace.state.profile.createdAt).toLocaleDateString() }}</span>
+        <span>{{ formatDate(auth.state.user?.createdAt) }}</span>
       </p>
       <p class="info-row">
         Last Updated:
-        <span>{{ new Date(mockWorkspace.state.profile.updatedAt).toLocaleDateString() }}</span>
+        <span>{{ formatDate(auth.state.user?.updatedAt) }}</span>
       </p>
     </div>
     <div class="profile-actions">
       <RouterLink to="/" class="link-back">Back to Dashboard</RouterLink>
-      <button type="button" class="btn btn--primary" @click="saveProfile">
-        Update Profile
+      <button
+        type="button"
+        class="btn btn--primary"
+        :disabled="auth.state.isLoading"
+        @click="saveProfile"
+      >
+        {{ auth.state.isLoading ? "Saving..." : "Update Profile" }}
       </button>
     </div>
   </div>
@@ -64,17 +108,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { RouterLink } from "vue-router";
 import { useNotice } from "../composables/useNotice";
 import { auth } from "../stores/auth";
-import { mockWorkspace } from "../stores/mockWorkspace";
 
 const notice = useNotice();
-const fullName = ref(auth.state.user?.name || mockWorkspace.state.profile.fullName);
-const email = ref(auth.state.user?.email || mockWorkspace.state.profile.email);
+const fullName = ref("");
+const email = ref("");
+const otp = ref("");
+const pendingEmail = ref("");
+const debugOtp = ref("");
 const initials = computed(() =>
-  fullName.value
+  (fullName.value || auth.state.user?.name || "User")
     .split(" ")
     .filter(Boolean)
     .slice(0, 2)
@@ -82,26 +128,84 @@ const initials = computed(() =>
     .join(""),
 );
 
+watch(
+  () => [auth.state.user?.name, auth.state.user?.email] as const,
+  ([name, userEmail]) => {
+    if (pendingEmail.value) return;
+    fullName.value = name || "";
+    email.value = userEmail || "";
+  },
+  { immediate: true },
+);
+
+function formatDate(value?: string | null) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleDateString();
+}
+
 async function saveProfile() {
   if (!fullName.value.trim() || !email.value.trim()) {
     notice.show("Name and email are required.", "error");
     return;
   }
   try {
-    await auth.updateProfile({
+    const result = await auth.updateProfile({
       name: fullName.value,
       email: email.value,
     });
-    mockWorkspace.updateProfile({
-      fullName: fullName.value,
-      email: email.value,
-    });
-    notice.show("Profile updated locally.", "success");
+    if (result.requiresOtp) {
+      pendingEmail.value = result.email || email.value.trim().toLowerCase();
+      debugOtp.value = result.debugOtp || "";
+      otp.value = "";
+      notice.show(`OTP sent to ${pendingEmail.value}.`, "success");
+      return;
+    }
+
+    pendingEmail.value = "";
+    debugOtp.value = "";
+    fullName.value = auth.state.user?.name || fullName.value;
+    email.value = auth.state.user?.email || email.value;
+    notice.show("Profile updated successfully.", "success");
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unable to update profile";
     notice.show(message, "error");
   }
+}
+
+async function verifyEmailOtp() {
+  if (!pendingEmail.value) return;
+  if (!/^\d{6}$/.test(otp.value.trim())) {
+    notice.show("OTP must be 6 digits.", "error");
+    return;
+  }
+
+  try {
+    await auth.verifyProfileEmailOtp({
+      email: pendingEmail.value,
+      otp: otp.value,
+    });
+    pendingEmail.value = "";
+    debugOtp.value = "";
+    otp.value = "";
+    fullName.value = auth.state.user?.name || "";
+    email.value = auth.state.user?.email || "";
+    notice.show("Profile email updated successfully.", "success");
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Unable to verify email OTP";
+    notice.show(message, "error");
+  }
+}
+
+function cancelEmailOtp() {
+  pendingEmail.value = "";
+  debugOtp.value = "";
+  otp.value = "";
+  fullName.value = auth.state.user?.name || "";
+  email.value = auth.state.user?.email || "";
 }
 </script>
 
@@ -172,6 +276,39 @@ async function saveProfile() {
   margin-bottom: 24px;
 }
 
+.otp-panel {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 14px;
+  background: var(--color-control-bg-muted);
+  padding: 18px;
+  margin-bottom: 24px;
+}
+
+.otp-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0 0 6px;
+}
+
+.otp-copy,
+.otp-debug {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin: 0 0 10px;
+}
+
+.otp-debug {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.otp-form {
+  display: grid;
+  grid-template-columns: minmax(160px, 240px) auto auto;
+  align-items: end;
+  gap: 12px;
+}
+
 .account-info {
   margin-bottom: 24px;
   padding-top: 20px;
@@ -213,6 +350,18 @@ async function saveProfile() {
   color: var(--color-warning-text-strong);
 }
 
+.btn--secondary {
+  background: var(--color-control-bg-muted);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-main);
+}
+
+button:disabled,
+input:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 .card--security-preview {
   padding: 20px 24px;
   display: flex;
@@ -235,7 +384,8 @@ async function saveProfile() {
 }
 
 @media (max-width: 600px) {
-  .profile-fields {
+  .profile-fields,
+  .otp-form {
     grid-template-columns: 1fr;
   }
 }
