@@ -188,12 +188,17 @@ body.dark-mode .card {
 }
 
 @media (max-width: 768px) {
+  html,
+  body {
+    overflow-x: hidden;
+  }
+
   .content__header {
-    margin-bottom: 16px;
+    margin-bottom: 14px;
   }
 
   .page-title {
-    font-size: 20px;
+    font-size: 22px;
     line-height: 1.2;
   }
 
@@ -203,24 +208,42 @@ body.dark-mode .card {
   }
 
   .content__section {
-    margin-top: 20px;
+    margin-top: 18px;
   }
 
   .card {
-    border-radius: 12px;
-    padding: 14px;
+    border-radius: 20px;
+    padding: 16px;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+  }
+
+  .grid {
+    gap: 14px;
   }
 
   .btn {
-    min-height: 42px;
+    min-height: 48px;
+    border-radius: 14px;
     justify-content: center;
-    padding: 10px 14px;
+    padding: 10px 16px;
+    font-weight: 700;
   }
 
   .input-wrap input,
   .input-wrap textarea,
   .input-wrap select {
-    min-height: 42px;
+    min-height: 48px;
+    border-radius: 14px;
     font-size: 16px;
+  }
+
+  .card--table,
+  .table-card {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table {
+    min-width: 640px;
   }
 }

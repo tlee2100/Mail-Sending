@@ -16,17 +16,35 @@
     </div>
     <div class="hero-actions">
       <button
+        v-if="canStartCampaign"
         type="button"
         class="btn btn--primary"
-        :disabled="!canManageCampaign"
         @click="startCampaign"
       >
         Start
       </button>
-      <button type="button" class="btn btn--secondary" @click="pauseCampaign">
+      <button
+        v-if="canPauseCampaign"
+        type="button"
+        class="btn btn--secondary"
+        @click="pauseCampaign"
+      >
         Pause
       </button>
-      <button v-if="isAdmin" type="button" class="btn btn--danger" @click="deleteCampaign">
+      <button
+        v-if="canResumeCampaign"
+        type="button"
+        class="btn btn--primary"
+        @click="resumeCampaign"
+      >
+        Continue
+      </button>
+      <button
+        v-if="canDeleteCampaign"
+        type="button"
+        class="btn btn--danger"
+        @click="deleteCampaign"
+      >
         Delete
       </button>
     </div>
@@ -156,6 +174,9 @@ const router = useRouter();
 const notice = useNotice();
 const campaign = ref<Record<string, any> | null>(null);
 let refreshTimer: number | undefined;
+const STARTABLE_CAMPAIGN_STATUSES = ["draft", "scheduled", "queued", "failed"];
+const PAUSABLE_CAMPAIGN_STATUSES = ["scheduled", "sending", "queued"];
+const TIMEZONE_SUFFIX_PATTERN = /(z|[+-]\d{2}:?\d{2})$/i;
 
 const totalRecipients = computed(() => Number(campaign.value?.total_recipients || 0));
 const sentRate = computed(() => {
@@ -166,6 +187,27 @@ const sentRate = computed(() => {
 const isAdmin = computed(() => auth.state.user?.role === "admin");
 const canManageCampaign = computed(() =>
   canManageOwnRecord(campaign.value, auth.state.user),
+);
+const campaignStatus = computed(() => String(campaign.value?.status || "draft"));
+const canStartCampaign = computed(
+  () =>
+    canManageCampaign.value &&
+    STARTABLE_CAMPAIGN_STATUSES.includes(campaignStatus.value),
+);
+const canPauseCampaign = computed(
+  () =>
+    (isAdmin.value || canManageCampaign.value) &&
+    PAUSABLE_CAMPAIGN_STATUSES.includes(campaignStatus.value),
+);
+const canResumeCampaign = computed(
+  () =>
+    (isAdmin.value || canManageCampaign.value) &&
+    campaignStatus.value === "paused",
+);
+const canDeleteCampaign = computed(
+  () =>
+    (isAdmin.value || canManageCampaign.value) &&
+    campaignStatus.value !== "sending",
 );
 const ownerText = computed(() => recordOwnerLabel(campaign.value));
 
@@ -197,8 +239,19 @@ const statusBreakdown = computed(() => {
   });
 });
 
+function parseApiDate(value?: string) {
+  if (!value) return null;
+  const normalized = String(value).trim();
+  if (!normalized) return null;
+  const isoValue = TIMEZONE_SUFFIX_PATTERN.test(normalized)
+    ? normalized
+    : `${normalized.replace(" ", "T")}Z`;
+  const date = new Date(isoValue);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 function formatDate(value?: string) {
-  return value ? new Date(value).toLocaleString() : "-";
+  return parseApiDate(value)?.toLocaleString() || "-";
 }
 
 async function loadCampaign(silent = false) {
@@ -215,7 +268,7 @@ async function loadCampaign(silent = false) {
 }
 
 async function startCampaign() {
-  if (!auth.state.token) return;
+  if (!auth.state.token || !canStartCampaign.value) return;
   if (!canManageCampaign.value) {
     notice.show("Admin should not start another user's campaign from the normal route.", "error");
     return;
@@ -232,7 +285,7 @@ async function startCampaign() {
 }
 
 async function pauseCampaign() {
-  if (!auth.state.token) return;
+  if (!auth.state.token || !canPauseCampaign.value) return;
   try {
     if (isAdmin.value && !canManageCampaign.value) {
       await adminApi.pauseCampaign(auth.state.token, String(route.params.id));
@@ -248,11 +301,32 @@ async function pauseCampaign() {
   }
 }
 
+async function resumeCampaign() {
+  if (!auth.state.token || !canResumeCampaign.value) return;
+  try {
+    if (isAdmin.value && !canManageCampaign.value) {
+      await adminApi.resumeCampaign(auth.state.token, String(route.params.id));
+    } else {
+      await campaignsApi.resume(auth.state.token, String(route.params.id));
+    }
+    notice.show("Campaign continued.", "success");
+    await loadCampaign();
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to continue campaign";
+    notice.show(message, "error");
+  }
+}
+
 async function deleteCampaign() {
-  if (!auth.state.token || !isAdmin.value) return;
+  if (!auth.state.token || !canDeleteCampaign.value) return;
   if (!window.confirm("Delete this campaign?")) return;
   try {
-    await adminApi.deleteCampaign(auth.state.token, String(route.params.id));
+    if (isAdmin.value && !canManageCampaign.value) {
+      await adminApi.deleteCampaign(auth.state.token, String(route.params.id));
+    } else {
+      await campaignsApi.delete(auth.state.token, String(route.params.id));
+    }
     notice.show("Campaign deleted.", "success");
     router.push({ name: "campaigns" });
   } catch (error) {
@@ -352,6 +426,7 @@ onUnmounted(() => {
 .badge--sending,
 .badge--scheduled { background: var(--color-chip-yellow-bg); color: var(--color-chip-yellow-text); }
 .badge--paused { background: var(--color-slate-bg); color: var(--color-text-secondary); }
+.badge--failed { background: var(--color-danger-bg-subtle); color: var(--color-danger-text); }
 
 .progress-ring {
   display: grid;

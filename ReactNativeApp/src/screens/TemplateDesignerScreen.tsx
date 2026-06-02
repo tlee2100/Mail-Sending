@@ -58,6 +58,17 @@ function htmlHeading(value: string) {
   return match ? plainHtml(match[1]) : "Custom HTML";
 }
 
+function ensureBlockIds(blocks: TemplateLayoutNode[]) {
+  return blocks.map((block, index) => ({
+    ...block,
+    id: block.id || `blk_loaded_${block.type || "block"}_${index}_${Date.now()}`,
+    children: block.children?.map((child, childIndex) => ({
+      ...child,
+      id: child.id || `blk_child_${child.type || "block"}_${index}_${childIndex}_${Date.now()}`,
+    })),
+  }));
+}
+
 type EmailPreviewProps = {
   blocks: TemplateLayoutNode[];
   device: "desktop" | "mobile";
@@ -98,7 +109,7 @@ function EmailPreview({ blocks, device, html, mode, subject, text }: EmailPrevie
       <View style={[styles.emailCanvas, isMobile ? styles.mobileCanvas : styles.desktopCanvas]}>
         {subject ? <Text style={styles.emailSubject}>{subject}</Text> : null}
         {blocks.map((block) => (
-          <PreviewBlock block={block} key={block.id || `${block.type}-${Math.random()}`} />
+          <PreviewBlock block={block} key={block.id} />
         ))}
       </View>
     </ScrollView>
@@ -218,7 +229,7 @@ export function TemplateDesignerScreen({ session, initialTemplateId }: TemplateD
   const [sharedTemplates, setSharedTemplates] = useState<EmailTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(initialTemplateId || null);
   const [selectedSample, setSelectedSample] = useState<SampleKey>("aiShowcase");
-  const [blocks, setBlocks] = useState<TemplateLayoutNode[]>(layoutToBlocks(defaultLayout()));
+  const [blocks, setBlocks] = useState<TemplateLayoutNode[]>(() => ensureBlockIds(layoutToBlocks(defaultLayout())));
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState<"draft" | "publish" | "">("");
@@ -280,7 +291,7 @@ export function TemplateDesignerScreen({ session, initialTemplateId }: TemplateD
     setLoading(true);
     try {
       const draft = await templatesApi.getDesigner(session, id);
-      const nextBlocks = layoutToBlocks(draft.layout || defaultLayout());
+      const nextBlocks = ensureBlockIds(layoutToBlocks(draft.layout || defaultLayout()));
       setBlocks(nextBlocks);
       setSelectedBlockId(nextBlocks[0]?.id || null);
       setInfo("Designer data loaded.");
@@ -347,7 +358,7 @@ export function TemplateDesignerScreen({ session, initialTemplateId }: TemplateD
   }
 
   function applySample() {
-    const nextBlocks = layoutToBlocks(sampleLayout(selectedSample));
+    const nextBlocks = ensureBlockIds(layoutToBlocks(sampleLayout(selectedSample)));
     setBlocks(nextBlocks);
     setSelectedBlockId(nextBlocks[0]?.id || null);
     setInfo("Quick sample applied.");
@@ -666,8 +677,8 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   notice: {
-    backgroundColor: "#dbeafe",
-    borderColor: "#bfdbfe",
+    backgroundColor: "#eef2ff",
+    borderColor: "#c7d2fe",
     borderRadius: radii.md,
     borderWidth: 1,
     color: colors.primary,
@@ -676,6 +687,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   card: {
+    borderColor: "#dbe4ff",
     gap: 12,
   },
   sectionTitle: {
@@ -697,6 +709,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   paletteButton: {
+    backgroundColor: "#ffffff",
+    borderColor: "#dbe4ff",
     minHeight: 40,
     paddingHorizontal: 10,
   },
@@ -709,6 +723,11 @@ const styles = StyleSheet.create({
   },
   activeBlockButton: {
     alignItems: "flex-start",
+    shadowColor: colors.violet,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 3,
   },
   row: {
     flexDirection: "row",
@@ -741,8 +760,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   previewFrame: {
-    backgroundColor: "#f8fafc",
-    borderColor: "#dbeafe",
+    backgroundColor: "#f8fbff",
+    borderColor: "#a5b4fc",
     borderRadius: radii.lg,
     borderWidth: 1,
     height: 430,
@@ -751,7 +770,7 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   tapToEnlarge: {
-    backgroundColor: "rgba(17,24,39,0.82)",
+    backgroundColor: "rgba(91,79,242,0.92)",
     borderRadius: radii.pill,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -775,7 +794,7 @@ const styles = StyleSheet.create({
   },
   emailCanvas: {
     backgroundColor: colors.surface,
-    borderColor: colors.border,
+    borderColor: "#dbe4ff",
     borderRadius: 8,
     borderWidth: 1,
     gap: 16,
@@ -880,7 +899,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   htmlPreviewHero: {
-    backgroundColor: "#4f46e5",
+    backgroundColor: colors.primary,
     borderRadius: 22,
     gap: 12,
     overflow: "hidden",
@@ -914,7 +933,7 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   codePane: {
-    backgroundColor: "#0f172a",
+    backgroundColor: "#111827",
     borderRadius: 12,
     flex: 1,
     padding: 12,
@@ -926,13 +945,15 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   modalBackdrop: {
-    backgroundColor: "rgba(15,23,42,0.64)",
+    backgroundColor: "rgba(15,23,42,0.72)",
     flex: 1,
     justifyContent: "center",
     padding: 10,
   },
   previewModal: {
     backgroundColor: colors.surface,
+    borderColor: "#c7d2fe",
+    borderWidth: 1,
     borderRadius: 18,
     gap: 12,
     maxHeight: "92%",
@@ -957,8 +978,8 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     alignItems: "center",
-    backgroundColor: colors.surfaceSoft,
-    borderColor: colors.border,
+    backgroundColor: "#eef2ff",
+    borderColor: "#c7d2fe",
     borderRadius: 20,
     borderWidth: 1,
     height: 40,

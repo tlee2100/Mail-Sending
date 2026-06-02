@@ -21,6 +21,7 @@
             <th>Opens</th>
             <th>Clicks</th>
             <th>Last Tracking</th>
+            <th>Error</th>
             <th></th>
           </tr>
         </thead>
@@ -33,6 +34,7 @@
             <td>{{ row.open_count || 0 }}</td>
             <td>{{ row.click_count || 0 }}</td>
             <td>{{ lastTrackedEvent(row) }}</td>
+            <td class="error-cell">{{ row.error_message || "-" }}</td>
             <td>
               <button type="button" class="link-action" @click="selectRecipient(row.id)">
                 View email
@@ -63,6 +65,9 @@
       <p class="preview-note">
         Preview is read-only. Tracking links and the open pixel are disabled here so this view
         does not count as recipient engagement.
+      </p>
+      <p v-if="selectedRecipient.error_message" class="error-note">
+        Send error: {{ selectedRecipient.error_message }}
       </p>
       <iframe
         class="email-preview"
@@ -234,6 +239,11 @@ onUnmounted(() => {
   color: var(--color-text-main);
 }
 .table th { color: var(--color-text-muted); font-weight: 600; }
+.error-cell {
+  max-width: 280px;
+  color: var(--color-danger-text);
+  overflow-wrap: anywhere;
+}
 .empty-text { padding: 18px; color: var(--color-text-muted); }
 .link-action {
   border: 0;
@@ -267,6 +277,14 @@ onUnmounted(() => {
 }
 .meta,
 .preview-note { color: var(--color-text-muted); font-size: 13px; }
+.error-note {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--color-danger-bg-subtle);
+  color: var(--color-danger-text);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
 .email-preview {
   width: 100%;
   min-height: 520px;

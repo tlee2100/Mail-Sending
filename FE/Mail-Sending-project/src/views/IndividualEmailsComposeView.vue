@@ -332,6 +332,10 @@ function resolveDefaultAccountId(rows: Array<Record<string, unknown>>) {
   return defaultAccount ? String(defaultAccount.id || "") : "";
 }
 
+function accountExists(accountId: string, rows: Array<Record<string, unknown>>) {
+  return rows.some((item) => String(item.id || "") === accountId);
+}
+
 async function loadDependencies() {
   if (!auth.state.token) {
     notice.show("Missing auth token. Please login again.", "error");
@@ -347,7 +351,10 @@ async function loadDependencies() {
     accounts.value = accountsRes.data || [];
     templates.value = templatesRes.data.items || [];
 
-    if (!selectedAccountId.value) {
+    if (
+      !selectedAccountId.value ||
+      !accountExists(selectedAccountId.value, accounts.value)
+    ) {
       selectedAccountId.value = resolveDefaultAccountId(accounts.value);
     }
   } catch (error) {

@@ -47,6 +47,51 @@ export const campaignsApi = {
     );
   },
 
+  addRecipient(
+    token: string,
+    campaignId: string | number,
+    body: { email: string },
+  ) {
+    return apiRequest<Record<string, unknown>>(
+      `/campaigns/${campaignId}/recipients`,
+      {
+        method: "POST",
+        token,
+        body,
+      },
+    );
+  },
+
+  updateRecipient(
+    token: string,
+    campaignId: string | number,
+    recipientId: string | number,
+    body: { email: string },
+  ) {
+    return apiRequest<Record<string, unknown>>(
+      `/campaigns/${campaignId}/recipients/${recipientId}`,
+      {
+        method: "PATCH",
+        token,
+        body,
+      },
+    );
+  },
+
+  deleteRecipient(
+    token: string,
+    campaignId: string | number,
+    recipientId: string | number,
+  ) {
+    return apiRequest<{ deleted: boolean }>(
+      `/campaigns/${campaignId}/recipients/${recipientId}`,
+      {
+        method: "DELETE",
+        token,
+      },
+    );
+  },
+
   create(
     token: string,
     body: {
@@ -115,6 +160,20 @@ export const campaignsApi = {
   pause(token: string, id: string | number) {
     return apiRequest<Record<string, unknown>>(`/campaigns/${id}/pause`, {
       method: "POST",
+      token,
+    });
+  },
+
+  resume(token: string, id: string | number) {
+    return apiRequest<Record<string, unknown>>(`/campaigns/${id}/resume`, {
+      method: "POST",
+      token,
+    });
+  },
+
+  delete(token: string, id: string | number) {
+    return apiRequest<{ deleted: boolean }>(`/campaigns/${id}`, {
+      method: "DELETE",
       token,
     });
   },

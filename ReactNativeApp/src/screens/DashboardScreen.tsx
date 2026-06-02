@@ -93,6 +93,7 @@ export function DashboardScreen({ session }: DashboardScreenProps) {
 function MetricCard({ label, value }: { label: string; value: string }) {
   return (
     <Card style={styles.metric}>
+      <View style={styles.metricAccent} />
       <Text style={styles.metricLabel}>{label}</Text>
       <Text style={styles.metricValue}>{value}</Text>
     </Card>
@@ -128,11 +129,23 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   metric: {
+    backgroundColor: "#ffffff",
+    borderColor: "#c7d2fe",
     minHeight: 110,
+    position: "relative",
     width: "47.5%",
   },
+  metricAccent: {
+    backgroundColor: colors.cyan,
+    borderRadius: radii.pill,
+    height: 8,
+    position: "absolute",
+    right: 14,
+    top: 14,
+    width: 34,
+  },
   metricLabel: {
-    color: colors.muted,
+    color: colors.primary,
     fontSize: 12,
     fontWeight: "800",
     textTransform: "uppercase",

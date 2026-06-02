@@ -53,7 +53,7 @@
           <button
             type="button"
             class="btn btn--secondary btn--small"
-            :disabled="!canManageCampaign(item)"
+            :disabled="!canEditCampaign(item)"
             :title="manageBlockedTitle(item)"
             @click="openEditModal(item)"
           >
@@ -66,18 +66,34 @@
             Recipients
           </RouterLink>
           <button
-            v-if="isAdmin"
+            v-if="canStartCampaign(item)"
+            type="button"
+            class="btn btn--primary btn--small"
+            @click="startCampaign(item)"
+          >
+            Start
+          </button>
+          <button
+            v-if="canPauseCampaign(item)"
             type="button"
             class="btn btn--secondary btn--small"
-            @click="pauseCampaignAsAdmin(item)"
+            @click="pauseCampaign(item)"
           >
             Pause
           </button>
           <button
-            v-if="isAdmin"
+            v-if="canResumeCampaign(item)"
+            type="button"
+            class="btn btn--primary btn--small"
+            @click="resumeCampaign(item)"
+          >
+            Continue
+          </button>
+          <button
+            v-if="canDeleteCampaign(item)"
             type="button"
             class="btn btn--danger btn--small"
-            @click="deleteCampaignAsAdmin(item)"
+            @click="deleteCampaign(item)"
           >
             Delete
           </button>
@@ -154,26 +170,108 @@
             <div>
               <h3>Recipients</h3>
               <p>
-                Import `.xlsx`, `.xls`, or `.csv` with an <strong>email</strong> column.
-                Leave empty to use all active contacts.
+                <template v-if="editingCampaign">
+                  Add, edit or remove pending/failed recipients. Sent recipients are locked.
+                </template>
+                <template v-else>
+                  Import `.xlsx`, `.xls`, or `.csv` with an <strong>email</strong> column.
+                  Leave empty to use all active contacts.
+                </template>
               </p>
             </div>
-            <label class="upload-btn">
+            <label v-if="!editingCampaign" class="upload-btn">
               Import Excel
               <input type="file" accept=".xlsx,.xls,.csv" @change="onRecipientFileChange" />
             </label>
+            <button
+              v-else
+              type="button"
+              class="btn btn--secondary"
+              :disabled="recipientsLoading"
+              @click="refreshRecipientManager"
+            >
+              {{ recipientsLoading ? "Loading..." : "Refresh recipients" }}
+            </button>
           </div>
 
-          <textarea
-            v-model="form.recipientsText"
-            rows="7"
-            placeholder="customer@example.com&#10;friend@example.com"
-            @input="recipientsDirty = true"
-          ></textarea>
+          <template v-if="!editingCampaign">
+            <textarea
+              v-model="form.recipientsText"
+              rows="7"
+              placeholder="customer@example.com&#10;friend@example.com"
+              @input="recipientsDirty = true"
+            ></textarea>
 
-          <div class="recipient-summary">
-            <span>{{ parsedRecipients.length }} valid recipients in form</span>
-            <span v-if="importSummary">{{ importSummary }}</span>
+            <div class="recipient-summary">
+              <span>{{ parsedRecipients.length }} valid recipients in form</span>
+              <span v-if="importSummary">{{ importSummary }}</span>
+            </div>
+          </template>
+
+          <div v-else class="recipient-manager">
+            <div class="recipient-add-row">
+              <input
+                v-model.trim="newRecipientEmail"
+                type="email"
+                placeholder="new-recipient@example.com"
+                @keyup.enter.prevent="addRecipient"
+              />
+              <button
+                type="button"
+                class="btn btn--primary"
+                :disabled="recipientSavingId === 'new' || !isValidEmail(newRecipientEmail)"
+                @click="addRecipient"
+              >
+                {{ recipientSavingId === "new" ? "Adding..." : "Add recipient" }}
+              </button>
+            </div>
+
+            <p v-if="recipientManagerSummary" class="recipient-manager-summary">
+              {{ recipientManagerSummary }}
+            </p>
+
+            <div v-if="recipientRows.length" class="recipient-edit-list">
+              <div
+                v-for="row in recipientRows"
+                :key="row.id"
+                class="recipient-edit-row"
+              >
+                <div class="recipient-edit-main">
+                  <input
+                    v-model.trim="row.draftEmail"
+                    type="email"
+                    :disabled="!canEditRecipientRow(row) || recipientSavingId === row.id"
+                  />
+                  <span class="recipient-status" :class="`recipient-status--${row.status}`">
+                    {{ row.status }}
+                  </span>
+                  <small v-if="row.error_message" class="recipient-error">
+                    {{ row.error_message }}
+                  </small>
+                </div>
+                <div class="recipient-row-actions">
+                  <button
+                    type="button"
+                    class="btn btn--secondary btn--small"
+                    :disabled="!canSaveRecipientRow(row)"
+                    @click="saveRecipient(row)"
+                  >
+                    {{ recipientSavingId === row.id ? "Saving..." : "Save" }}
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn--danger btn--small"
+                    :disabled="!canEditRecipientRow(row) || recipientSavingId === row.id"
+                    @click="deleteRecipient(row)"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+            <p v-else class="empty-text">
+              {{ recipientsLoading ? "Loading recipients..." : "No recipients in this campaign." }}
+            </p>
           </div>
         </section>
 
@@ -204,6 +302,7 @@ import {
 } from "../utils/recordOwnership";
 
 type CampaignRow = Record<string, any>;
+type RecipientRow = Record<string, any> & { draftEmail: string };
 
 type CampaignForm = {
   campaignName: string;
@@ -214,6 +313,9 @@ type CampaignForm = {
   recipientsText: string;
 };
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MUTABLE_RECIPIENT_STATUSES = ["pending", "failed", "bounced"];
+
 const notice = useNotice();
 const campaigns = ref<CampaignRow[]>([]);
 const templates = ref<Array<Record<string, any>>>([]);
@@ -223,6 +325,11 @@ const saving = ref(false);
 const editingCampaign = ref<CampaignRow | null>(null);
 const recipientsDirty = ref(false);
 const importSummary = ref("");
+const recipientsLoading = ref(false);
+const recipientRows = ref<RecipientRow[]>([]);
+const newRecipientEmail = ref("");
+const recipientSavingId = ref<string | number | null>(null);
+const recipientManagerSummary = ref("");
 
 const form = reactive<CampaignForm>({
   campaignName: "",
@@ -241,13 +348,61 @@ const sentCampaigns = computed(
 );
 const parsedRecipients = computed(() => parseRecipientInput(form.recipientsText));
 const isAdmin = computed(() => auth.state.user?.role === "admin");
+const STARTABLE_CAMPAIGN_STATUSES = ["draft", "scheduled", "queued", "failed"];
+const PAUSABLE_CAMPAIGN_STATUSES = ["scheduled", "sending", "queued"];
+const TIMEZONE_SUFFIX_PATTERN = /(z|[+-]\d{2}:?\d{2})$/i;
+
+function parseApiDate(value?: string) {
+  if (!value) return null;
+  const normalized = String(value).trim();
+  if (!normalized) return null;
+  const isoValue = TIMEZONE_SUFFIX_PATTERN.test(normalized)
+    ? normalized
+    : `${normalized.replace(" ", "T")}Z`;
+  const date = new Date(isoValue);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
 
 function formatDate(value?: string) {
-  return value ? new Date(value).toLocaleString() : "-";
+  return parseApiDate(value)?.toLocaleString() || "-";
 }
 
 function canManageCampaign(item: CampaignRow | null) {
   return canManageOwnRecord(item, auth.state.user);
+}
+
+function canEditCampaignStatus(item: CampaignRow | null) {
+  if (!item) return false;
+  const status = String(item.status || "draft");
+  if (status === "sending") return false;
+  return !(status === "sent" && Number(item.sent_count || 0) > 0);
+}
+
+function canEditCampaign(item: CampaignRow | null) {
+  return canManageCampaign(item) && canEditCampaignStatus(item);
+}
+
+function canStartCampaign(item: CampaignRow | null) {
+  if (!item || !canManageCampaign(item)) return false;
+  return STARTABLE_CAMPAIGN_STATUSES.includes(String(item.status || "draft"));
+}
+
+function canPauseCampaign(item: CampaignRow | null) {
+  if (!item) return false;
+  const canControl = isAdmin.value || canManageCampaign(item);
+  return canControl && PAUSABLE_CAMPAIGN_STATUSES.includes(String(item.status || ""));
+}
+
+function canResumeCampaign(item: CampaignRow | null) {
+  if (!item) return false;
+  const canControl = isAdmin.value || canManageCampaign(item);
+  return canControl && String(item.status || "") === "paused";
+}
+
+function canDeleteCampaign(item: CampaignRow | null) {
+  if (!item) return false;
+  const canControl = isAdmin.value || canManageCampaign(item);
+  return canControl && String(item.status || "") !== "sending";
 }
 
 function ownerText(item: CampaignRow) {
@@ -255,9 +410,13 @@ function ownerText(item: CampaignRow) {
 }
 
 function manageBlockedTitle(item: CampaignRow) {
-  return canManageCampaign(item)
-    ? ""
-    : "Admin can inspect this campaign here, but should not edit another user's campaign in the normal route.";
+  if (!canManageCampaign(item)) {
+    return "Admin can inspect this campaign here, but should not edit another user's campaign in the normal route.";
+  }
+  if (!canEditCampaignStatus(item)) {
+    return "Campaign is sending or already sent successfully and cannot be edited.";
+  }
+  return "";
 }
 
 function parseRecipientInput(value: string) {
@@ -266,15 +425,22 @@ function parseRecipientInput(value: string) {
       value
         .split(/[\n,;]+/)
         .map((item) => item.trim().toLowerCase())
-        .filter((item) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(item)),
+        .filter((item) => EMAIL_PATTERN.test(item)),
     ),
   ];
 }
 
+function normalizeRecipientEmail(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function isValidEmail(value: string) {
+  return EMAIL_PATTERN.test(normalizeRecipientEmail(value));
+}
+
 function toDatetimeLocal(value?: string) {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
+  const date = parseApiDate(value);
+  if (!date) return "";
   const offset = date.getTimezoneOffset() * 60000;
   return new Date(date.getTime() - offset).toISOString().slice(0, 16);
 }
@@ -292,6 +458,11 @@ function resetForm() {
   form.recipientsText = "";
   recipientsDirty.value = false;
   importSummary.value = "";
+  recipientsLoading.value = false;
+  recipientRows.value = [];
+  newRecipientEmail.value = "";
+  recipientSavingId.value = null;
+  recipientManagerSummary.value = "";
 }
 
 async function loadOptions() {
@@ -313,6 +484,31 @@ async function loadCampaigns() {
     const message =
       error instanceof ApiClientError ? error.message : "Failed to load campaigns";
     notice.show(message, "error");
+  }
+}
+
+async function loadRecipientsForEdit(campaignId: string | number) {
+  if (!auth.state.token) return;
+  recipientsLoading.value = true;
+  try {
+    const response = await campaignsApi.recipients(auth.state.token, campaignId, {
+      pageSize: 100,
+    });
+    recipientRows.value = response.data.items.map((row) => ({
+      ...row,
+      draftEmail: String(row.email || ""),
+    }));
+    const total = response.data.pagination.total;
+    recipientManagerSummary.value =
+      total > recipientRows.value.length
+        ? `Showing ${recipientRows.value.length}/${total} recipients. Use the Recipients page for the full list.`
+        : `${total} recipients loaded.`;
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to load campaign recipients";
+    notice.show(message, "error");
+  } finally {
+    recipientsLoading.value = false;
   }
 }
 
@@ -344,8 +540,8 @@ async function openEditModal(item: CampaignRow) {
     );
     return;
   }
-  if (["sending", "sent"].includes(String(item.status))) {
-    notice.show("Only draft, scheduled or paused campaigns can be edited.", "error");
+  if (!canEditCampaignStatus(item)) {
+    notice.show("Campaign is sending or already sent successfully and cannot be edited.", "error");
     return;
   }
 
@@ -359,8 +555,13 @@ async function openEditModal(item: CampaignRow) {
     form.scheduledTime = toDatetimeLocal(item.scheduled_time);
     form.recipientsText = "";
     recipientsDirty.value = false;
-    importSummary.value = "Leave recipients empty to keep the existing audience.";
+    importSummary.value = "";
+    recipientRows.value = [];
+    newRecipientEmail.value = "";
+    recipientSavingId.value = null;
+    recipientManagerSummary.value = "";
     isModalOpen.value = true;
+    await loadRecipientsForEdit(item.id);
   } catch (error) {
     const message =
       error instanceof ApiClientError ? error.message : "Failed to load campaign options";
@@ -368,10 +569,27 @@ async function openEditModal(item: CampaignRow) {
   }
 }
 
-async function pauseCampaignAsAdmin(item: CampaignRow) {
+async function startCampaign(item: CampaignRow) {
+  if (!auth.state.token || !canStartCampaign(item)) return;
+  try {
+    await campaignsApi.start(auth.state.token, item.id);
+    notice.show("Campaign started.", "success");
+    await loadCampaigns();
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to start campaign";
+    notice.show(message, "error");
+  }
+}
+
+async function pauseCampaign(item: CampaignRow) {
   if (!auth.state.token) return;
   try {
-    await adminApi.pauseCampaign(auth.state.token, item.id);
+    if (isAdmin.value && !canManageCampaign(item)) {
+      await adminApi.pauseCampaign(auth.state.token, item.id);
+    } else {
+      await campaignsApi.pause(auth.state.token, item.id);
+    }
     notice.show("Campaign paused.", "success");
     await loadCampaigns();
   } catch (error) {
@@ -381,11 +599,32 @@ async function pauseCampaignAsAdmin(item: CampaignRow) {
   }
 }
 
-async function deleteCampaignAsAdmin(item: CampaignRow) {
+async function resumeCampaign(item: CampaignRow) {
+  if (!auth.state.token || !canResumeCampaign(item)) return;
+  try {
+    if (isAdmin.value && !canManageCampaign(item)) {
+      await adminApi.resumeCampaign(auth.state.token, item.id);
+    } else {
+      await campaignsApi.resume(auth.state.token, item.id);
+    }
+    notice.show("Campaign continued.", "success");
+    await loadCampaigns();
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to continue campaign";
+    notice.show(message, "error");
+  }
+}
+
+async function deleteCampaign(item: CampaignRow) {
   if (!auth.state.token) return;
   if (!window.confirm(`Delete campaign ${item.campaign_name || item.id}?`)) return;
   try {
-    await adminApi.deleteCampaign(auth.state.token, item.id);
+    if (isAdmin.value && !canManageCampaign(item)) {
+      await adminApi.deleteCampaign(auth.state.token, item.id);
+    } else {
+      await campaignsApi.delete(auth.state.token, item.id);
+    }
     notice.show("Campaign deleted.", "success");
     await loadCampaigns();
   } catch (error) {
@@ -397,6 +636,107 @@ async function deleteCampaignAsAdmin(item: CampaignRow) {
 
 function closeModal() {
   isModalOpen.value = false;
+  recipientRows.value = [];
+  newRecipientEmail.value = "";
+  recipientSavingId.value = null;
+  recipientManagerSummary.value = "";
+}
+
+function canEditRecipientRow(row: RecipientRow) {
+  return MUTABLE_RECIPIENT_STATUSES.includes(String(row.status || ""));
+}
+
+function canSaveRecipientRow(row: RecipientRow) {
+  if (!canEditRecipientRow(row) || recipientSavingId.value === row.id) {
+    return false;
+  }
+  const nextEmail = normalizeRecipientEmail(String(row.draftEmail || ""));
+  const currentEmail = normalizeRecipientEmail(String(row.email || ""));
+  return isValidEmail(nextEmail) && nextEmail !== currentEmail;
+}
+
+async function refreshRecipientManager() {
+  if (!editingCampaign.value) return;
+  await loadRecipientsForEdit(editingCampaign.value.id);
+}
+
+async function addRecipient() {
+  if (!auth.state.token || !editingCampaign.value) return;
+  const email = normalizeRecipientEmail(newRecipientEmail.value);
+  if (!isValidEmail(email)) {
+    notice.show("Recipient email is invalid.", "error");
+    return;
+  }
+
+  recipientSavingId.value = "new";
+  try {
+    await campaignsApi.addRecipient(auth.state.token, editingCampaign.value.id, {
+      email,
+    });
+    newRecipientEmail.value = "";
+    notice.show("Recipient added.", "success");
+    await Promise.all([
+      loadRecipientsForEdit(editingCampaign.value.id),
+      loadCampaigns(),
+    ]);
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to add recipient";
+    notice.show(message, "error");
+  } finally {
+    recipientSavingId.value = null;
+  }
+}
+
+async function saveRecipient(row: RecipientRow) {
+  if (!auth.state.token || !editingCampaign.value || !canSaveRecipientRow(row)) return;
+  const email = normalizeRecipientEmail(String(row.draftEmail || ""));
+
+  recipientSavingId.value = row.id;
+  try {
+    await campaignsApi.updateRecipient(
+      auth.state.token,
+      editingCampaign.value.id,
+      row.id,
+      { email },
+    );
+    notice.show("Recipient updated and reset to pending.", "success");
+    await Promise.all([
+      loadRecipientsForEdit(editingCampaign.value.id),
+      loadCampaigns(),
+    ]);
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to update recipient";
+    notice.show(message, "error");
+  } finally {
+    recipientSavingId.value = null;
+  }
+}
+
+async function deleteRecipient(row: RecipientRow) {
+  if (!auth.state.token || !editingCampaign.value || !canEditRecipientRow(row)) return;
+  if (!window.confirm(`Remove ${row.email} from this campaign?`)) return;
+
+  recipientSavingId.value = row.id;
+  try {
+    await campaignsApi.deleteRecipient(
+      auth.state.token,
+      editingCampaign.value.id,
+      row.id,
+    );
+    notice.show("Recipient removed.", "success");
+    await Promise.all([
+      loadRecipientsForEdit(editingCampaign.value.id),
+      loadCampaigns(),
+    ]);
+  } catch (error) {
+    const message =
+      error instanceof ApiClientError ? error.message : "Failed to delete recipient";
+    notice.show(message, "error");
+  } finally {
+    recipientSavingId.value = null;
+  }
 }
 
 async function onRecipientFileChange(event: Event) {
@@ -440,7 +780,9 @@ async function submitCampaign() {
       emailAccountId: Number(form.emailAccountId),
       campaignType: form.campaignType,
       ...(scheduledTime || editingCampaign.value ? { scheduledTime } : {}),
-      ...(recipientEmails.length || recipientsDirty.value ? { recipientEmails } : {}),
+      ...(!editingCampaign.value && (recipientEmails.length || recipientsDirty.value)
+        ? { recipientEmails }
+        : {}),
     };
 
     if (editingCampaign.value) {
@@ -579,6 +921,7 @@ onMounted(() => {
 .status-dot--sending { background: linear-gradient(180deg, var(--color-warning-soft), var(--color-orange)); }
 .status-dot--sent { background: linear-gradient(180deg, var(--color-success-soft), var(--color-success-strong)); }
 .status-dot--paused { background: linear-gradient(180deg, var(--color-border-muted), var(--color-slate)); }
+.status-dot--failed { background: linear-gradient(180deg, var(--color-danger-soft), var(--color-danger)); }
 
 .badge {
   display: inline-flex;
@@ -600,6 +943,11 @@ onMounted(() => {
 .badge--scheduled {
   background: var(--color-chip-yellow-bg);
   color: var(--color-chip-yellow-text);
+}
+
+.badge--failed {
+  background: var(--color-danger-bg-subtle);
+  color: var(--color-danger-text);
 }
 
 .actions {
@@ -779,6 +1127,85 @@ onMounted(() => {
   font-weight: 700;
 }
 
+.recipient-manager {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.recipient-add-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.recipient-add-row input,
+.recipient-edit-main input {
+  width: 100%;
+  min-height: 44px;
+  box-sizing: border-box;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 12px;
+  background: var(--color-white);
+  color: var(--color-text-main);
+  font: inherit;
+  padding: 0 12px;
+}
+
+.recipient-manager-summary,
+.empty-text {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.recipient-edit-list {
+  display: grid;
+  gap: 10px;
+}
+
+.recipient-edit-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 14px;
+  background: var(--color-bg-surface-elevated);
+}
+
+.recipient-edit-main {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.recipient-status {
+  justify-self: start;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--color-control-bg-muted);
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.recipient-status--pending { color: var(--color-chip-yellow-text); }
+.recipient-status--sent { color: var(--color-success-text-strong); }
+.recipient-status--failed,
+.recipient-status--bounced { color: var(--color-danger-text); }
+
+.recipient-error {
+  color: var(--color-danger-text);
+  overflow-wrap: anywhere;
+}
+
+.recipient-row-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .modal-actions {
   justify-content: flex-end;
   margin-top: 22px;
@@ -826,8 +1253,19 @@ onMounted(() => {
     flex-direction: column;
   }
 
+  .recipient-add-row,
+  .recipient-edit-row {
+    grid-template-columns: 1fr;
+  }
+
+  .recipient-row-actions {
+    flex-direction: column;
+  }
+
   .upload-btn,
-  .modal-actions .btn {
+  .modal-actions .btn,
+  .recipient-add-row .btn,
+  .recipient-row-actions .btn {
     width: 100%;
   }
 }

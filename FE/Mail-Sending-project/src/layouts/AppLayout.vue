@@ -191,6 +191,17 @@
 
     <div class="main">
       <header class="topbar">
+        <button
+          class="topbar__menu-button"
+          :class="{ 'topbar__menu-button--active': mobileMenuOpen }"
+          type="button"
+          aria-label="Open navigation menu"
+          @click="toggleMobileMenu"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
         <RouterLink to="/" class="topbar__mobile-brand">
           <div class="brand__logo brand__logo--small">CM</div>
           <span>ChadMailer</span>
@@ -209,6 +220,28 @@
           <span class="topbar__name">{{ displayName }}</span>
           <span class="topbar__role">{{ roleLabel }}</span>
         </div>
+        <div class="topbar__mobile-title">
+          <strong>{{ breadcrumb }}</strong>
+          <span>{{ userEmail }}</span>
+        </div>
+        <nav v-if="mobileMenuOpen" class="mobile-menu" aria-label="Mobile menu">
+          <RouterLink
+            v-for="link in mobileMenuLinks"
+            :key="link.to"
+            :to="link.to"
+            class="mobile-menu__item"
+            :class="{ 'mobile-menu__item--active': isMobileLinkActive(link) }"
+            @click="closeMobileMenu"
+          >
+            <span class="mobile-menu__icon">{{ link.icon }}</span>
+            <span>{{ link.label }}</span>
+            <span v-if="isMobileLinkActive(link)" class="mobile-menu__dot"></span>
+          </RouterLink>
+          <button type="button" class="mobile-menu__logout" @click="handleMobileLogout">
+            <span class="mobile-menu__icon">LO</span>
+            <span>Logout</span>
+          </button>
+        </nav>
       </header>
 
       <main class="content">
@@ -268,15 +301,23 @@
 
 <script setup lang="ts">
 import { useRoute, useRouter } from "vue-router";
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { auth } from "../stores/auth";
 
 const route = useRoute();
 const router = useRouter();
+type MobileMenuLink = {
+  to: string;
+  icon: string;
+  label: string;
+  exact?: boolean;
+};
+
 const breadcrumb = computed(
   () => (route.meta.breadcrumb as string) || "Dashboard",
 );
 const displayName = computed(() => auth.state.user?.name || "User");
+const userEmail = computed(() => auth.state.user?.email || "Account");
 const userInitial = computed(() =>
   displayName.value.trim().slice(0, 1).toUpperCase(),
 );
@@ -284,6 +325,34 @@ const isAdmin = computed(() => auth.state.user?.role === "admin");
 const roleLabel = computed(() => (isAdmin.value ? "Admin" : "User"));
 
 const isDark = ref(false);
+const mobileMenuOpen = ref(false);
+
+const mobileMenuLinks = computed<MobileMenuLink[]>(() => {
+  const links: MobileMenuLink[] = [
+    { to: "/", icon: "DB", label: "Dashboard", exact: true },
+    { to: "/individual-emails", icon: "SD", label: "Send" },
+    { to: "/campaigns", icon: "CP", label: "Campaigns" },
+    { to: "/email-templates", icon: "TP", label: "Templates" },
+    { to: "/templates/designer", icon: "DS", label: "Designer" },
+    { to: "/email-contacts", icon: "CT", label: "Contacts" },
+    { to: "/contact-tags", icon: "TG", label: "Tags" },
+    { to: "/email-accounts", icon: "SM", label: "SMTP Accounts" },
+    { to: "/usage", icon: "QT", label: "Usage" },
+    { to: "/profile", icon: "PF", label: "Profile" },
+    { to: "/security", icon: "SC", label: "Security" },
+  ];
+
+  if (isAdmin.value) {
+    links.push(
+      { to: "/admin/dashboard", icon: "AD", label: "Admin" },
+      { to: "/admin/users", icon: "US", label: "Users" },
+      { to: "/admin/audit-logs", icon: "LG", label: "Audit Logs" },
+      { to: "/admin/settings", icon: "ST", label: "Settings" },
+    );
+  }
+
+  return links;
+});
 
 const THEME_KEY = "ui.theme.v1";
 
@@ -318,6 +387,21 @@ function toggleTheme() {
   }
 }
 
+function toggleMobileMenu() {
+  mobileMenuOpen.value = !mobileMenuOpen.value;
+}
+
+function closeMobileMenu() {
+  mobileMenuOpen.value = false;
+}
+
+function isMobileLinkActive(link: MobileMenuLink) {
+  if (link.exact) {
+    return route.path === link.to;
+  }
+  return route.path === link.to || route.path.startsWith(`${link.to}/`);
+}
+
 onMounted(() => {
   loadInitialTheme();
 });
@@ -326,6 +410,18 @@ async function handleLogout() {
   await auth.logout();
   router.push({ name: "login" });
 }
+
+async function handleMobileLogout() {
+  closeMobileMenu();
+  await handleLogout();
+}
+
+watch(
+  () => route.fullPath,
+  () => {
+    closeMobileMenu();
+  },
+);
 </script>
 
 <style scoped>
@@ -621,6 +717,12 @@ async function handleLogout() {
   text-decoration: none;
 }
 
+.topbar__menu-button,
+.topbar__mobile-title,
+.mobile-menu {
+  display: none;
+}
+
 .topbar__right {
   display: flex;
   align-items: center;
@@ -723,12 +825,63 @@ async function handleLogout() {
     position: sticky;
     top: 0;
     z-index: 20;
-    height: 58px;
-    padding: 0 14px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 10px 12px;
+    height: auto;
+    min-height: 104px;
+    padding: max(env(safe-area-inset-top), 10px) 16px 12px;
+    align-items: center;
+    overflow: visible;
+  }
+
+  .topbar__menu-button {
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 12px;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    background: var(--color-control-bg-muted);
+    color: var(--color-text-main);
+    cursor: pointer;
+    box-shadow: var(--shadow-control);
+  }
+
+  .topbar__menu-button span {
+    width: 18px;
+    height: 2px;
+    border-radius: 999px;
+    background: currentColor;
+    transition:
+      transform 0.18s ease,
+      opacity 0.18s ease;
+  }
+
+  .topbar__menu-button--active span:first-child {
+    transform: translateY(6px) rotate(45deg);
+  }
+
+  .topbar__menu-button--active span:nth-child(2) {
+    opacity: 0;
+  }
+
+  .topbar__menu-button--active span:last-child {
+    transform: translateY(-6px) rotate(-45deg);
   }
 
   .topbar__mobile-brand {
     display: flex;
+    min-width: 0;
+  }
+
+  .topbar__mobile-brand span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .topbar__breadcrumb,
@@ -740,11 +893,16 @@ async function handleLogout() {
 
   .topbar__right {
     gap: 8px;
+    justify-self: end;
   }
 
   .theme-toggle {
     margin-right: 2px;
     padding: 6px 9px;
+  }
+
+  .topbar__pulse {
+    display: none;
   }
 
   .topbar__avatar {
@@ -753,71 +911,115 @@ async function handleLogout() {
     font-size: 13px;
   }
 
-  .content {
-    padding: 16px 14px 92px;
+  .topbar__mobile-title {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    min-width: 0;
   }
 
-  .mobile-nav {
-    position: fixed;
-    left: 10px;
-    right: 10px;
-    bottom: 10px;
-    z-index: 30;
+  .topbar__mobile-title strong {
+    color: var(--color-text-strong);
+    font-size: 20px;
+    font-weight: 900;
+    line-height: 1.15;
+  }
+
+  .topbar__mobile-title span {
+    max-width: 100%;
+    color: var(--color-text-muted);
+    font-size: 12px;
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-menu {
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    top: calc(100% + 8px);
+    z-index: 40;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(54px, 1fr));
-    gap: 4px;
-    padding: 8px;
+    gap: 6px;
+    max-height: min(70vh, 560px);
+    overflow-y: auto;
+    padding: 10px;
     border: 1px solid var(--color-border-subtle);
     border-radius: 18px;
     background: var(--color-surface-mobile);
     box-shadow: var(--shadow-mobile-nav);
-    backdrop-filter: blur(14px);
+    backdrop-filter: blur(16px);
   }
 
-  :global(body.dark-mode) .mobile-nav {
+  :global(body.dark-mode) .mobile-menu {
     background: var(--color-bg-sidebar-soft);
   }
 
-  .mobile-nav__item {
-    min-width: 0;
-    min-height: 54px;
-    display: flex;
-    flex-direction: column;
+  .mobile-menu__item,
+  .mobile-menu__logout {
+    min-height: 44px;
+    padding: 0 12px;
+    border-radius: 12px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
-    justify-content: center;
-    gap: 4px;
-    border-radius: 14px;
+    gap: 10px;
+    border: 0;
+    background: transparent;
     color: var(--color-text-muted);
-    font-size: 10px;
-    font-weight: 700;
+    font-size: 14px;
+    font-weight: 800;
+    text-align: left;
     text-decoration: none;
-    transition:
-      background 0.18s ease,
-      transform 0.18s ease,
-      color 0.18s ease;
+    cursor: pointer;
   }
 
-  .mobile-nav__icon {
-    width: 26px;
-    height: 22px;
+  .mobile-menu__item--active {
+    background: var(--color-primary-bg-hover);
+    color: var(--color-primary);
+  }
+
+  .mobile-menu__icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 10px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 8px;
     background: var(--color-control-bg-muted);
     color: var(--color-text-main);
     font-size: 10px;
+    font-weight: 900;
   }
 
-  .mobile-nav__item--active {
-    background: linear-gradient(135deg, var(--color-primary-bg-hover), var(--color-info-bg-subtle));
-    color: var(--color-primary);
-    transform: translateY(-2px);
-  }
-
-  .mobile-nav__item--active .mobile-nav__icon {
-    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-soft));
+  .mobile-menu__item--active .mobile-menu__icon {
+    background: var(--color-primary);
     color: var(--color-text-on-primary);
+  }
+
+  .mobile-menu__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--color-primary);
+  }
+
+  .mobile-menu__logout {
+    margin-top: 4px;
+    color: var(--color-danger-text);
+    background: var(--color-danger-bg-subtle);
+  }
+
+  .content {
+    padding: 16px 14px calc(18px + env(safe-area-inset-bottom));
+  }
+
+  .mobile-nav {
+    display: none;
   }
 }
 

@@ -1,20 +1,27 @@
 import { StyleSheet } from "react-native";
 
 export const colors = {
-  background: "#eef2f7",
+  background: "#edf4ff",
   surface: "#ffffff",
-  surfaceSoft: "#f8fafc",
-  border: "#e2e8f0",
+  surfaceSoft: "#f7f4ff",
+  border: "#dbe4ff",
   text: "#0f172a",
   muted: "#64748b",
-  primary: "#2563eb",
-  primaryDark: "#1d4ed8",
-  success: "#16a34a",
-  warning: "#d97706",
-  danger: "#e11d48",
+  primary: "#5b4ff2",
+  primaryDark: "#3b37c7",
+  primarySoft: "#eef2ff",
+  violet: "#7c3aed",
+  magenta: "#ec4899",
+  teal: "#14b8a6",
+  success: "#10b981",
+  warning: "#f59e0b",
+  danger: "#ef4444",
   dark: "#020617",
   darkMuted: "#94a3b8",
   cyan: "#22d3ee",
+  amberSoft: "#fff7ed",
+  pinkSoft: "#fdf2f8",
+  cyanSoft: "#ecfeff",
 };
 
 export const radii = {
@@ -26,10 +33,10 @@ export const radii = {
 
 export const shadow = StyleSheet.create({
   card: {
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 18,
-    elevation: 2,
+    shadowColor: "#4f46e5",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.12,
+    shadowRadius: 22,
+    elevation: 3,
   },
 });

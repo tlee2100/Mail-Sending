@@ -43,8 +43,21 @@
             <span>{{ ownerLabel(campaign) }} - {{ campaign.status || "draft" }}</span>
           </div>
           <div class="row-actions">
-            <button type="button" class="btn btn--secondary btn--small" @click="pauseCampaign(campaign)">
+            <button
+              v-if="campaign.status !== 'paused'"
+              type="button"
+              class="btn btn--secondary btn--small"
+              @click="pauseCampaign(campaign)"
+            >
               Pause
+            </button>
+            <button
+              v-else
+              type="button"
+              class="btn btn--primary btn--small"
+              @click="resumeCampaign(campaign)"
+            >
+              Continue
             </button>
             <button type="button" class="btn btn--danger btn--small" @click="deleteCampaign(campaign)">
               Delete
@@ -215,6 +228,18 @@ async function pauseCampaign(campaign: DataRow) {
     await loadAdminData();
   } catch (error) {
     const message = error instanceof ApiClientError ? error.message : "Failed to pause campaign";
+    notice.show(message, "error");
+  }
+}
+
+async function resumeCampaign(campaign: DataRow) {
+  if (!auth.state.token) return;
+  try {
+    await adminApi.resumeCampaign(auth.state.token, campaign.id);
+    notice.show("Campaign continued.", "success");
+    await loadAdminData();
+  } catch (error) {
+    const message = error instanceof ApiClientError ? error.message : "Failed to continue campaign";
     notice.show(message, "error");
   }
 }
