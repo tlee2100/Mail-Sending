@@ -1,5 +1,7 @@
 <template>
   <div class="layout">
+    <div class="layout__glow layout__glow--one"></div>
+    <div class="layout__glow layout__glow--two"></div>
     <aside class="sidebar">
       <RouterLink to="/" class="sidebar__brand">
         <div class="brand__logo">CM</div>
@@ -13,7 +15,7 @@
         <div class="nav__section">
           <div class="nav__title">Main Menu</div>
           <RouterLink to="/" class="nav__item" exact-active-class="nav__item--active">
-            <span class="nav__icon">📊</span>
+            <span class="nav__icon">DB</span>
             <span>Dashboard</span>
           </RouterLink>
           <RouterLink
@@ -21,7 +23,7 @@
             class="nav__item"
             active-class="nav__item--active"
           >
-            <span class="nav__icon">⚡</span>
+            <span class="nav__icon">IC</span>
             <span>Instant Campaign</span>
           </RouterLink>
           <RouterLink
@@ -29,7 +31,7 @@
             class="nav__item"
             active-class="nav__item--active"
           >
-            <span class="nav__icon">✉️</span>
+            <span class="nav__icon">EM</span>
             <span>Individual Emails</span>
           </RouterLink>
           <RouterLink
@@ -37,7 +39,7 @@
             class="nav__item"
             active-class="nav__item--active"
           >
-            <span class="nav__icon">📄</span>
+            <span class="nav__icon">TP</span>
             <span>Email Templates</span>
           </RouterLink>
           <RouterLink
@@ -45,7 +47,7 @@
             class="nav__item"
             active-class="nav__item--active"
           >
-            <span class="nav__icon">👥</span>
+            <span class="nav__icon">CT</span>
             <span>Email Contacts</span>
           </RouterLink>
           <RouterLink
@@ -53,7 +55,7 @@
             class="nav__item"
             active-class="nav__item--active"
           >
-            <span class="nav__icon">🏷️</span>
+            <span class="nav__icon">TG</span>
             <span>Contact Tags</span>
           </RouterLink>
           <RouterLink
@@ -61,7 +63,7 @@
             class="nav__item"
             active-class="nav__item--active"
           >
-            <span class="nav__icon">🚀</span>
+            <span class="nav__icon">CP</span>
             <span>Campaigns</span>
           </RouterLink>
         </div>
@@ -73,7 +75,7 @@
             class="nav__item"
             active-class="nav__item--active"
           >
-            <span class="nav__icon">📥</span>
+            <span class="nav__icon">IM</span>
             <span>Import / Export</span>
           </RouterLink>
           <RouterLink
@@ -82,7 +84,7 @@
             class="nav__item"
             active-class="nav__item--active"
           >
-            <span class="nav__icon">🧩</span>
+            <span class="nav__icon">FL</span>
             <span>Contact Fields</span>
           </RouterLink>
           <RouterLink
@@ -90,7 +92,7 @@
             class="nav__item"
             active-class="nav__item--active"
           >
-            <span class="nav__icon">🛠️</span>
+            <span class="nav__icon">DS</span>
             <span>Template Designer</span>
           </RouterLink>
         </div>
@@ -102,7 +104,7 @@
             class="nav__item"
             active-class="nav__item--active"
           >
-            <span class="nav__icon">📨</span>
+            <span class="nav__icon">SM</span>
             <span>Email Accounts</span>
           </RouterLink>
           <RouterLink
@@ -111,7 +113,7 @@
             class="nav__item"
             active-class="nav__item--active"
           >
-            <span class="nav__icon">💳</span>
+            <span class="nav__icon">PY</span>
             <span>Payment Integration</span>
           </RouterLink>
         </div>
@@ -167,7 +169,7 @@
             class="nav__item"
             active-class="nav__item--active"
           >
-            <span class="nav__icon">👤</span>
+            <span class="nav__icon">PF</span>
             <span>Profile</span>
           </RouterLink>
           <RouterLink
@@ -175,14 +177,14 @@
             class="nav__item"
             active-class="nav__item--active"
           >
-            <span class="nav__icon">🔐</span>
+            <span class="nav__icon">SC</span>
             <span>Security</span>
           </RouterLink>
         </div>
       </nav>
 
       <button class="sidebar__logout" @click="handleLogout">
-        <span class="nav__icon">⏻</span>
+        <span class="nav__icon">LO</span>
         <span>Logout</span>
       </button>
     </aside>
@@ -198,9 +200,10 @@
         </div>
         <div class="topbar__right">
           <button class="theme-toggle" type="button" @click="toggleTheme">
-            <span v-if="isDark">🌙 Dark</span>
-            <span v-else>☀️ Light</span>
+            <span v-if="isDark">Dark</span>
+            <span v-else>Light</span>
           </button>
+          <span class="topbar__pulse">Live SMTP</span>
           <span class="topbar__welcome">Welcome back</span>
           <div class="topbar__avatar">{{ userInitial }}</div>
           <span class="topbar__name">{{ displayName }}</span>
@@ -328,26 +331,38 @@ async function handleLogout() {
 <style scoped>
 .theme-toggle {
   margin-right: 12px;
-  padding: 6px 10px;
+  padding: 8px 12px;
   border-radius: 999px;
-  border: 1px solid var(--color-border-subtle);
-  background: var(--color-transparent);
-  color: var(--color-text-muted);
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  background: linear-gradient(135deg, var(--color-primary-bg-soft), var(--color-info-bg-muted));
+  color: var(--color-primary-text);
   font-size: 12px;
+  font-weight: 800;
   cursor: pointer;
+  box-shadow: var(--shadow-control);
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
 }
 
 .theme-toggle:hover {
-  background: var(--color-sidebar-hover);
+  border-color: var(--color-primary-border-muted);
+  box-shadow: 0 14px 26px var(--shadow-primary-soft-color);
+  transform: translateY(-1px);
 }
 </style>
 
 <style scoped>
 .layout {
+  position: relative;
   display: grid;
   grid-template-columns: 260px 1fr;
   min-height: 100vh;
-  background: var(--color-bg-surface);
+  background:
+    radial-gradient(circle at 30% -12%, rgba(14, 165, 233, 0.06), transparent 32%),
+    radial-gradient(circle at 94% 10%, rgba(236, 72, 153, 0.05), transparent 28%),
+    linear-gradient(135deg, var(--color-bg-surface), var(--color-bg-surface-tinted));
   color: var(--color-text-main);
   font-family:
     system-ui,
@@ -355,21 +370,79 @@ async function handleLogout() {
     BlinkMacSystemFont,
     "SF Pro Text",
     sans-serif;
+  overflow: hidden;
+}
+
+.layout__glow {
+  position: fixed;
+  z-index: 0;
+  width: 360px;
+  height: 360px;
+  border-radius: 999px;
+  filter: blur(8px);
+  opacity: 0.18;
+  pointer-events: none;
+  animation: floatGlow 9s ease-in-out infinite;
+}
+
+.layout__glow--one {
+  top: 90px;
+  left: 220px;
+  background: radial-gradient(circle, var(--color-mail-glow), transparent 66%);
+}
+
+.layout__glow--two {
+  right: -110px;
+  bottom: 12%;
+  background: radial-gradient(circle, var(--color-campaign-glow), transparent 66%);
+  animation-delay: -3s;
 }
 
 .sidebar {
-  background: var(--color-bg-sidebar);
+  position: relative;
+  z-index: 2;
+  background: var(--gradient-sidebar);
   color: var(--color-text-on-dark);
   display: flex;
   flex-direction: column;
   padding: 20px 18px;
+  border-right: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 10px 0 34px rgba(15, 23, 42, 0.12);
+  overflow: hidden;
+}
+
+.sidebar::before,
+.sidebar::after {
+  content: "";
+  position: absolute;
+  inset: auto;
+  pointer-events: none;
+}
+
+.sidebar::before {
+  top: -90px;
+  right: -90px;
+  width: 220px;
+  height: 220px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(34, 211, 238, 0.12), transparent 68%);
+}
+
+.sidebar::after {
+  left: 24px;
+  right: 24px;
+  bottom: 86px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.34), transparent);
 }
 
 .sidebar__brand {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 8px 10px 18px;
+  padding: 10px 10px 18px;
   border-bottom: 1px solid var(--color-sidebar-border);
   margin-bottom: 16px;
   color: inherit;
@@ -380,12 +453,14 @@ async function handleLogout() {
   width: 34px;
   height: 34px;
   border-radius: 12px;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-accent));
+  background: var(--gradient-campaign);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   font-size: 16px;
+  color: var(--color-text-on-solid);
+  box-shadow: 0 8px 18px rgba(236, 72, 153, 0.18);
 }
 
 .brand__logo--small {
@@ -398,6 +473,7 @@ async function handleLogout() {
 .brand__name {
   font-weight: 600;
   font-size: 15px;
+  letter-spacing: 0;
 }
 
 .brand__subtitle {
@@ -408,6 +484,8 @@ async function handleLogout() {
 }
 
 .sidebar__nav {
+  position: relative;
+  z-index: 1;
   flex: 1;
   overflow-y: auto;
   padding-right: 6px;
@@ -423,39 +501,44 @@ async function handleLogout() {
   letter-spacing: 0.08em;
   color: var(--color-text-muted);
   padding: 8px 4px;
+  font-weight: 800;
 }
 
 .nav__item {
+  position: relative;
   width: 100%;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  border: none;
-  background: var(--color-transparent);
+  padding: 9px 10px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.03);
   color: inherit;
   font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
   transition:
-    background 0.15s ease,
-    color 0.15s ease;
+    background 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
   text-decoration: none;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
   box-sizing: border-box;
 }
 
 .nav__item:hover {
-  background: var(--color-sidebar-active);
+  background: rgba(255, 255, 255, 0.11);
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateX(3px);
 }
 
 .nav__item--active {
-  background: linear-gradient(
-    135deg,
-    var(--color-primary),
-    var(--color-primary-soft)
-  );
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.18);
+  background: var(--gradient-campaign);
+  border-color: rgba(255, 255, 255, 0.24);
+  box-shadow: 0 8px 18px rgba(236, 72, 153, 0.14);
 }
 
 .nav__item--active .nav__icon {
@@ -465,16 +548,20 @@ async function handleLogout() {
 .nav__icon {
   width: 26px;
   height: 26px;
-  border-radius: 999px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
-  background: var(--color-overlay-soft);
+  font-size: 10px;
+  font-weight: 900;
+  background: rgba(255, 255, 255, 0.12);
   flex-shrink: 0;
+  letter-spacing: 0;
 }
 
 .sidebar__logout {
+  position: relative;
+  z-index: 1;
   border: none;
   margin-top: 16px;
   padding: 9px 10px;
@@ -482,31 +569,46 @@ async function handleLogout() {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: var(--color-badge-error-bg);
+  background: linear-gradient(135deg, rgba(244, 63, 94, 0.2), rgba(249, 115, 22, 0.16));
   color: var(--color-badge-error-text);
   cursor: pointer;
   font-size: 13px;
+  font-weight: 800;
+  transition:
+    transform 0.18s ease,
+    background 0.18s ease;
 }
 
 .sidebar__logout:hover {
   background: var(--color-badge-error-bg-strong);
+  transform: translateY(-1px);
 }
 
 .main {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
-  background: var(--color-bg-surface);
+  background: transparent;
 }
 
 .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 12;
   height: 64px;
   padding: 0 28px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--color-bg-surface-elevated);
-  border-bottom: 1px solid var(--color-border-subtle);
+  background: rgba(255, 255, 255, 0.72);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+:global(body.dark-mode) .topbar {
+  background: rgba(2, 6, 23, 0.72);
 }
 
 .topbar__mobile-brand {
@@ -525,6 +627,30 @@ async function handleLogout() {
   gap: 12px;
 }
 
+.topbar__pulse {
+  position: relative;
+  padding: 6px 10px 6px 24px;
+  border-radius: 999px;
+  background: var(--color-success-bg-soft);
+  color: var(--color-success-text);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.topbar__pulse::before {
+  content: "";
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-success);
+  box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.42);
+  transform: translateY(-50%);
+  animation: pulseDot 1.8s ease-out infinite;
+}
+
 .topbar__welcome {
   font-size: 13px;
   color: var(--color-text-muted);
@@ -534,13 +660,14 @@ async function handleLogout() {
   width: 32px;
   height: 32px;
   border-radius: 999px;
-  background: var(--color-primary);
+  background: var(--gradient-campaign);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--color-text-on-primary);
   font-weight: 600;
   font-size: 14px;
+  box-shadow: 0 7px 14px rgba(124, 58, 237, 0.16);
 }
 
 .topbar__name {
@@ -551,7 +678,7 @@ async function handleLogout() {
 .topbar__role {
   padding: 4px 8px;
   border-radius: 999px;
-  background: var(--color-primary-bg-active);
+  background: linear-gradient(135deg, var(--color-primary-bg-active), var(--color-info-bg-subtle));
   color: var(--color-primary-text);
   font-size: 11px;
   font-weight: 700;
@@ -566,7 +693,7 @@ async function handleLogout() {
   padding: 20px 28px 28px;
   overflow-y: auto;
   flex: 1;
-  background: var(--color-bg-surface);
+  background: transparent;
 }
 
 .mobile-nav {
@@ -643,11 +770,11 @@ async function handleLogout() {
     border: 1px solid var(--color-border-subtle);
     border-radius: 18px;
     background: var(--color-surface-mobile);
-    box-shadow: 0 18px 50px var(--shadow-mobile-nav-color);
+    box-shadow: var(--shadow-mobile-nav);
     backdrop-filter: blur(14px);
   }
 
-  body.dark-mode .mobile-nav {
+  :global(body.dark-mode) .mobile-nav {
     background: var(--color-bg-sidebar-soft);
   }
 
@@ -664,6 +791,10 @@ async function handleLogout() {
     font-size: 10px;
     font-weight: 700;
     text-decoration: none;
+    transition:
+      background 0.18s ease,
+      transform 0.18s ease,
+      color 0.18s ease;
   }
 
   .mobile-nav__icon {
@@ -679,13 +810,35 @@ async function handleLogout() {
   }
 
   .mobile-nav__item--active {
-    background: var(--color-primary-bg-hover);
+    background: linear-gradient(135deg, var(--color-primary-bg-hover), var(--color-info-bg-subtle));
     color: var(--color-primary);
+    transform: translateY(-2px);
   }
 
   .mobile-nav__item--active .mobile-nav__icon {
     background: linear-gradient(135deg, var(--color-primary), var(--color-primary-soft));
     color: var(--color-text-on-primary);
+  }
+}
+
+@keyframes floatGlow {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(24px, -18px, 0) scale(1.08);
+  }
+}
+
+@keyframes pulseDot {
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.42);
+  }
+
+  100% {
+    box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
   }
 }
 </style>
