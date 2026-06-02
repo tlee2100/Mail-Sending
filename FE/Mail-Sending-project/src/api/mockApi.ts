@@ -210,9 +210,33 @@ export const mockApi = {
     writeJson(LS_USERS, users);
   },
 
+  async resetPassword(payload: {
+    email: string;
+    newPassword: string;
+  }): Promise<void> {
+    ensureSeed();
+    await sleep(400);
+
+    const email = normalizeEmail(payload.email);
+    const newPassword = payload.newPassword;
+    if (!email) throw new MockApiError("Email is required");
+    if (newPassword.length < 8)
+      throw new MockApiError("New password must be at least 8 characters");
+
+    const users = readJson<StoredUser[]>(LS_USERS, []);
+    const idx = users.findIndex((u) => normalizeEmail(u.email) === email);
+    if (idx < 0) throw new MockApiError("OTP is invalid or expired", 400);
+    const currentUser = users[idx];
+    if (!currentUser) throw new MockApiError("OTP is invalid or expired", 400);
+
+    users[idx] = { ...currentUser, password: newPassword };
+    writeJson(LS_USERS, users);
+  },
+
   async updateProfile(payload: {
     token: string;
     name: string;
+    email?: string;
   }): Promise<MockUser> {
     ensureSeed();
     await sleep(350);
@@ -220,7 +244,9 @@ export const mockApi = {
     const { token, name } = payload;
     if (!token) throw new MockApiError("Unauthorized", 401);
     const displayName = name.trim();
+    const email = payload.email ? normalizeEmail(payload.email) : undefined;
     if (!displayName) throw new MockApiError("Name is required");
+    if (payload.email !== undefined && !email) throw new MockApiError("Email is required");
 
     const sessions = readJson<Record<string, string>>(LS_SESSIONS, {});
     const userId = sessions[token];
@@ -231,8 +257,14 @@ export const mockApi = {
     if (idx < 0) throw new MockApiError("Unauthorized", 401);
     const currentUser = users[idx];
     if (!currentUser) throw new MockApiError("Unauthorized", 401);
+    if (
+      email &&
+      users.some((user) => user.id !== userId && normalizeEmail(user.email) === email)
+    ) {
+      throw new MockApiError("Email already exists", 409);
+    }
 
-    users[idx] = { ...currentUser, name: displayName };
+    users[idx] = { ...currentUser, name: displayName, email: email || currentUser.email };
     writeJson(LS_USERS, users);
     return safeUser(users[idx]);
   },

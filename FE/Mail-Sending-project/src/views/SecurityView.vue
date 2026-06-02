@@ -23,6 +23,7 @@
             v-model="currentPassword"
             :type="showCurrent ? 'text' : 'password'"
             placeholder="Enter your current password"
+            :disabled="otpSent"
           />
           <button type="button" class="input-icon-btn" @click="showCurrent = !showCurrent">
             {{ showCurrent ? "Hide" : "Show" }}
@@ -37,6 +38,7 @@
               v-model="newPassword"
               :type="showNew ? 'text' : 'password'"
               placeholder="Enter new password"
+              :disabled="otpSent"
             />
             <button type="button" class="input-icon-btn" @click="showNew = !showNew">
               {{ showNew ? "Hide" : "Show" }}
@@ -50,6 +52,7 @@
               v-model="confirmPassword"
               :type="showConfirm ? 'text' : 'password'"
               placeholder="Confirm new password"
+              :disabled="otpSent"
             />
             <button type="button" class="input-icon-btn" @click="showConfirm = !showConfirm">
               {{ showConfirm ? "Hide" : "Show" }}
@@ -57,11 +60,29 @@
           </div>
         </div>
       </div>
+      <div v-if="otpSent" class="input-wrap">
+        <label>Email OTP</label>
+        <input
+          v-model="otp"
+          type="text"
+          inputmode="numeric"
+          maxlength="6"
+          placeholder="Enter the 6-digit OTP"
+          autocomplete="one-time-code"
+        />
+        <p class="otp-hint">
+          We sent an OTP to {{ otpEmail }}. The code expires in
+          {{ otpExpiresInMinutes }} minutes.
+        </p>
+        <p v-if="debugOtp" class="otp-hint">
+          Local demo OTP: <strong>{{ debugOtp }}</strong>
+        </p>
+      </div>
     </div>
     <div class="password-actions">
       <RouterLink to="/profile" class="link-back">Back to Profile</RouterLink>
-      <button type="button" class="btn btn--warning" @click="updatePassword">
-        Update Password
+      <button type="button" class="btn btn--warning" :disabled="isSubmitting" @click="updatePassword">
+        {{ isSubmitting ? "Processing..." : otpSent ? "Verify OTP & Update" : "Send OTP" }}
       </button>
     </div>
   </div>
@@ -111,6 +132,12 @@ const notice = useNotice();
 const currentPassword = ref("");
 const newPassword = ref("");
 const confirmPassword = ref("");
+const otp = ref("");
+const otpSent = ref(false);
+const otpEmail = ref("");
+const otpExpiresInMinutes = ref(10);
+const debugOtp = ref("");
+const isSubmitting = ref(false);
 const showCurrent = ref(false);
 const showNew = ref(false);
 const showConfirm = ref(false);
@@ -124,23 +151,55 @@ async function updatePassword() {
     notice.show("New password and confirm password must match.", "error");
     return;
   }
-  if (newPassword.value.length < 6) {
-    notice.show("New password must be at least 6 characters.", "error");
+  if (newPassword.value.length < 8) {
+    notice.show("New password must be at least 8 characters.", "error");
     return;
   }
+
+  if (otpSent.value) {
+    if (!/^\d{6}$/.test(otp.value.trim())) {
+      notice.show("Please enter the 6-digit OTP.", "error");
+      return;
+    }
+
+    isSubmitting.value = true;
+    try {
+      await auth.verifyPasswordChangeOtp({ otp: otp.value.trim() });
+      currentPassword.value = "";
+      newPassword.value = "";
+      confirmPassword.value = "";
+      otp.value = "";
+      otpSent.value = false;
+      otpEmail.value = "";
+      debugOtp.value = "";
+      notice.show("Password updated.", "success");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to update password";
+      notice.show(message, "error");
+    } finally {
+      isSubmitting.value = false;
+    }
+    return;
+  }
+
+  isSubmitting.value = true;
   try {
-    await auth.changePassword({
+    const response = await auth.requestPasswordChangeOtp({
       currentPassword: currentPassword.value,
       newPassword: newPassword.value,
     });
-    currentPassword.value = "";
-    newPassword.value = "";
-    confirmPassword.value = "";
-    notice.show("Password updated in local demo mode.", "success");
+    otpSent.value = true;
+    otpEmail.value = response.email;
+    otpExpiresInMinutes.value = response.expiresInMinutes || 10;
+    debugOtp.value = response.debugOtp || "";
+    notice.show("OTP sent to your email.", "success");
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Unable to update password";
+      error instanceof Error ? error.message : "Unable to send password OTP";
     notice.show(message, "error");
+  } finally {
+    isSubmitting.value = false;
   }
 }
 </script>
@@ -234,6 +293,12 @@ async function updatePassword() {
 .btn--warning {
   background: var(--color-warning);
   color: var(--color-warning-text-strong);
+}
+
+.otp-hint {
+  margin: 8px 0 0;
+  color: var(--color-text-muted);
+  font-size: 12px;
 }
 
 .grid--tips {

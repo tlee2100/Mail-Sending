@@ -1,34 +1,44 @@
 import { ReactNode, useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AppButton } from "../components/AppButton";
 import { colors } from "../theme";
 import type { AuthSession } from "../types";
+import { AccountScreen } from "./AccountScreen";
 import { CampaignsScreen } from "./CampaignsScreen";
 import { ContactsScreen } from "./ContactsScreen";
 import { DashboardScreen } from "./DashboardScreen";
+import { EmailTemplatesScreen } from "./EmailTemplatesScreen";
 import { QuickSendScreen } from "./QuickSendScreen";
 import { TagsScreen } from "./TagsScreen";
+import { TemplateDesignerScreen } from "./TemplateDesignerScreen";
 
-type TabKey = "dashboard" | "send" | "campaigns" | "contacts" | "tags";
+type TabKey = "dashboard" | "send" | "templates" | "designer" | "campaigns" | "contacts" | "tags" | "account";
 
 const tabs: Array<{ key: TabKey; label: string; title: string }> = [
   { key: "dashboard", label: "Home", title: "Dashboard" },
   { key: "send", label: "Send", title: "Quick Send" },
+  { key: "templates", label: "Templates", title: "Email Templates" },
+  { key: "designer", label: "Designer", title: "Template Designer" },
   { key: "campaigns", label: "Campaigns", title: "Campaigns" },
   { key: "contacts", label: "Contacts", title: "Contacts" },
   { key: "tags", label: "Tags", title: "Tags" },
+  { key: "account", label: "Account", title: "Account Security" },
 ];
 
 type AppShellProps = {
   session: AuthSession;
   onLogout: () => void;
+  onSessionUpdate: (session: AuthSession) => void;
 };
 
-export function AppShell({ session, onLogout }: AppShellProps) {
+export function AppShell({ session, onLogout, onSessionUpdate }: AppShellProps) {
   const [activeTab, setActiveTab] = useState<TabKey>("dashboard");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [designerTemplateId, setDesignerTemplateId] = useState<number | null>(null);
+  const { width, height } = useWindowDimensions();
+  const landscape = width > height;
 
   const title = useMemo(
     () => tabs.find((tab) => tab.key === activeTab)?.title || "ChadMailer",
@@ -40,12 +50,26 @@ export function AppShell({ session, onLogout }: AppShellProps) {
     content = <DashboardScreen session={session} />;
   } else if (activeTab === "send") {
     content = <QuickSendScreen session={session} />;
+  } else if (activeTab === "templates") {
+    content = (
+      <EmailTemplatesScreen
+        session={session}
+        onOpenDesigner={(templateId) => {
+          setDesignerTemplateId(templateId || null);
+          setActiveTab("designer");
+        }}
+      />
+    );
+  } else if (activeTab === "designer") {
+    content = <TemplateDesignerScreen session={session} initialTemplateId={designerTemplateId} />;
   } else if (activeTab === "campaigns") {
     content = <CampaignsScreen session={session} />;
   } else if (activeTab === "contacts") {
     content = <ContactsScreen session={session} />;
-  } else {
+  } else if (activeTab === "tags") {
     content = <TagsScreen session={session} />;
+  } else {
+    content = <AccountScreen session={session} onSessionUpdate={onSessionUpdate} />;
   }
 
   function selectTab(tab: TabKey) {
@@ -53,63 +77,117 @@ export function AppShell({ session, onLogout }: AppShellProps) {
     setMenuOpen(false);
   }
 
+  function renderNavItems(mode: "menu" | "sidebar") {
+    return tabs.map((tab) => {
+      const active = tab.key === activeTab;
+      return (
+        <TouchableOpacity
+          key={tab.key}
+          activeOpacity={0.75}
+          onPress={() => selectTab(tab.key)}
+          style={[
+            mode === "sidebar" ? styles.sideNavItem : styles.menuItem,
+            active && (mode === "sidebar" ? styles.activeSideNavItem : styles.activeMenuItem),
+          ]}
+        >
+          <Text
+            style={[
+              mode === "sidebar" ? styles.sideNavText : styles.menuItemText,
+              active && (mode === "sidebar" ? styles.activeSideNavText : styles.activeMenuItemText),
+            ]}
+          >
+            {tab.label}
+          </Text>
+          {active ? <View style={mode === "sidebar" ? styles.sideActiveDot : styles.activeDot} /> : null}
+        </TouchableOpacity>
+      );
+    });
+  }
+
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <View style={styles.menuWrap}>
-            <Pressable
-              accessibilityLabel="Open navigation menu"
-              accessibilityRole="button"
-              onPress={() => setMenuOpen((value) => !value)}
-              style={({ pressed }) => [styles.menuButton, pressed && styles.pressed]}
-            >
-              <View style={styles.menuLine} />
-              <View style={styles.menuLine} />
-              <View style={styles.menuLine} />
-            </Pressable>
-
-            {menuOpen ? (
-              <View style={styles.menu}>
-                {tabs.map((tab) => {
-                  const active = tab.key === activeTab;
-                  return (
-                    <TouchableOpacity
-                      key={tab.key}
-                      activeOpacity={0.75}
-                      onPress={() => selectTab(tab.key)}
-                      style={[styles.menuItem, active && styles.activeMenuItem]}
-                    >
-                      <Text style={[styles.menuItemText, active && styles.activeMenuItemText]}>{tab.label}</Text>
-                      {active ? <View style={styles.activeDot} /> : null}
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            ) : null}
-          </View>
-
-          <View style={styles.brand}>
+      <View style={styles.shell}>
+        <View style={[styles.sidebar, !landscape && styles.hiddenSidebar]}>
+          <View style={styles.sideBrand}>
             <View style={styles.logoMark}>
               <Text style={styles.logoText}>CM</Text>
               <View style={styles.logoSpark} />
             </View>
             <View style={styles.brandText}>
-              <Text numberOfLines={1} style={styles.brandName}>ChadMailer</Text>
-              <Text numberOfLines={1} style={styles.brandTag}>Mail studio</Text>
+              <Text numberOfLines={1} style={styles.sideBrandName}>ChadMailer</Text>
+              <Text numberOfLines={1} style={styles.sideBrandTag}>Mail studio</Text>
             </View>
           </View>
 
-          <AppButton onPress={onLogout} style={styles.logout} title="Logout" variant="secondary" />
+          <ScrollView
+            contentContainerStyle={styles.sideNavContent}
+            showsVerticalScrollIndicator={false}
+            style={styles.sideNav}
+          >
+            {renderNavItems("sidebar")}
+          </ScrollView>
+
+          <View style={styles.sideFooter}>
+            <Text numberOfLines={1} style={styles.sideEmail}>{session.email}</Text>
+            <AppButton onPress={onLogout} style={styles.sideLogout} title="Logout" variant="secondary" />
+          </View>
         </View>
 
-        <View style={styles.pageTitle}>
-          <Text style={styles.title}>{title}</Text>
-          <Text numberOfLines={1} style={styles.subtitle}>{session.email}</Text>
+        <View style={styles.main}>
+          {landscape ? (
+            <View style={styles.landscapeTopbar}>
+              <View>
+                <Text style={styles.title}>{title}</Text>
+                <Text numberOfLines={1} style={styles.subtitle}>{session.email}</Text>
+              </View>
+              <Text style={styles.orientationBadge}>Landscape</Text>
+            </View>
+          ) : (
+            <View style={styles.header}>
+              <View style={styles.headerTop}>
+                <View style={styles.menuWrap}>
+                  <Pressable
+                    accessibilityLabel="Open navigation menu"
+                    accessibilityRole="button"
+                    onPress={() => setMenuOpen((value) => !value)}
+                    style={({ pressed }) => [styles.menuButton, pressed && styles.pressed]}
+                  >
+                    <View style={styles.menuLine} />
+                    <View style={styles.menuLine} />
+                    <View style={styles.menuLine} />
+                  </Pressable>
+
+                  {menuOpen ? (
+                    <View style={styles.menu}>
+                      {renderNavItems("menu")}
+                    </View>
+                  ) : null}
+                </View>
+
+                <View style={styles.brand}>
+                  <View style={styles.logoMark}>
+                    <Text style={styles.logoText}>CM</Text>
+                    <View style={styles.logoSpark} />
+                  </View>
+                  <View style={styles.brandText}>
+                    <Text numberOfLines={1} style={styles.brandName}>ChadMailer</Text>
+                    <Text numberOfLines={1} style={styles.brandTag}>Mail studio</Text>
+                  </View>
+                </View>
+
+                <AppButton onPress={onLogout} style={styles.logout} title="Logout" variant="secondary" />
+              </View>
+
+              <View style={styles.pageTitle}>
+                <Text style={styles.title}>{title}</Text>
+                <Text numberOfLines={1} style={styles.subtitle}>{session.email}</Text>
+              </View>
+            </View>
+          )}
+
+          <View style={styles.content}>{content}</View>
         </View>
       </View>
-
-      <View style={styles.content}>{content}</View>
     </SafeAreaView>
   );
 }
@@ -118,6 +196,118 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  shell: {
+    backgroundColor: colors.background,
+    flex: 1,
+    flexDirection: "row",
+  },
+  sidebar: {
+    backgroundColor: colors.dark,
+    borderRightColor: "rgba(148,163,184,0.22)",
+    borderRightWidth: 1,
+    flexShrink: 0,
+    padding: 14,
+    width: 230,
+  },
+  hiddenSidebar: {
+    borderRightWidth: 0,
+    display: "none",
+    padding: 0,
+    width: 0,
+  },
+  sideBrand: {
+    alignItems: "center",
+    borderBottomColor: "rgba(148,163,184,0.22)",
+    borderBottomWidth: 1,
+    flexDirection: "row",
+    gap: 10,
+    paddingBottom: 16,
+  },
+  sideBrandName: {
+    color: colors.surface,
+    fontSize: 17,
+    fontWeight: "900",
+  },
+  sideBrandTag: {
+    color: colors.darkMuted,
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 0,
+    marginTop: 2,
+    textTransform: "uppercase",
+  },
+  sideNav: {
+    flex: 1,
+  },
+  sideNavContent: {
+    gap: 6,
+    paddingTop: 16,
+    paddingBottom: 16,
+  },
+  sideNavItem: {
+    alignItems: "center",
+    borderRadius: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    minHeight: 44,
+    paddingHorizontal: 12,
+  },
+  activeSideNavItem: {
+    backgroundColor: colors.primary,
+  },
+  sideNavText: {
+    color: colors.darkMuted,
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  activeSideNavText: {
+    color: colors.surface,
+  },
+  sideActiveDot: {
+    backgroundColor: colors.cyan,
+    borderRadius: 4,
+    height: 8,
+    width: 8,
+  },
+  sideFooter: {
+    borderTopColor: "rgba(148,163,184,0.22)",
+    borderTopWidth: 1,
+    gap: 10,
+    paddingTop: 14,
+  },
+  sideEmail: {
+    color: colors.darkMuted,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  sideLogout: {
+    backgroundColor: "#111827",
+    borderColor: "rgba(148,163,184,0.32)",
+    minHeight: 40,
+  },
+  main: {
+    flex: 1,
+    minWidth: 0,
+  },
+  landscapeTopbar: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderBottomColor: colors.border,
+    borderBottomWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+  },
+  orientationBadge: {
+    backgroundColor: "#eff6ff",
+    borderRadius: 999,
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: "900",
+    paddingHorizontal: 12,
+    paddingVertical: 7,
   },
   header: {
     backgroundColor: colors.surface,
