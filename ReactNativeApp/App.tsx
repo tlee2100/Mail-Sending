@@ -42,6 +42,11 @@ export default function App() {
     setSession(null);
   }
 
+  async function handleSessionUpdate(nextSession: AuthSession) {
+    await saveSession(nextSession);
+    setSession(nextSession);
+  }
+
   if (booting) {
     return (
       <SafeAreaView style={styles.boot}>
@@ -56,7 +61,7 @@ export default function App() {
     <View style={styles.root}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.surface} />
       {session ? (
-        <AppShell session={session} onLogout={handleLogout} />
+        <AppShell session={session} onLogout={handleLogout} onSessionUpdate={handleSessionUpdate} />
       ) : (
         <LoginScreen onAuthenticated={handleAuthenticated} />
       )}
