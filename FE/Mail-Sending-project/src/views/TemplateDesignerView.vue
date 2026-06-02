@@ -463,7 +463,7 @@
       <article class="card preview-card">
         <div class="side-head">
           <h2 class="section-title">Preview</h2>
-          <p class="side-copy">Switch view mode and device size before publishing.</p>
+          <p class="side-copy">Switch view mode and device size before publishing. Click the preview to enlarge.</p>
         </div>
 
         <div class="preview-toggle-grid">
@@ -516,14 +516,121 @@
           v-if="previewMode === 'email'"
           class="preview-frame-shell"
           :class="{ 'preview-frame-shell--mobile': previewDevice === 'mobile' }"
+          role="button"
+          tabindex="0"
+          title="Open larger preview"
+          @click="openPreviewModal"
+          @keydown.enter.prevent="openPreviewModal"
+          @keydown.space.prevent="openPreviewModal"
         >
           <iframe class="email-frame" :srcdoc="renderedHtml" title="Email preview"></iframe>
+          <button type="button" class="preview-zoom-hit" @click.stop="openPreviewModal">
+            Click to enlarge
+          </button>
         </div>
-        <pre v-else-if="previewMode === 'html'" class="preview-code">{{ renderedHtml }}</pre>
-        <pre v-else class="preview-code">{{ renderedText }}</pre>
+        <pre
+          v-else-if="previewMode === 'html'"
+          class="preview-code preview-code--clickable"
+          role="button"
+          tabindex="0"
+          title="Open larger preview"
+          @click="openPreviewModal"
+          @keydown.enter.prevent="openPreviewModal"
+          @keydown.space.prevent="openPreviewModal"
+        >{{ renderedHtml }}</pre>
+        <pre
+          v-else
+          class="preview-code preview-code--clickable"
+          role="button"
+          tabindex="0"
+          title="Open larger preview"
+          @click="openPreviewModal"
+          @keydown.enter.prevent="openPreviewModal"
+          @keydown.space.prevent="openPreviewModal"
+        >{{ renderedText }}</pre>
       </article>
     </aside>
   </section>
+
+  <Teleport to="body">
+    <div
+      v-if="isPreviewModalOpen"
+      class="preview-modal-backdrop"
+      @click.self="closePreviewModal"
+    >
+      <section class="preview-modal" aria-label="Large email preview">
+        <header class="preview-modal__header">
+          <div>
+            <p class="designer-eyebrow">Preview</p>
+            <h2 class="preview-modal__title">{{ previewModalTitle }}</h2>
+          </div>
+          <button type="button" class="preview-modal__close" @click="closePreviewModal">
+            x
+          </button>
+        </header>
+
+        <div class="preview-modal__toolbar">
+          <div class="preview-toggle-grid preview-toggle-grid--modal">
+            <button
+              type="button"
+              class="toggle-btn"
+              :class="{ 'toggle-btn--active': previewMode === 'email' }"
+              @click="previewMode = 'email'"
+            >
+              Email
+            </button>
+            <button
+              type="button"
+              class="toggle-btn"
+              :class="{ 'toggle-btn--active': previewMode === 'html' }"
+              @click="previewMode = 'html'"
+            >
+              HTML
+            </button>
+            <button
+              type="button"
+              class="toggle-btn"
+              :class="{ 'toggle-btn--active': previewMode === 'text' }"
+              @click="previewMode = 'text'"
+            >
+              Text
+            </button>
+          </div>
+
+          <div class="preview-toggle-grid preview-toggle-grid--device preview-toggle-grid--modal">
+            <button
+              type="button"
+              class="toggle-btn"
+              :class="{ 'toggle-btn--active': previewDevice === 'desktop' }"
+              @click="previewDevice = 'desktop'"
+            >
+              Desktop
+            </button>
+            <button
+              type="button"
+              class="toggle-btn"
+              :class="{ 'toggle-btn--active': previewDevice === 'mobile' }"
+              @click="previewDevice = 'mobile'"
+            >
+              Mobile
+            </button>
+          </div>
+        </div>
+
+        <div class="preview-modal__body">
+          <div
+            v-if="previewMode === 'email'"
+            class="preview-modal__frame-shell"
+            :class="{ 'preview-modal__frame-shell--mobile': previewDevice === 'mobile' }"
+          >
+            <iframe class="preview-modal__frame" :srcdoc="renderedHtml" title="Large email preview"></iframe>
+          </div>
+          <pre v-else-if="previewMode === 'html'" class="preview-modal__code">{{ renderedHtml }}</pre>
+          <pre v-else class="preview-modal__code">{{ renderedText }}</pre>
+        </div>
+      </section>
+    </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -681,6 +788,115 @@ function colorCallout(
   );
 }
 
+function glowDivider(label: string, from: string, to: string): LayoutNode {
+  return sampleHtmlBlock(
+    `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:30px 0;border-collapse:collapse;"><tr><td style="height:1px;background:linear-gradient(90deg,transparent,${from},${to},transparent);"></td></tr><tr><td align="center" style="padding:10px 0 0;"><span style="display:inline-block;padding:7px 12px;border-radius:999px;background:#ffffff;border:1px solid ${from};color:#111827;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;">${label}</span></td></tr></table>`,
+  );
+}
+
+function timelineBlock(
+  title: string,
+  one: string,
+  two: string,
+  three: string,
+  accent: string,
+  bg: string,
+): LayoutNode {
+  return sampleHtmlBlock(
+    `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 28px;border-collapse:collapse;"><tr><td style="padding:22px;border-radius:24px;background:${bg};border:1px solid ${accent};"><h3 style="margin:0 0 16px;color:#111827;font-size:22px;line-height:1.25;">${title}</h3><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;"><tr><td valign="top" width="32" style="padding:0 12px 14px 0;"><span style="display:inline-block;width:28px;height:28px;border-radius:999px;background:${accent};color:#ffffff;text-align:center;line-height:28px;font-weight:800;">1</span></td><td style="padding:1px 0 14px;color:#334155;font-size:15px;line-height:1.55;">${one}</td></tr><tr><td valign="top" width="32" style="padding:0 12px 14px 0;"><span style="display:inline-block;width:28px;height:28px;border-radius:999px;background:${accent};color:#ffffff;text-align:center;line-height:28px;font-weight:800;">2</span></td><td style="padding:1px 0 14px;color:#334155;font-size:15px;line-height:1.55;">${two}</td></tr><tr><td valign="top" width="32" style="padding:0 12px 0 0;"><span style="display:inline-block;width:28px;height:28px;border-radius:999px;background:${accent};color:#ffffff;text-align:center;line-height:28px;font-weight:800;">3</span></td><td style="padding:1px 0 0;color:#334155;font-size:15px;line-height:1.55;">${three}</td></tr></table></td></tr></table>`,
+  );
+}
+
+function progressBars(
+  title: string,
+  first: string,
+  second: string,
+  third: string,
+  accent: string,
+): LayoutNode {
+  const rows = [first, second, third]
+    .map((item) => {
+      const [label, value, width] = item.split("|");
+      return `<tr><td style="padding:10px 0;"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;"><tr><td style="padding:0 0 7px;color:#111827;font-size:14px;font-weight:700;">${label}</td><td align="right" style="padding:0 0 7px;color:${accent};font-size:13px;font-weight:800;">${value}</td></tr><tr><td colspan="2" style="height:10px;border-radius:999px;background:#e5e7eb;overflow:hidden;"><div style="width:${width};height:10px;border-radius:999px;background:linear-gradient(90deg,${accent},#22d3ee);"></div></td></tr></table></td></tr>`;
+    })
+    .join("");
+  return sampleHtmlBlock(
+    `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 28px;border-collapse:collapse;"><tr><td style="padding:22px;border-radius:22px;background:#ffffff;border:1px solid #e5e7eb;box-shadow:0 18px 40px rgba(15,23,42,.08);"><h3 style="margin:0 0 8px;color:#111827;font-size:21px;">${title}</h3><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">${rows}</table></td></tr></table>`,
+  );
+}
+
+function quoteBlock(
+  quote: string,
+  author: string,
+  bg: string,
+  accent: string,
+): LayoutNode {
+  return sampleHtmlBlock(
+    `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 28px;border-collapse:collapse;"><tr><td style="padding:24px;border-radius:24px;background:${bg};border-left:6px solid ${accent};"><div style="font-size:34px;line-height:1;color:${accent};font-weight:900;">"</div><p style="margin:0 0 14px;color:#111827;font-size:18px;line-height:1.55;font-weight:650;">${quote}</p><p style="margin:0;color:#64748b;font-size:14px;line-height:1.5;">${author}</p></td></tr></table>`,
+  );
+}
+
+function featureMatrix(
+  title: string,
+  left: string,
+  center: string,
+  right: string,
+  accent: string,
+): LayoutNode {
+  return sampleHtmlBlock(
+    `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 30px;border-collapse:collapse;"><tr><td style="padding:24px;border-radius:24px;background:linear-gradient(180deg,#ffffff,#f8fafc);border:1px solid #e5e7eb;"><h3 style="margin:0 0 16px;color:#111827;font-size:22px;">${title}</h3><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:separate;border-spacing:10px;"><tr><td valign="top" width="33.33%" style="padding:16px;border-radius:18px;background:${accent};color:#ffffff;font-size:14px;line-height:1.5;">${left}</td><td valign="top" width="33.33%" style="padding:16px;border-radius:18px;background:#111827;color:#ffffff;font-size:14px;line-height:1.5;">${center}</td><td valign="top" width="33.33%" style="padding:16px;border-radius:18px;background:#0f766e;color:#ffffff;font-size:14px;line-height:1.5;">${right}</td></tr></table></td></tr></table>`,
+  );
+}
+
+function checklistPanel(
+  title: string,
+  intro: string,
+  one: string,
+  two: string,
+  three: string,
+  four: string,
+  accent: string,
+  bg: string,
+): LayoutNode {
+  const items = [one, two, three, four]
+    .map(
+      (item) =>
+        `<tr><td valign="top" width="30" style="padding:0 10px 12px 0;"><span style="display:inline-block;width:24px;height:24px;border-radius:8px;background:${accent};color:#ffffff;text-align:center;line-height:24px;font-size:12px;font-weight:900;">OK</span></td><td style="padding:1px 0 12px;color:#334155;font-size:15px;line-height:1.55;">${item}</td></tr>`,
+    )
+    .join("");
+  return sampleHtmlBlock(
+    `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 30px;border-collapse:collapse;"><tr><td style="padding:24px;border-radius:24px;background:${bg};border:1px solid ${accent};"><h3 style="margin:0 0 8px;color:#111827;font-size:22px;">${title}</h3><p style="margin:0 0 18px;color:#475569;font-size:15px;line-height:1.6;">${intro}</p><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">${items}</table></td></tr></table>`,
+  );
+}
+
+function faqPanel(
+  title: string,
+  q1: string,
+  a1: string,
+  q2: string,
+  a2: string,
+  q3: string,
+  a3: string,
+  accent: string,
+): LayoutNode {
+  return sampleHtmlBlock(
+    `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 30px;border-collapse:collapse;"><tr><td style="padding:24px;border-radius:24px;background:#ffffff;border:1px solid #e5e7eb;box-shadow:0 18px 40px rgba(15,23,42,.07);"><h3 style="margin:0 0 16px;color:#111827;font-size:22px;">${title}</h3><div style="padding:15px 0;border-top:3px solid ${accent};"><strong style="display:block;color:#111827;font-size:15px;margin-bottom:6px;">${q1}</strong><span style="display:block;color:#475569;font-size:14px;line-height:1.6;">${a1}</span></div><div style="padding:15px 0;border-top:1px solid #e5e7eb;"><strong style="display:block;color:#111827;font-size:15px;margin-bottom:6px;">${q2}</strong><span style="display:block;color:#475569;font-size:14px;line-height:1.6;">${a2}</span></div><div style="padding:15px 0 0;border-top:1px solid #e5e7eb;"><strong style="display:block;color:#111827;font-size:15px;margin-bottom:6px;">${q3}</strong><span style="display:block;color:#475569;font-size:14px;line-height:1.6;">${a3}</span></div></td></tr></table>`,
+  );
+}
+
+function ctaBand(
+  title: string,
+  copy: string,
+  label: string,
+  href: string,
+  from: string,
+  to: string,
+): LayoutNode {
+  return sampleHtmlBlock(
+    `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 30px;border-collapse:collapse;"><tr><td style="padding:26px;border-radius:26px;background:linear-gradient(135deg,${from},${to});color:#ffffff;text-align:center;"><h3 style="margin:0 0 10px;color:#ffffff;font-size:26px;line-height:1.2;">${title}</h3><p style="margin:0 auto 18px;max-width:560px;color:rgba(255,255,255,.86);font-size:15px;line-height:1.65;">${copy}</p><a href="${href}" style="display:inline-block;padding:13px 22px;border-radius:999px;background:#ffffff;color:${from};font-weight:900;text-decoration:none;font-size:14px;">${label}</a></td></tr></table>`,
+  );
+}
+
 const samples: Record<SampleKey, { root: LayoutNode }> = {
   aiShowcase: {
     root: {
@@ -738,6 +954,15 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
           "1 place|Brief, assets, and review",
           "#eef2ff",
           "#c7d2fe",
+        ),
+        glowDivider("AI workflow", "#6366f1", "#22d3ee"),
+        timelineBlock(
+          "A deeper campaign workflow",
+          "Start with a single product brief and let AI turn it into audience angles, subject lines, and a first-pass email structure.",
+          "Generate hero visuals, benefit cards, and customer-specific talking points that still match your brand voice.",
+          "Review the final campaign with performance predictions, QA notes, and a reusable checklist for the next send.",
+          "#6366f1",
+          "#f5f3ff",
         ),
         { type: "divider" },
         {
@@ -809,6 +1034,39 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
             imageHeight: "220",
           },
         },
+        featureMatrix(
+          "What makes this template stronger",
+          "<strong>Creative</strong><br/>Hero image, benefit cards, and modular copy blocks are already staged.",
+          "<strong>Operational</strong><br/>The campaign can become a launch, nurture, or renewal email by changing only a few sections.",
+          "<strong>Measurable</strong><br/>CTA, supporting links, and next-step prompts are separated for cleaner reporting.",
+          "#4f46e5",
+        ),
+        quoteBlock(
+          "The best AI email does not feel automated. It feels prepared, relevant, and easy to act on.",
+          "Campaign strategy note",
+          "#eef2ff",
+          "#6366f1",
+        ),
+        checklistPanel(
+          "Pre-send AI quality checklist",
+          "Use this section as a final QA pass before the campaign goes to customers.",
+          "Confirm the hero promise matches one real customer pain point for {{company}}.",
+          "Replace generic AI claims with specific workflow outcomes and time savings.",
+          "Check every CTA destination and make sure each link has a clear analytics label.",
+          "Keep one human review step for brand voice, compliance, and customer context.",
+          "#6366f1",
+          "#f8fafc",
+        ),
+        faqPanel(
+          "Questions readers may have",
+          "Will this replace my team?",
+          "No. Position the AI workspace as a multiplier for planning, drafting, and review, not a replacement for judgment.",
+          "Can I keep our brand voice?",
+          "Yes. Add a brand brief, approved examples, and reusable prompt patterns before generating campaign assets.",
+          "What should I try first?",
+          "Start with one announcement email and compare the draft against your usual production workflow.",
+          "#6366f1",
+        ),
         {
           type: "columns",
           props: {
@@ -824,6 +1082,14 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
           "#f5f3ff",
           "#ddd6fe",
           "#4c1d95",
+        ),
+        ctaBand(
+          "Turn this into your next AI campaign",
+          "Keep the structure, personalize the examples, and publish a polished announcement without rebuilding the layout.",
+          "Customize AI Campaign",
+          "https://example.com/ai-workspace",
+          "#4f46e5",
+          "#06b6d4",
         ),
         {
           type: "text",
@@ -906,6 +1172,15 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
           "#ecfeff",
           "#a5f3fc",
         ),
+        glowDivider("Onboarding path", "#06b6d4", "#2563eb"),
+        timelineBlock(
+          "The first 24 hours",
+          "Set up your sender identity, import the highest-quality contact list first, and keep segmentation simple.",
+          "Design one welcome email with a clear promise, one useful resource, and one primary call to action.",
+          "Send to a small test segment, review clicks and replies, then expand to your full audience.",
+          "#0891b2",
+          "#ecfeff",
+        ),
         {
           type: "imageCard",
           props: {
@@ -920,6 +1195,39 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
             imageHeight: "210",
           },
         },
+        progressBars(
+          "Setup confidence",
+          "Contacts imported|Ready|88%",
+          "Template customized|In progress|64%",
+          "First campaign launched|Next step|38%",
+          "#0891b2",
+        ),
+        quoteBlock(
+          "A welcome email should not explain everything. It should make the next step feel obvious.",
+          "Onboarding best practice",
+          "#f0fdfa",
+          "#0891b2",
+        ),
+        checklistPanel(
+          "What to personalize before sending",
+          "A welcome message feels stronger when it reflects the user's first job to be done.",
+          "Mention the workspace, plan, or company name so the email feels connected to signup intent.",
+          "Swap the dashboard screenshot with a product area that matches the user's first action.",
+          "Keep the first CTA focused on setup, not a broad product tour.",
+          "Add one support path so new users know where to ask for help.",
+          "#0891b2",
+          "#ecfeff",
+        ),
+        faqPanel(
+          "Onboarding objections to answer",
+          "What if I do not have contacts ready?",
+          "Invite users to start with a small CSV or create a test contact so they can preview the workflow.",
+          "What if I am not ready to send?",
+          "Encourage saving a draft and previewing across devices before launching.",
+          "What should I measure first?",
+          "Recommend delivery, clicks, replies, and unsubscribes instead of only open rate.",
+          "#0891b2",
+        ),
         {
           type: "button",
           props: {
@@ -940,6 +1248,14 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
             align: "center",
           },
         },
+        ctaBand(
+          "Build your first complete email",
+          "Use the checklist, keep the layout simple, and send a small test campaign before scaling.",
+          "Open Setup Checklist",
+          "https://example.com/dashboard",
+          "#0891b2",
+          "#2563eb",
+        ),
       ],
     },
   },
@@ -997,6 +1313,13 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
           "#fff7ed",
           "#fed7aa",
         ),
+        progressBars(
+          "Why customers upgrade now",
+          "Need stronger reporting|High|82%",
+          "Need team approvals|Medium|61%",
+          "Need reusable templates|High|77%",
+          "#dc2626",
+        ),
         {
           type: "twoColumnGrid",
           props: {
@@ -1020,6 +1343,49 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
             imageHeight: "170",
           },
         },
+        glowDivider("Offer stack", "#dc2626", "#f97316"),
+        featureMatrix(
+          "What the upgrade unlocks",
+          "<strong>Advanced insights</strong><br/>See campaign quality beyond opens with click depth and reply signals.",
+          "<strong>Team control</strong><br/>Keep approvals, ownership, and template reuse in one workflow.",
+          "<strong>Faster launches</strong><br/>Ship campaign variants without rebuilding the same layout every time.",
+          "#dc2626",
+        ),
+        colorCallout(
+          "Recommended subject line",
+          "Your private 30% upgrade offer ends Sunday",
+          "#fff1f2",
+          "#fecdd3",
+          "#991b1b",
+        ),
+        checklistPanel(
+          "Promotion readiness checklist",
+          "Use this before launching to make the offer clearer and easier to trust.",
+          "State who the offer is for and why they are receiving it.",
+          "Repeat the promo code near the CTA and in the checkout destination.",
+          "Add one trust-building line that says existing service will not be interrupted.",
+          "Keep the deadline visible in the hero, the offer strip, and the closing CTA.",
+          "#dc2626",
+          "#fff7ed",
+        ),
+        faqPanel(
+          "Offer questions to handle",
+          "Does the discount apply automatically?",
+          "No. Customers should use SPRING30 at checkout unless the upgrade page applies it for them.",
+          "Can customers keep their current plan?",
+          "Yes. Make it clear the offer is optional and current service continues as normal.",
+          "Why upgrade now?",
+          "Tie the discount to concrete improvements: analytics, approvals, shared templates, and faster launches.",
+          "#dc2626",
+        ),
+        ctaBand(
+          "Make the deadline impossible to miss",
+          "Close the email with one clean CTA, one code reminder, and one reason to act today.",
+          "Apply SPRING30",
+          "https://example.com/promo",
+          "#dc2626",
+          "#f97316",
+        ),
         {
           type: "button",
           props: {
@@ -1081,6 +1447,21 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
           "#99f6e4",
           "#064e3b",
         ),
+        timelineBlock(
+          "What happens next",
+          "Payment is processed through a secure checkout connected to your billing email.",
+          "Your receipt is sent automatically, and the invoice status updates in your workspace.",
+          "If payment fails, your team gets a final reminder before any account changes happen.",
+          "#0f766e",
+          "#ecfdf5",
+        ),
+        progressBars(
+          "Billing status",
+          "Invoice generated|Complete|100%",
+          "Payment received|Pending|45%",
+          "Service continuity|Protected|90%",
+          "#0f766e",
+        ),
         {
           type: "qrcode",
           props: {
@@ -1090,6 +1471,40 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
             size: "190",
           },
         },
+        quoteBlock(
+          "Clear billing emails reduce support tickets because customers can see the amount, deadline, and next step immediately.",
+          "Finance operations note",
+          "#f0fdfa",
+          "#0f766e",
+        ),
+        checklistPanel(
+          "Billing clarity checklist",
+          "A payment email should reduce anxiety while still making the deadline clear.",
+          "Show invoice ID, amount, due date, and billing email in a scannable area.",
+          "Provide both a button and QR code for customers who switch devices.",
+          "Explain what happens after payment so customers know the status will update.",
+          "Add a calm fallback note for customers who already paid.",
+          "#0f766e",
+          "#ecfdf5",
+        ),
+        faqPanel(
+          "Payment support details",
+          "What if the payment already happened?",
+          "Tell customers that processing may take a short time and the reminder can be ignored if paid.",
+          "What if the QR code does not work?",
+          "Provide the payment button as the primary fallback and include a support contact.",
+          "What if the invoice amount is wrong?",
+          "Direct customers to billing support before asking them to complete the payment.",
+          "#0f766e",
+        ),
+        ctaBand(
+          "Keep your account uninterrupted",
+          "Complete payment now or contact billing support if anything looks incorrect.",
+          "Review Billing Details",
+          "https://example.com/billing",
+          "#0f766e",
+          "#14b8a6",
+        ),
         {
           type: "button",
           props: {
@@ -1174,6 +1589,15 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
           "#eef2ff",
           "#c7d2fe",
         ),
+        glowDivider("Editor's picks", "#4f46e5", "#06b6d4"),
+        timelineBlock(
+          "How to use this issue",
+          "Read the featured metric guide first and choose one reporting habit to test this week.",
+          "Save the lifecycle idea and adapt it to a segment that already shows buying intent.",
+          "Forward the customer story to your team if you need a practical example for template governance.",
+          "#4f46e5",
+          "#eef2ff",
+        ),
         {
           type: "twoColumnGrid",
           props: {
@@ -1197,6 +1621,47 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
             imageHeight: "170",
           },
         },
+        featureMatrix(
+          "Newsletter content map",
+          "<strong>Learn</strong><br/>A practical guide with one measurable takeaway.",
+          "<strong>Apply</strong><br/>A lifecycle play your team can build in the next campaign.",
+          "<strong>Share</strong><br/>A customer example that makes the strategy easier to explain.",
+          "#4f46e5",
+        ),
+        quoteBlock(
+          "A useful newsletter earns attention by helping readers make one better decision before the week ends.",
+          "Editorial principle",
+          "#eef2ff",
+          "#4f46e5",
+        ),
+        checklistPanel(
+          "Editorial polish checklist",
+          "Use this checklist to keep a long newsletter easy to scan instead of overwhelming.",
+          "Put the most actionable article first and make its value clear in the first sentence.",
+          "Balance one educational story, one practical example, and one customer proof point.",
+          "Use short section titles so readers can skim on mobile.",
+          "End with preference management to keep the list healthy.",
+          "#4f46e5",
+          "#eef2ff",
+        ),
+        faqPanel(
+          "Reader questions this issue answers",
+          "What should I improve before my next send?",
+          "The metrics guide explains which signals to review before changing subject lines or copy.",
+          "What can I try this week?",
+          "The lifecycle play gives a simple onboarding sequence that can be adapted quickly.",
+          "Why should my team care?",
+          "The customer story shows the operational impact of tags, templates, and shared approvals.",
+          "#4f46e5",
+        ),
+        ctaBand(
+          "Save this issue for your next planning session",
+          "Forward it to your campaign team and use the content map as a lightweight meeting agenda.",
+          "Read the Full Digest",
+          "https://example.com/news",
+          "#4f46e5",
+          "#06b6d4",
+        ),
         {
           type: "button",
           props: {
@@ -1290,6 +1755,15 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
           "#f8fafc",
           "#cbd5e1",
         ),
+        glowDivider("Launch narrative", "#0f172a", "#7c3aed"),
+        timelineBlock(
+          "Launch story arc",
+          "Lead with the customer problem: teams lose speed when campaign design, approval, and reporting are disconnected.",
+          "Show the transformation: reusable blocks, visual approvals, and live analytics turn each campaign into a repeatable system.",
+          "Close with proof: invite readers to watch a demo, compare workflows, or open the new product experience.",
+          "#7c3aed",
+          "#f5f3ff",
+        ),
         {
           type: "imageCard",
           props: {
@@ -1304,6 +1778,47 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
             imageHeight: "220",
           },
         },
+        featureMatrix(
+          "Launch assets included",
+          "<strong>Hero story</strong><br/>A premium announcement section that frames the product clearly.",
+          "<strong>Feature proof</strong><br/>Visual cards that connect features to outcomes.",
+          "<strong>Conversion path</strong><br/>Demo, feature page, and campaign follow-up CTAs are separated.",
+          "#7c3aed",
+        ),
+        quoteBlock(
+          "Great launch emails do not list features. They make the new future feel close enough to try.",
+          "Product marketing note",
+          "#f5f3ff",
+          "#7c3aed",
+        ),
+        checklistPanel(
+          "Launch email depth checklist",
+          "A longer launch email should build momentum without turning into a changelog.",
+          "Open with the problem and the new outcome, not a generic feature list.",
+          "Group features by customer benefit so each section has a clear reason to exist.",
+          "Use proof points, demo links, and visual cards to support the launch claim.",
+          "Close with a demo CTA and a lower-friction feature page CTA for cautious readers.",
+          "#7c3aed",
+          "#f5f3ff",
+        ),
+        faqPanel(
+          "Launch objections to answer",
+          "Is this available now?",
+          "State availability clearly and point readers to the right demo or feature page.",
+          "Will existing workflows break?",
+          "Explain that current templates and campaigns remain available while new workflows are added.",
+          "Why should teams switch?",
+          "Tie the launch to speed, approval clarity, and better reporting rather than novelty.",
+          "#7c3aed",
+        ),
+        ctaBand(
+          "See the new workflow in action",
+          "A short demo helps readers understand the upgrade faster than another paragraph of feature copy.",
+          "Watch Launch Demo",
+          "https://example.com/launch/demo",
+          "#0f172a",
+          "#7c3aed",
+        ),
         {
           type: "button",
           props: {
@@ -1374,6 +1889,21 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
           "#fdf2f8",
           "#fbcfe8",
         ),
+        timelineBlock(
+          "Event experience",
+          "Before the event, registrants receive a calendar invite, agenda summary, and suggested questions to prepare.",
+          "During the event, each speaker shares one framework and one campaign example that can be copied later.",
+          "After the event, attendees receive the replay, slides, and a template checklist for their next send.",
+          "#ec4899",
+          "#fdf2f8",
+        ),
+        progressBars(
+          "Seat availability",
+          "Live seats reserved|72% full|72%",
+          "Q&A slots submitted|Growing|54%",
+          "Replay access|Included|100%",
+          "#ec4899",
+        ),
         {
           type: "qrcode",
           props: {
@@ -1383,6 +1913,40 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
             size: "180",
           },
         },
+        quoteBlock(
+          "The strongest event invite makes the value concrete before the registration button appears.",
+          "Event marketing note",
+          "#fdf2f8",
+          "#ec4899",
+        ),
+        checklistPanel(
+          "Event invitation checklist",
+          "Use this to make the email feel useful before the reader registers.",
+          "Lead with the outcome attendees will take back to their team.",
+          "Show the agenda in short, practical modules rather than speaker bios only.",
+          "Offer replay access to reduce hesitation from busy readers.",
+          "Repeat the registration CTA after the agenda and near the closing note.",
+          "#ec4899",
+          "#fdf2f8",
+        ),
+        faqPanel(
+          "Common event questions",
+          "Will there be a recording?",
+          "Yes. Tell readers that registering is still useful even if they cannot attend live.",
+          "Who should attend?",
+          "Name the role or team: campaign managers, lifecycle marketers, founders, or operators.",
+          "What will I leave with?",
+          "Promise a checklist, replay, or practical framework instead of only inspiration.",
+          "#ec4899",
+        ),
+        ctaBand(
+          "Bring one question to the live Q&A",
+          "Register now, submit a question, and use the replay link after the session.",
+          "Register for the Webinar",
+          "https://example.com/events",
+          "#7c3aed",
+          "#ec4899",
+        ),
         {
           type: "button",
           props: {
@@ -1476,6 +2040,55 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
           "#fdba74",
           "#7c2d12",
         ),
+        progressBars(
+          "What is waiting for you",
+          "Saved templates|Still available|100%",
+          "Contact tags|Ready to reuse|100%",
+          "Comeback discount|Ends soon|42%",
+          "#ea580c",
+        ),
+        timelineBlock(
+          "Return in three steps",
+          "Reactivate the account and keep your existing templates, contacts, and campaign history.",
+          "Choose the campaign you wanted to finish and refresh the message with current offers.",
+          "Send to a small reactivation segment before rolling out to the full audience.",
+          "#ea580c",
+          "#fff7ed",
+        ),
+        quoteBlock(
+          "Win-back emails work best when they remind customers what they already built, not only what they can buy.",
+          "Retention strategy note",
+          "#fff7ed",
+          "#ea580c",
+        ),
+        checklistPanel(
+          "Win-back personalization checklist",
+          "Use concrete reminders so the email feels specific instead of desperate.",
+          "Reference saved templates, tags, or previous campaign history when those details are available.",
+          "Show the comeback offer once near the middle and once near the CTA.",
+          "Make the next step low-friction: open workspace, reactivate, or review saved assets.",
+          "Give readers a preference link if they are not ready to return.",
+          "#ea580c",
+          "#fff7ed",
+        ),
+        faqPanel(
+          "Reasons to return",
+          "Will my previous work still be there?",
+          "Yes. Position saved templates and tags as the fastest path back to value.",
+          "Do I have to start with a paid plan?",
+          "If your product supports it, offer a softer path like reviewing saved assets before checkout.",
+          "Why now?",
+          "Use the limited discount and saved work together so urgency does not feel arbitrary.",
+          "#ea580c",
+        ),
+        ctaBand(
+          "Your saved workspace is one click away",
+          "Reactivate now, apply the comeback code, and finish the campaign you already started.",
+          "Return to Workspace",
+          "https://example.com/reactivate",
+          "#ea580c",
+          "#facc15",
+        ),
         {
           type: "button",
           props: {
@@ -1554,6 +2167,56 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
           "#eff6ff",
           "#bfdbfe",
         ),
+        glowDivider("Feedback loop", "#2563eb", "#14b8a6"),
+        timelineBlock(
+          "How your feedback is used",
+          "We group responses by workflow area so product, support, and engineering can see the same customer themes.",
+          "The highest-impact requests are reviewed against current roadmap work and support volume.",
+          "We share a short improvement summary so customers know what changed because of their input.",
+          "#2563eb",
+          "#eff6ff",
+        ),
+        featureMatrix(
+          "What we want to learn",
+          "<strong>Clarity</strong><br/>Where the product feels easy, confusing, or too hidden.",
+          "<strong>Speed</strong><br/>Which workflows take too many clicks or too much waiting.",
+          "<strong>Trust</strong><br/>What would make your team more confident before sending.",
+          "#2563eb",
+        ),
+        quoteBlock(
+          "Specific feedback helps us fix the workflow behind the complaint, not just the screen where it appeared.",
+          "Product research note",
+          "#eff6ff",
+          "#2563eb",
+        ),
+        checklistPanel(
+          "Survey design checklist",
+          "A feedback request gets more useful responses when readers know what kind of detail helps.",
+          "Tell users how long the survey takes and what topics it covers.",
+          "Ask about recent workflows instead of general satisfaction only.",
+          "Promise a follow-up summary so the request feels reciprocal.",
+          "Keep the CTA singular and avoid multiple competing survey links.",
+          "#2563eb",
+          "#eff6ff",
+        ),
+        faqPanel(
+          "Feedback concerns to address",
+          "Will my response be read?",
+          "Explain that responses are grouped by workflow and reviewed by product, support, and engineering.",
+          "Do I need to write a lot?",
+          "Set expectations: short answers are useful when they mention the exact workflow.",
+          "Will anything change?",
+          "Commit to sharing a summary of themes and improvements when possible.",
+          "#2563eb",
+        ),
+        ctaBand(
+          "Help shape the next product improvements",
+          "Your feedback gives the team sharper context than analytics alone can provide.",
+          "Start the Survey",
+          "https://example.com/feedback",
+          "#2563eb",
+          "#14b8a6",
+        ),
         {
           type: "button",
           props: {
@@ -1588,6 +2251,7 @@ const initialSample: SampleKey = isSampleKey(sampleFromQuery)
 const selectedSample = ref<SampleKey>(initialSample);
 const previewMode = ref<"email" | "html" | "text">("email");
 const previewDevice = ref<"desktop" | "mobile">("desktop");
+const isPreviewModalOpen = ref(false);
 const layout = ref(JSON.stringify(samples[initialSample], null, 2));
 const palette: BlockType[] = [
   "text",
@@ -1638,6 +2302,9 @@ const saveDraftLabel = computed(() =>
 );
 const publishDraftLabel = computed(() =>
   canManageCurrentTemplate.value ? "Publish" : "Publish As New",
+);
+const previewModalTitle = computed(
+  () => `${previewMode.value.toUpperCase()} preview - ${previewDevice.value}`,
 );
 
 const selectedBlock = computed(() => {
@@ -1765,6 +2432,14 @@ function defaultProps(type: BlockType): Record<string, BlockPropValue> {
     };
   }
   return {};
+}
+
+function openPreviewModal() {
+  isPreviewModalOpen.value = true;
+}
+
+function closePreviewModal() {
+  isPreviewModalOpen.value = false;
 }
 
 function blockSummary(block: DesignerBlock): string {
@@ -3180,15 +3855,58 @@ onMounted(() => {
 }
 
 .preview-frame-shell {
+  position: relative;
   border: 1px solid var(--color-border-subtle);
   border-radius: 18px;
   padding: 14px;
   background: var(--color-slate-bg-muted);
+  cursor: zoom-in;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.preview-zoom-hit {
+  position: absolute;
+  inset: 14px;
+  z-index: 2;
+  border: none;
+  border-radius: 14px;
+  background: var(--color-transparent);
+  color: var(--color-transparent);
+  cursor: zoom-in;
+}
+
+.preview-zoom-hit::after {
+  content: "Click to enlarge";
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.72);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.preview-frame-shell:hover .preview-zoom-hit::after,
+.preview-zoom-hit:focus::after {
+  opacity: 1;
 }
 
 .preview-frame-shell--mobile {
   max-width: 320px;
   margin: 0 auto;
+}
+
+.preview-frame-shell:hover,
+.preview-frame-shell:focus {
+  border-color: var(--color-primary-soft);
+  box-shadow: 0 14px 30px var(--color-primary-border-soft);
+  outline: none;
 }
 
 .email-frame {
@@ -3210,6 +3928,123 @@ onMounted(() => {
   overflow: auto;
   font-size: 12px;
   line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.preview-code--clickable {
+  cursor: zoom-in;
+}
+
+.preview-code--clickable:hover,
+.preview-code--clickable:focus {
+  border-color: var(--color-primary-soft);
+  box-shadow: 0 14px 30px var(--color-primary-border-soft);
+  outline: none;
+}
+
+.preview-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  padding: 24px;
+  background: var(--color-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-modal {
+  width: min(1180px, 100%);
+  max-height: calc(100vh - 48px);
+  border-radius: 18px;
+  background: var(--color-bg-surface-elevated);
+  color: var(--color-text-main);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 28px 80px var(--shadow-modal-color);
+}
+
+.preview-modal__header,
+.preview-modal__toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.preview-modal__toolbar {
+  align-items: center;
+  flex-wrap: wrap;
+  background: var(--color-bg-surface-soft);
+}
+
+.preview-modal__title {
+  margin: 8px 0 0;
+  color: var(--color-text-main);
+  font-size: 20px;
+}
+
+.preview-modal__close {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-surface);
+  color: var(--color-text-main);
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.preview-toggle-grid--modal {
+  width: min(360px, 100%);
+  margin-bottom: 0;
+}
+
+.preview-modal__body {
+  min-height: 0;
+  flex: 1;
+  padding: 20px;
+  overflow: auto;
+  background: var(--color-bg-surface);
+}
+
+.preview-modal__frame-shell {
+  width: 100%;
+  min-height: 72vh;
+  padding: 18px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 18px;
+  background: var(--color-slate-bg-muted);
+  box-sizing: border-box;
+}
+
+.preview-modal__frame-shell--mobile {
+  max-width: 390px;
+  margin: 0 auto;
+}
+
+.preview-modal__frame {
+  width: 100%;
+  min-height: 72vh;
+  border: none;
+  border-radius: 14px;
+  background: var(--color-white);
+}
+
+.preview-modal__code {
+  margin: 0;
+  min-height: 72vh;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 14px;
+  background: var(--color-text-main);
+  color: var(--color-slate-bg);
+  padding: 18px;
+  overflow: auto;
+  font-size: 13px;
+  line-height: 1.7;
   white-space: pre-wrap;
 }
 
