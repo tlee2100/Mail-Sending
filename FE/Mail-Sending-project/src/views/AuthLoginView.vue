@@ -31,10 +31,34 @@
             <span></span>
             <span></span>
           </div>
-          <div class="auth-preview__card auth-preview__card--wide"></div>
+          <div class="auth-preview__card auth-preview__card--wide">
+            <div class="preview-mail__top">
+              <span>Campaign launch</span>
+              <strong>Ready</strong>
+            </div>
+            <div class="preview-mail__subject"></div>
+            <div class="preview-mail__line preview-mail__line--long"></div>
+            <div class="preview-mail__line"></div>
+          </div>
           <div class="auth-preview__row">
-            <div class="auth-preview__card"></div>
-            <div class="auth-preview__card auth-preview__card--hot"></div>
+            <div class="auth-preview__card">
+              <div class="preview-stat__value">12K</div>
+              <div class="preview-stat__label">Recipients</div>
+              <div class="preview-stat__mini">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </div>
+            <div class="auth-preview__card auth-preview__card--hot">
+              <div class="preview-stat__value">98%</div>
+              <div class="preview-stat__label">Delivery</div>
+              <div class="preview-stat__mini preview-stat__mini--hot">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </div>
           </div>
           <div class="auth-preview__progress"><span></span></div>
         </div>
@@ -54,10 +78,23 @@
           </div>
           <div class="scene-dashboard">
             <div class="scene-dashboard__bar"></div>
+            <div class="scene-dashboard__meta">
+              <span>Mail flow</span>
+              <strong>Live</strong>
+            </div>
             <div class="scene-dashboard__row">
-              <span></span>
-              <span></span>
-              <span></span>
+              <span>
+                <i></i>
+                <b></b>
+              </span>
+              <span>
+                <i></i>
+                <b></b>
+              </span>
+              <span>
+                <i></i>
+                <b></b>
+              </span>
             </div>
           </div>
         </div>
@@ -433,8 +470,11 @@ async function handleSubmit() {
 
 .auth-preview__card {
   min-height: 64px;
+  position: relative;
+  padding: 14px;
   border-radius: 18px;
   background: linear-gradient(135deg, rgba(14, 165, 233, 0.42), rgba(99, 102, 241, 0.2));
+  overflow: hidden;
 }
 
 .auth-preview__card--wide {
@@ -445,6 +485,89 @@ async function handleSubmit() {
 
 .auth-preview__card--hot {
   background: linear-gradient(135deg, rgba(245, 158, 11, 0.42), rgba(34, 197, 94, 0.22));
+}
+
+.preview-mail__top,
+.scene-dashboard__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.preview-mail__top span,
+.preview-stat__label,
+.scene-dashboard__meta span {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.preview-mail__top strong,
+.scene-dashboard__meta strong {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.preview-mail__subject {
+  width: min(220px, 72%);
+  height: 12px;
+  margin-top: 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.54);
+}
+
+.preview-mail__line {
+  width: 48%;
+  height: 7px;
+  margin-top: 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.26);
+}
+
+.preview-mail__line--long {
+  width: 82%;
+}
+
+.preview-stat__value {
+  color: rgba(255, 255, 255, 0.94);
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.preview-stat__mini {
+  display: flex;
+  align-items: end;
+  gap: 5px;
+  height: 22px;
+  margin-top: 9px;
+}
+
+.preview-stat__mini span {
+  width: 18px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.36);
+}
+
+.preview-stat__mini span:nth-child(1) {
+  height: 11px;
+}
+
+.preview-stat__mini span:nth-child(2) {
+  height: 18px;
+}
+
+.preview-stat__mini span:nth-child(3) {
+  height: 14px;
+}
+
+.preview-stat__mini--hot span {
+  background: rgba(255, 255, 255, 0.42);
 }
 
 .auth-preview__progress {
@@ -657,6 +780,10 @@ async function handleSubmit() {
   animation: routeSweep 2.8s linear infinite;
 }
 
+.scene-dashboard__meta {
+  margin-top: 12px;
+}
+
 .scene-dashboard__row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -665,7 +792,9 @@ async function handleSubmit() {
 }
 
 .scene-dashboard__row span {
+  position: relative;
   min-height: 46px;
+  padding: 10px;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.34);
 }
@@ -676,6 +805,25 @@ async function handleSubmit() {
 
 .scene-dashboard__row span:nth-child(3) {
   background: rgba(34, 197, 94, 0.22);
+}
+
+.scene-dashboard__row i,
+.scene-dashboard__row b {
+  display: block;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.scene-dashboard__row i {
+  width: 24px;
+  height: 8px;
+}
+
+.scene-dashboard__row b {
+  width: 38px;
+  height: 6px;
+  margin-top: 10px;
+  opacity: 0.72;
 }
 
 .auth__card {
