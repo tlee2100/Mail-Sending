@@ -210,6 +210,29 @@ export const mockApi = {
     writeJson(LS_USERS, users);
   },
 
+  async resetPassword(payload: {
+    email: string;
+    newPassword: string;
+  }): Promise<void> {
+    ensureSeed();
+    await sleep(400);
+
+    const email = normalizeEmail(payload.email);
+    const newPassword = payload.newPassword;
+    if (!email) throw new MockApiError("Email is required");
+    if (newPassword.length < 8)
+      throw new MockApiError("New password must be at least 8 characters");
+
+    const users = readJson<StoredUser[]>(LS_USERS, []);
+    const idx = users.findIndex((u) => normalizeEmail(u.email) === email);
+    if (idx < 0) throw new MockApiError("OTP is invalid or expired", 400);
+    const currentUser = users[idx];
+    if (!currentUser) throw new MockApiError("OTP is invalid or expired", 400);
+
+    users[idx] = { ...currentUser, password: newPassword };
+    writeJson(LS_USERS, users);
+  },
+
   async updateProfile(payload: {
     token: string;
     name: string;

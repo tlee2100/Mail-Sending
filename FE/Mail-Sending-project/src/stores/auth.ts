@@ -260,6 +260,7 @@ let mockPendingPasswordChange:
   | { currentPassword: string; newPassword: string }
   | null = null;
 let mockPendingProfileUpdate: { name: string; email: string } | null = null;
+let mockPendingPasswordReset: { email: string } | null = null;
 
 async function restore() {
   state.isLoading = true;
@@ -616,6 +617,106 @@ async function verifyPasswordChangeOtp(payload: { otp: string }) {
   }
 }
 
+async function requestPasswordResetOtp(payload: { email: string }) {
+  const email = payload.email.trim().toLowerCase();
+  if (!email) {
+    throw new Error("Email is required");
+  }
+
+  state.isLoading = true;
+  state.error = null;
+  try {
+    try {
+      const res = await authRequest<OtpRequestPayload>(
+        "/auth/password/forgot/request-otp",
+        {
+          method: "POST",
+          body: { email },
+        },
+      );
+      return res.data;
+    } catch (error) {
+      if (!shouldFallbackToMock(error)) {
+        throw error;
+      }
+
+      mockPendingPasswordReset = { email };
+      return {
+        email,
+        expiresInMinutes: 10,
+        requiresOtp: true,
+        debugOtp: MOCK_OTP,
+      };
+    }
+  } catch (e) {
+    state.error = getErrorMessage(e);
+    throw e;
+  } finally {
+    state.isLoading = false;
+  }
+}
+
+async function verifyPasswordResetOtp(payload: {
+  email: string;
+  otp: string;
+  newPassword: string;
+}) {
+  const email = payload.email.trim().toLowerCase();
+  if (!email) {
+    throw new Error("Email is required");
+  }
+  if (!/^\d{6}$/.test(payload.otp.trim())) {
+    throw new Error("OTP must be 6 digits");
+  }
+  if (payload.newPassword.trim().length < 8) {
+    throw new Error("New password must be at least 8 characters");
+  }
+
+  state.isLoading = true;
+  state.error = null;
+  try {
+    try {
+      const res = await authRequest<{ ok: boolean }>(
+        "/auth/password/forgot/verify-otp",
+        {
+          method: "POST",
+          body: {
+            email,
+            otp: payload.otp.trim(),
+            newPassword: payload.newPassword,
+          },
+        },
+      );
+      return res.data;
+    } catch (error) {
+      if (!shouldFallbackToMock(error)) {
+        throw error;
+      }
+
+      if (!mockPendingPasswordReset) {
+        throw new Error("No pending password reset OTP request");
+      }
+      if (
+        mockPendingPasswordReset.email !== email ||
+        payload.otp.trim() !== MOCK_OTP
+      ) {
+        throw new Error("OTP is invalid or expired");
+      }
+      await mockApi.resetPassword({
+        email,
+        newPassword: payload.newPassword,
+      });
+      mockPendingPasswordReset = null;
+      return { ok: true };
+    }
+  } catch (e) {
+    state.error = getErrorMessage(e);
+    throw e;
+  } finally {
+    state.isLoading = false;
+  }
+}
+
 async function updateProfile(payload: { name: string; email?: string }) {
   if (!state.user || !state.token) {
     throw new Error("Unauthorized");
@@ -773,6 +874,8 @@ export const auth = {
   changePassword,
   requestPasswordChangeOtp,
   verifyPasswordChangeOtp,
+  requestPasswordResetOtp,
+  verifyPasswordResetOtp,
   updateProfile,
   verifyProfileEmailOtp,
 };
