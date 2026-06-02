@@ -107,6 +107,8 @@ export function AppShell({ session, onLogout, onSessionUpdate }: AppShellProps) 
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.shell}>
+        <View pointerEvents="none" style={styles.colorBandTop} />
+        <View pointerEvents="none" style={styles.colorBandBottom} />
         <View style={[styles.sidebar, !landscape && styles.hiddenSidebar]}>
           <View style={styles.sideBrand}>
             <View style={styles.logoMark}>
@@ -201,14 +203,35 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     flex: 1,
     flexDirection: "row",
+    overflow: "hidden",
+    position: "relative",
+  },
+  colorBandTop: {
+    backgroundColor: "#dbeafe",
+    height: 96,
+    left: 0,
+    opacity: 0.8,
+    position: "absolute",
+    right: 0,
+    top: 0,
+  },
+  colorBandBottom: {
+    backgroundColor: "#f5d0fe",
+    bottom: -36,
+    height: 94,
+    left: 0,
+    opacity: 0.55,
+    position: "absolute",
+    right: 0,
   },
   sidebar: {
-    backgroundColor: colors.dark,
-    borderRightColor: "rgba(148,163,184,0.22)",
+    backgroundColor: "#050816",
+    borderRightColor: "rgba(34,211,238,0.18)",
     borderRightWidth: 1,
     flexShrink: 0,
     padding: 14,
     width: 230,
+    zIndex: 2,
   },
   hiddenSidebar: {
     borderRightWidth: 0,
@@ -218,7 +241,7 @@ const styles = StyleSheet.create({
   },
   sideBrand: {
     alignItems: "center",
-    borderBottomColor: "rgba(148,163,184,0.22)",
+    borderBottomColor: "rgba(129,140,248,0.28)",
     borderBottomWidth: 1,
     flexDirection: "row",
     gap: 10,
@@ -254,7 +277,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   activeSideNavItem: {
-    backgroundColor: colors.primary,
+    backgroundColor: "#5b4ff2",
+    borderColor: "rgba(34,211,238,0.5)",
+    borderWidth: 1,
+    shadowColor: colors.cyan,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.22,
+    shadowRadius: 16,
+    elevation: 4,
   },
   sideNavText: {
     color: colors.darkMuted,
@@ -271,7 +301,7 @@ const styles = StyleSheet.create({
     width: 8,
   },
   sideFooter: {
-    borderTopColor: "rgba(148,163,184,0.22)",
+    borderTopColor: "rgba(129,140,248,0.28)",
     borderTopWidth: 1,
     gap: 10,
     paddingTop: 14,
@@ -283,7 +313,7 @@ const styles = StyleSheet.create({
   },
   sideLogout: {
     backgroundColor: "#111827",
-    borderColor: "rgba(148,163,184,0.32)",
+    borderColor: "rgba(34,211,238,0.32)",
     minHeight: 40,
   },
   main: {
@@ -292,7 +322,7 @@ const styles = StyleSheet.create({
   },
   landscapeTopbar: {
     alignItems: "center",
-    backgroundColor: colors.surface,
+    backgroundColor: "rgba(255,255,255,0.96)",
     borderBottomColor: colors.border,
     borderBottomWidth: 1,
     flexDirection: "row",
@@ -301,7 +331,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   orientationBadge: {
-    backgroundColor: "#eff6ff",
+    backgroundColor: colors.primarySoft,
     borderRadius: 999,
     color: colors.primary,
     fontSize: 12,
@@ -310,7 +340,7 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
   },
   header: {
-    backgroundColor: colors.surface,
+    backgroundColor: "rgba(255,255,255,0.96)",
     borderBottomColor: colors.border,
     borderBottomWidth: 1,
     gap: 10,
@@ -329,8 +359,8 @@ const styles = StyleSheet.create({
   },
   menuButton: {
     alignItems: "center",
-    backgroundColor: colors.surfaceSoft,
-    borderColor: colors.border,
+    backgroundColor: "#eef2ff",
+    borderColor: "#c7d2fe",
     borderRadius: 12,
     borderWidth: 1,
     height: 44,
@@ -346,7 +376,7 @@ const styles = StyleSheet.create({
   },
   menu: {
     backgroundColor: colors.surface,
-    borderColor: colors.border,
+    borderColor: "#c7d2fe",
     borderRadius: 16,
     borderWidth: 1,
     left: 0,
@@ -355,9 +385,9 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 52,
     zIndex: 30,
-    shadowColor: "#0f172a",
+    shadowColor: colors.violet,
     shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.14,
+    shadowOpacity: 0.18,
     shadowRadius: 24,
     elevation: 8,
   },
@@ -370,7 +400,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   activeMenuItem: {
-    backgroundColor: "#eff6ff",
+    backgroundColor: "#eef2ff",
+    borderColor: "#c7d2fe",
+    borderWidth: 1,
   },
   menuItemText: {
     color: colors.muted,
@@ -381,7 +413,7 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   activeDot: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.magenta,
     borderRadius: 4,
     height: 8,
     width: 8,
@@ -395,8 +427,8 @@ const styles = StyleSheet.create({
   },
   logoMark: {
     alignItems: "center",
-    backgroundColor: colors.dark,
-    borderColor: "#bfdbfe",
+    backgroundColor: "#111827",
+    borderColor: colors.cyan,
     borderRadius: 13,
     borderWidth: 2,
     height: 42,
@@ -410,7 +442,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   logoSpark: {
-    backgroundColor: colors.cyan,
+    backgroundColor: colors.magenta,
     borderColor: colors.surface,
     borderRadius: 6,
     borderWidth: 2,
@@ -458,5 +490,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    zIndex: 1,
   },
 });

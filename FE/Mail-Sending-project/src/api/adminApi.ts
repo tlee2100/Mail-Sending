@@ -59,6 +59,13 @@ export const adminApi = {
     });
   },
 
+  resumeCampaign(token: string, id: string | number) {
+    return apiRequest<Record<string, unknown>>(`/admin/campaigns/${id}/resume`, {
+      method: "POST",
+      token,
+    });
+  },
+
   deleteCampaign(token: string, id: string | number) {
     return apiRequest<Record<string, unknown>>(`/admin/campaigns/${id}`, {
       method: "DELETE",

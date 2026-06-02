@@ -208,6 +208,7 @@ const showForm = ref(false);
 const showPassword = ref(false);
 const editingId = ref<number | null>(null);
 const isTesting = ref(false);
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const form = reactive({
   emailAddress: "",
   displayName: "",
@@ -260,6 +261,48 @@ function resetForm() {
   showPassword.value = false;
 }
 
+function isGmailHost(host: string) {
+  return host.trim().toLowerCase() === "smtp.gmail.com";
+}
+
+function validateFormBasics(requirePassword: boolean) {
+  const senderEmail = form.emailAddress.trim();
+  const smtpHost = form.smtpHost.trim();
+  const smtpPort = Number(form.smtpPort);
+  const smtpUsername = form.smtpUsername.trim();
+
+  if (!senderEmail) {
+    notice.show("Sender email is required.", "error");
+    return false;
+  }
+  if (!EMAIL_PATTERN.test(senderEmail)) {
+    notice.show("Sender email must be a valid email address.", "error");
+    return false;
+  }
+  if (!smtpHost) {
+    notice.show("SMTP host is required.", "error");
+    return false;
+  }
+  if (!Number.isFinite(smtpPort) || smtpPort <= 0 || smtpPort > 65535) {
+    notice.show("SMTP port is invalid.", "error");
+    return false;
+  }
+  if (isGmailHost(smtpHost) && ![465, 587].includes(smtpPort)) {
+    notice.show("For Gmail, use SMTP port 587 with TLS or 465 with SSL.", "error");
+    return false;
+  }
+  if (!smtpUsername) {
+    notice.show("SMTP username is required.", "error");
+    return false;
+  }
+  if (requirePassword && !form.smtpPassword.trim()) {
+    notice.show("SMTP password is required.", "error");
+    return false;
+  }
+
+  return true;
+}
+
 function openCreateForm() {
   editingId.value = null;
   resetForm();
@@ -309,26 +352,7 @@ async function loadAccounts() {
 
 async function saveAccount() {
   if (!auth.state.token) return;
-  if (!form.emailAddress.trim()) {
-    notice.show("Sender email is required.", "error");
-    return;
-  }
-  if (!form.smtpHost.trim()) {
-    notice.show("SMTP host is required.", "error");
-    return;
-  }
-  if (!Number.isFinite(Number(form.smtpPort)) || Number(form.smtpPort) <= 0) {
-    notice.show("SMTP port is invalid.", "error");
-    return;
-  }
-  if (!form.smtpUsername.trim()) {
-    notice.show("SMTP username is required.", "error");
-    return;
-  }
-  if (!editingId.value && !form.smtpPassword.trim()) {
-    notice.show("SMTP password is required.", "error");
-    return;
-  }
+  if (!validateFormBasics(!editingId.value)) return;
 
   try {
     const payload = {
@@ -355,42 +379,64 @@ async function saveAccount() {
     closeForm();
     await loadAccounts();
   } catch (error) {
-    const message =
-      error instanceof ApiClientError
-        ? error.message
-        : editingId.value
+    notice.show(
+      getApiErrorMessage(
+        error,
+        editingId.value
           ? "Failed to update email account"
-          : "Failed to create email account";
-    notice.show(message, "error");
+          : "Failed to create email account",
+      ),
+      "error",
+    );
   }
 }
 
 function getApiErrorMessage(error: unknown, fallback: string) {
   if (error instanceof ApiClientError) {
-    const details = error.details as { reason?: string } | undefined;
-    return details?.reason ? `${error.message}: ${details.reason}` : error.message;
+    const detailMessage = getApiDetailsMessage(error.details);
+    return detailMessage ? `${error.message}: ${detailMessage}` : error.message;
   }
   return fallback;
 }
 
+function getApiDetailsMessage(details: unknown) {
+  if (Array.isArray(details)) {
+    const messages = details.flatMap((segment) => {
+      const errors = (segment as { errors?: Array<{ path?: string; message?: string }> })
+        .errors;
+      return Array.isArray(errors)
+        ? errors.map((item) => {
+            const label = fieldLabel(item.path || "");
+            return label ? `${label}: ${item.message}` : item.message || "";
+          })
+        : [];
+    });
+    return messages.filter(Boolean).join("; ");
+  }
+
+  if (details && typeof details === "object" && "reason" in details) {
+    return String((details as { reason?: unknown }).reason || "");
+  }
+
+  return "";
+}
+
+function fieldLabel(path: string) {
+  return (
+    {
+      emailAddress: "Sender email",
+      smtpHost: "SMTP host",
+      smtpPort: "SMTP port",
+      smtpUsername: "SMTP username",
+      smtpPassword: "SMTP password",
+      dailyLimit: "Daily limit",
+    } as Record<string, string>
+  )[path] || path;
+}
+
 async function testConnection() {
   if (!auth.state.token) return;
-  if (!form.smtpHost.trim()) {
-    notice.show("SMTP host is required.", "error");
-    return;
-  }
-  if (!Number.isFinite(Number(form.smtpPort)) || Number(form.smtpPort) <= 0) {
-    notice.show("SMTP port is invalid.", "error");
-    return;
-  }
-  if (!form.smtpUsername.trim()) {
-    notice.show("SMTP username is required.", "error");
-    return;
-  }
-  if (!editingId.value && !form.smtpPassword.trim()) {
-    notice.show("SMTP password is required before testing.", "error");
-    return;
-  }
+  if (!validateFormBasics(!editingId.value)) return;
 
   isTesting.value = true;
   try {

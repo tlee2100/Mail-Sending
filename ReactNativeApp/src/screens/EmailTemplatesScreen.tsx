@@ -360,7 +360,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   latestCard: {
-    backgroundColor: "#ecfeff",
+    backgroundColor: colors.cyanSoft,
+    borderColor: "#67e8f9",
   },
   latestLabel: {
     color: "#0e7490",
@@ -373,6 +374,7 @@ const styles = StyleSheet.create({
     fontWeight: "900",
   },
   templateCard: {
+    borderColor: "#dbe4ff",
     gap: 10,
   },
   templateTop: {
@@ -401,7 +403,7 @@ const styles = StyleSheet.create({
     color: colors.muted,
   },
   sharedStatus: {
-    backgroundColor: "#dbeafe",
+    backgroundColor: colors.primarySoft,
     borderRadius: radii.pill,
     color: colors.primary,
     fontSize: 12,
@@ -425,6 +427,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   emptyCard: {
+    backgroundColor: colors.surfaceSoft,
     gap: 8,
   },
 });

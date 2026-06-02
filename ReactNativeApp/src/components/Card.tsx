@@ -18,6 +18,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radii.lg,
     borderWidth: 1,
+    overflow: "hidden",
     padding: 16,
   },
 });

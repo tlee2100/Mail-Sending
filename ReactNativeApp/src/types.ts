@@ -37,6 +37,7 @@ export type DashboardOverview = {
 export type EmailAccount = {
   id: number;
   email_address?: string;
+  display_name?: string;
   provider?: string;
   is_default?: boolean;
 };
@@ -89,10 +90,29 @@ export type Campaign = {
   id: number;
   campaign_name?: string;
   status?: string;
+  campaign_type?: "regular" | "ab_test" | "automated";
+  template_id?: number;
+  template_name?: string;
+  email_account_id?: number;
+  sender_email?: string;
+  owner_name?: string;
+  owner_email?: string;
+  user_id?: number;
+  scheduled_time?: string | null;
   total_recipients?: number;
   sent_count?: number;
   open_count?: number;
   click_count?: number;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type CampaignRecipient = {
+  id: number;
+  email?: string;
+  status?: string;
+  error_message?: string | null;
+  sent_time?: string | null;
 };
 
 export type Contact = {

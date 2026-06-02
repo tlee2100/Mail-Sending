@@ -53,17 +53,32 @@ const styles = StyleSheet.create({
   },
   primary: {
     backgroundColor: colors.primary,
+    shadowColor: colors.violet,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.22,
+    shadowRadius: 14,
+    elevation: 4,
   },
   secondary: {
-    backgroundColor: colors.surfaceSoft,
+    backgroundColor: "#ffffff",
     borderColor: colors.border,
     borderWidth: 1,
   },
   success: {
     backgroundColor: colors.success,
+    shadowColor: colors.teal,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.16,
+    shadowRadius: 12,
+    elevation: 3,
   },
   danger: {
     backgroundColor: colors.danger,
+    shadowColor: colors.magenta,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.16,
+    shadowRadius: 12,
+    elevation: 3,
   },
   pressed: {
     opacity: 0.85,
