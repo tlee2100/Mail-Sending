@@ -2,6 +2,11 @@ export type AuthUser = {
   id?: number | string;
   name?: string;
   email?: string;
+  role?: string;
+  isActive?: boolean;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  lastLogin?: string | null;
 };
 
 export type AuthSession = {
@@ -43,6 +48,34 @@ export type EmailTemplate = {
   content_html?: string;
   content_text?: string;
   preview_text?: string;
+  is_active?: boolean;
+  user_id?: number;
+  owner_name?: string;
+  owner_email?: string;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type TemplateLayoutNode = {
+  id?: string;
+  type: string;
+  props?: Record<string, string | number>;
+  children?: TemplateLayoutNode[];
+};
+
+export type TemplateLayout = {
+  schemaVersion?: number;
+  root?: TemplateLayoutNode;
+  blocks?: TemplateLayoutNode[];
+};
+
+export type TemplateDesignerDraft = {
+  template?: EmailTemplate;
+  layout?: TemplateLayout | null;
+  editorState?: Record<string, unknown> | null;
+  renderedHtml?: string | null;
+  renderedText?: string | null;
+  updatedAt?: string | null;
 };
 
 export type ContactTag = {

@@ -1,15 +1,16 @@
-import { StyleSheet, Text, TextInput, TextInputProps, View } from "react-native";
+import { StyleSheet, Text, TextInput, TextInputProps, TextStyle, View } from "react-native";
 
 import { colors, radii } from "../theme";
 
 type TextFieldProps = TextInputProps & {
   label: string;
+  labelStyle?: TextStyle;
 };
 
-export function TextField({ label, style, multiline, ...props }: TextFieldProps) {
+export function TextField({ label, labelStyle, style, multiline, ...props }: TextFieldProps) {
   return (
     <View style={styles.group}>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, labelStyle]}>{label}</Text>
       <TextInput
         {...props}
         multiline={multiline}
