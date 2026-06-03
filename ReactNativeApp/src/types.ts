@@ -14,6 +14,8 @@ export type AuthSession = {
   name: string;
   email: string;
   baseUrl: string;
+  userId?: number | string;
+  role?: string;
 };
 
 export type AuthPayload = {
@@ -84,6 +86,7 @@ export type ContactTag = {
   tag_name?: string;
   color?: string;
   contact_count?: number;
+  created_at?: string;
 };
 
 export type Campaign = {
@@ -120,8 +123,26 @@ export type Contact = {
   email?: string;
   first_name?: string;
   last_name?: string;
+  phone?: string;
   company?: string;
+  city?: string;
+  country?: string;
+  language?: string;
+  email_status?: string;
+  source?: string;
+  owner_name?: string;
+  owner_email?: string;
+  user_id?: number;
   tags?: ContactTag[];
+};
+
+export type ContactField = {
+  id: number;
+  field_name?: string;
+  field_label?: string;
+  field_type?: "text" | "number" | "date" | "boolean" | "url" | string;
+  value?: string | number | boolean | null;
+  is_required?: boolean;
 };
 
 export type Paginated<T> = {

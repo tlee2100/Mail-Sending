@@ -5,6 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AppButton } from "../components/AppButton";
 import { colors } from "../theme";
 import type { AuthSession } from "../types";
+import { AdminAuditLogsScreen, AdminDashboardScreen, AdminSettingsScreen, AdminUsersScreen } from "./AdminScreens";
 import { AccountScreen } from "./AccountScreen";
 import { CampaignsScreen } from "./CampaignsScreen";
 import { ContactsScreen } from "./ContactsScreen";
@@ -14,7 +15,19 @@ import { QuickSendScreen } from "./QuickSendScreen";
 import { TagsScreen } from "./TagsScreen";
 import { TemplateDesignerScreen } from "./TemplateDesignerScreen";
 
-type TabKey = "dashboard" | "send" | "templates" | "designer" | "campaigns" | "contacts" | "tags" | "account";
+type TabKey =
+  | "dashboard"
+  | "send"
+  | "templates"
+  | "designer"
+  | "campaigns"
+  | "contacts"
+  | "tags"
+  | "adminDashboard"
+  | "adminUsers"
+  | "adminAudit"
+  | "adminSettings"
+  | "account";
 
 const tabs: Array<{ key: TabKey; label: string; title: string }> = [
   { key: "dashboard", label: "Home", title: "Dashboard" },
@@ -25,6 +38,13 @@ const tabs: Array<{ key: TabKey; label: string; title: string }> = [
   { key: "contacts", label: "Contacts", title: "Contacts" },
   { key: "tags", label: "Tags", title: "Tags" },
   { key: "account", label: "Account", title: "Account Security" },
+];
+
+const adminTabs: Array<{ key: TabKey; label: string; title: string }> = [
+  { key: "adminDashboard", label: "Admin Dashboard", title: "Admin > Dashboard" },
+  { key: "adminUsers", label: "User Management", title: "Admin > Users" },
+  { key: "adminAudit", label: "Audit Logs", title: "Admin > Audit Logs" },
+  { key: "adminSettings", label: "System Settings", title: "Admin > Settings" },
 ];
 
 type AppShellProps = {
@@ -39,10 +59,14 @@ export function AppShell({ session, onLogout, onSessionUpdate }: AppShellProps) 
   const [designerTemplateId, setDesignerTemplateId] = useState<number | null>(null);
   const { width, height } = useWindowDimensions();
   const landscape = width > height;
+  const availableTabs = useMemo(
+    () => (String(session.role || "").toLowerCase() === "admin" ? [...tabs.slice(0, -1), ...adminTabs, tabs[tabs.length - 1]] : tabs),
+    [session.role],
+  );
 
   const title = useMemo(
-    () => tabs.find((tab) => tab.key === activeTab)?.title || "ChadMailer",
-    [activeTab],
+    () => availableTabs.find((tab) => tab.key === activeTab)?.title || "ChadMailer",
+    [activeTab, availableTabs],
   );
 
   let content: ReactNode;
@@ -68,6 +92,14 @@ export function AppShell({ session, onLogout, onSessionUpdate }: AppShellProps) 
     content = <ContactsScreen session={session} />;
   } else if (activeTab === "tags") {
     content = <TagsScreen session={session} />;
+  } else if (activeTab === "adminDashboard") {
+    content = <AdminDashboardScreen session={session} />;
+  } else if (activeTab === "adminUsers") {
+    content = <AdminUsersScreen session={session} />;
+  } else if (activeTab === "adminAudit") {
+    content = <AdminAuditLogsScreen session={session} />;
+  } else if (activeTab === "adminSettings") {
+    content = <AdminSettingsScreen />;
   } else {
     content = <AccountScreen session={session} onSessionUpdate={onSessionUpdate} />;
   }
@@ -78,7 +110,7 @@ export function AppShell({ session, onLogout, onSessionUpdate }: AppShellProps) 
   }
 
   function renderNavItems(mode: "menu" | "sidebar") {
-    return tabs.map((tab) => {
+    return availableTabs.map((tab) => {
       const active = tab.key === activeTab;
       return (
         <TouchableOpacity

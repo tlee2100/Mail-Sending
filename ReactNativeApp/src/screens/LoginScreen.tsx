@@ -74,6 +74,8 @@ export function LoginScreen({ onAuthenticated }: LoginScreenProps) {
       name: data.user?.name || name.trim() || fallbackEmail.split("@")[0],
       email: data.user?.email || fallbackEmail,
       baseUrl: nextBaseUrl,
+      userId: data.user?.id,
+      role: data.user?.role,
     });
   }
 
