@@ -13,6 +13,8 @@ export async function loadSession(): Promise<AuthSession | null> {
       name: "",
       email: "",
       baseUrl: DEFAULT_API_BASE_URL,
+      userId: undefined,
+      role: undefined,
     };
   }
 
@@ -23,6 +25,8 @@ export async function loadSession(): Promise<AuthSession | null> {
       name: parsed.name || "",
       email: parsed.email || "",
       baseUrl: normalizeBaseUrl(parsed.baseUrl),
+      userId: parsed.userId,
+      role: parsed.role,
     };
   } catch {
     await AsyncStorage.removeItem(SESSION_KEY);
@@ -49,6 +53,8 @@ export async function clearSession() {
       name: "",
       email: "",
       baseUrl: normalizeBaseUrl(existing?.baseUrl || DEFAULT_API_BASE_URL),
+      userId: undefined,
+      role: undefined,
     }),
   );
 }

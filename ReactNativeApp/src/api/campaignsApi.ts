@@ -11,12 +11,13 @@ type CampaignBody = {
 };
 
 export const campaignsApi = {
-  list(session: AuthSession, pageSize = 50) {
+  list(session: AuthSession, pageSizeOrQuery: number | { pageSize?: number; userId?: number; status?: string } = 50) {
+    const query = typeof pageSizeOrQuery === "number" ? { pageSize: pageSizeOrQuery } : pageSizeOrQuery;
     return apiRequest<Paginated<Campaign>>(
       session.baseUrl,
       "/campaigns",
       { token: session.token },
-      { pageSize },
+      { pageSize: query.pageSize || 50, userId: query.userId, status: query.status },
     );
   },
 

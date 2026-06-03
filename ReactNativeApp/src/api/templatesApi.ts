@@ -11,12 +11,12 @@ type TemplateBody = {
 };
 
 export const templatesApi = {
-  list(session: AuthSession, query: { pageSize?: number; isActive?: boolean } = {}) {
+  list(session: AuthSession, query: { pageSize?: number; isActive?: boolean; userId?: number } = {}) {
     return apiRequest<Paginated<EmailTemplate>>(
       session.baseUrl,
       "/templates",
       { token: session.token },
-      { pageSize: query.pageSize || 100, isActive: query.isActive },
+      { pageSize: query.pageSize || 100, isActive: query.isActive, userId: query.userId },
     );
   },
 
