@@ -717,6 +717,7 @@ type DragPayload =
   | null;
 
 const sampleOptions = [
+  { key: "contactProfile", label: "Contact Profile Email" },
   { key: "aiShowcase", label: "AI Product Showcase" },
   { key: "welcome", label: "Welcome Email" },
   { key: "promo", label: "Promo Campaign" },
@@ -731,10 +732,18 @@ const sampleOptions = [
 const variables = [
   { key: "name", token: "{{name}}" },
   { key: "email", token: "{{email}}" },
+  { key: "first_name", token: "{{first_name}}" },
+  { key: "firstName", token: "{{firstName}}" },
+  { key: "last_name", token: "{{last_name}}" },
+  { key: "lastName", token: "{{lastName}}" },
+  { key: "full_name", token: "{{full_name}}" },
+  { key: "fullName", token: "{{fullName}}" },
   { key: "phone", token: "{{phone}}" },
-  { key: "amount", token: "{{amount}}" },
   { key: "company", token: "{{company}}" },
-  { key: "orderId", token: "{{orderId}}" },
+  { key: "city", token: "{{city}}" },
+  { key: "country", token: "{{country}}" },
+  { key: "language", token: "{{language}}" },
+  { key: "source", token: "{{source}}" },
   { key: "unsubscribe_url", token: "{{unsubscribe_url}}" },
 ] as const;
 
@@ -898,6 +907,69 @@ function ctaBand(
 }
 
 const samples: Record<SampleKey, { root: LayoutNode }> = {
+  contactProfile: {
+    root: {
+      type: "section",
+      children: [
+        gradientBanner(
+          "Contact profile",
+          "Welcome, {{firstName}}",
+          "This personalized email uses every saved recipient field so each contact sees a message built from their own profile data.",
+          "#0f766e",
+          "#2563eb",
+          "#ccfbf1",
+        ),
+        {
+          type: "text",
+          props: {
+            content:
+              "Hi {{firstName}} {{lastName}}, we prepared this quick profile summary for your account at {{company}}.",
+            fontSize: "18",
+            color: "#334155",
+            align: "left",
+          },
+        },
+        sampleHtmlBlock(
+          `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 28px;border-collapse:collapse;"><tr><td style="padding:24px;border-radius:24px;background:#ffffff;border:1px solid #dbeafe;box-shadow:0 18px 44px rgba(15,23,42,.08);"><h3 style="margin:0 0 16px;color:#0f172a;font-size:24px;line-height:1.25;">Recipient details</h3><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;"><tr><td width="35%" style="padding:12px 0;border-bottom:1px solid #e5e7eb;color:#64748b;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;">Email</td><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;color:#111827;font-size:16px;font-weight:700;">{{email}}</td></tr><tr><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;color:#64748b;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;">First name</td><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;color:#111827;font-size:16px;font-weight:700;">{{firstName}}</td></tr><tr><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;color:#64748b;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;">Last name</td><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;color:#111827;font-size:16px;font-weight:700;">{{lastName}}</td></tr><tr><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;color:#64748b;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;">Full name</td><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;color:#111827;font-size:16px;font-weight:700;">{{fullName}}</td></tr><tr><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;color:#64748b;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;">Phone</td><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;color:#111827;font-size:16px;font-weight:700;">{{phone}}</td></tr><tr><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;color:#64748b;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;">Company</td><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;color:#111827;font-size:16px;font-weight:700;">{{company}}</td></tr><tr><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;color:#64748b;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;">City</td><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;color:#111827;font-size:16px;font-weight:700;">{{city}}</td></tr><tr><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;color:#64748b;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;">Country</td><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;color:#111827;font-size:16px;font-weight:700;">{{country}}</td></tr><tr><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;color:#64748b;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;">Language</td><td style="padding:12px 0;border-bottom:1px solid #e5e7eb;color:#111827;font-size:16px;font-weight:700;">{{language}}</td></tr><tr><td style="padding:12px 0 0;color:#64748b;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;">Source</td><td style="padding:12px 0 0;color:#111827;font-size:16px;font-weight:700;">{{source}}</td></tr></table></td></tr></table>`,
+        ),
+        statStrip(
+          "{{city}}|City",
+          "{{country}}|Country",
+          "{{source}}|Lead source",
+          "#ecfeff",
+          "#a5f3fc",
+        ),
+        checklistPanel(
+          "Profile checklist",
+          "Use these fields to personalize follow-up content and route the contact to the right workflow.",
+          "Confirm {{email}} is active before adding this recipient to a campaign.",
+          "Segment by location: {{city}}, {{country}}.",
+          "Tailor company-specific copy for {{company}}.",
+          "Track acquisition source as {{source}} for reporting.",
+          "#0ea5e9",
+          "#f0f9ff",
+        ),
+        ctaBand(
+          "Keep your profile updated",
+          "If any information is wrong, reply to this email and our team will update your contact record.",
+          "Review my profile",
+          "https://example.com/profile",
+          "#0f766e",
+          "#2563eb",
+        ),
+        {
+          type: "text",
+          props: {
+            content:
+              "This email was sent to {{email}}. Language: {{language}}. Unsubscribe: {{unsubscribe_url}}",
+            fontSize: "13",
+            color: "#64748b",
+            align: "center",
+          },
+        },
+      ],
+    },
+  },
   aiShowcase: {
     root: {
       type: "section",
@@ -1415,7 +1487,7 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
         {
           type: "text",
           props: {
-            content: "Payment reminder for invoice {{orderId}}",
+            content: "Payment reminder for {{company}}",
             fontSize: "28",
             color: "#111827",
             align: "left",
@@ -1425,7 +1497,7 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
           type: "text",
           props: {
             content:
-              "Hi {{name}}, this is a friendly reminder that your invoice for {{amount}} is due soon. Paying on time keeps your account active without interruption.",
+              "Hi {{name}}, this is a friendly reminder for {{company}}. Please review the billing note connected to {{email}}.",
             fontSize: "16",
             color: "#4b5563",
             align: "left",
@@ -1434,7 +1506,7 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
         {
           type: "columns",
           props: {
-            leftContent: "Invoice: {{orderId}}\nAmount due: {{amount}}\nBilling email: {{email}}",
+            leftContent: "Company: {{company}}\nBilling email: {{email}}\nSource: {{source}}",
             rightContent: "Due date: In 2 days\nStatus: Awaiting payment\nSupport: billing@example.com",
             gap: "30",
             color: "#374151",
@@ -1442,7 +1514,7 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
         },
         colorCallout(
           "Payment summary",
-          "Invoice {{orderId}} is linked to {{email}}. Complete payment before the due date to avoid service interruption.",
+          "This billing reminder is linked to {{email}} at {{company}}. Complete payment before the due date to avoid service interruption.",
           "#ecfdf5",
           "#99f6e4",
           "#064e3b",
@@ -1465,7 +1537,7 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
         {
           type: "qrcode",
           props: {
-            value: "https://example.com/billing/pay?invoice={{orderId}}&email={{email}}",
+            value: "https://example.com/billing/pay?company={{company}}&email={{email}}",
             title: "Scan to pay securely",
             caption: "You can also use the payment button below.",
             size: "190",
@@ -2243,10 +2315,10 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
   },
 };
 
-const sampleFromQuery = String(route.query.sample || "aiShowcase");
+const sampleFromQuery = String(route.query.sample || "contactProfile");
 const initialSample: SampleKey = isSampleKey(sampleFromQuery)
   ? sampleFromQuery
-  : "aiShowcase";
+  : "contactProfile";
 
 const selectedSample = ref<SampleKey>(initialSample);
 const previewMode = ref<"email" | "html" | "text">("email");
