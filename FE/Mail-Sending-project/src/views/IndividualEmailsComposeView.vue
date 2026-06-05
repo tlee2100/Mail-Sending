@@ -62,6 +62,89 @@
           </button>
         </div>
 
+        <section class="contact-picker">
+          <div class="contact-picker__head">
+            <div>
+              <h2 class="contact-picker__title">Recipient Contacts</h2>
+              <p class="contact-picker__hint">
+                Choose contacts from your saved list. Their email addresses
+                become recipients for merge-tag personalization.
+              </p>
+            </div>
+            <span class="contact-picker__count">
+              {{ selectedContactIds.length }} selected
+            </span>
+          </div>
+
+          <div class="contact-picker__controls">
+            <input
+              v-model="contactSearch"
+              type="search"
+              placeholder="Search contacts by name, email, company, or city"
+              class="contact-picker__search"
+            />
+            <button
+              type="button"
+              class="btn btn--secondary"
+              @click="selectVisibleContacts"
+            >
+              Select visible
+            </button>
+            <button
+              type="button"
+              class="btn btn--secondary"
+              @click="clearSelectedContacts"
+            >
+              Clear
+            </button>
+            <button
+              type="button"
+              class="btn btn--primary"
+              @click="applySelectedContacts"
+            >
+              Use selected contacts
+            </button>
+          </div>
+
+          <div v-if="filteredContacts.length" class="contact-picker__list">
+            <label
+              v-for="contact in filteredContacts"
+              :key="String(contact.id)"
+              class="contact-option"
+            >
+              <input
+                v-model="selectedContactIds"
+                type="checkbox"
+                :value="String(contact.id)"
+              />
+              <span class="contact-option__main">
+                <strong>{{ contactDisplayName(contact) }}</strong>
+                <small>{{ contact.email }}</small>
+              </span>
+              <span class="contact-option__meta">
+                {{
+                  contact.company ||
+                  contact.city ||
+                  contact.email_status ||
+                  "contact"
+                }}
+              </span>
+            </label>
+          </div>
+          <div v-else class="contact-picker__empty">
+            No contacts found. Add contacts in Email Contacts first.
+          </div>
+
+          <div class="input-wrap">
+            <label>Recipients *</label>
+            <textarea
+              v-model="recipients"
+              rows="4"
+              placeholder="Select contacts above, or paste emails separated by comma, semicolon, or new lines."
+            ></textarea>
+          </div>
+        </section>
+
         <div class="input-wrap">
           <label>Email Subject *</label>
           <input
@@ -83,11 +166,37 @@
             <select class="editor-select">
               <option>14px</option>
             </select>
-            <button type="button" class="toolbar-btn" @click="wrapSelection('**', '**')">B</button>
-            <button type="button" class="toolbar-btn" @click="wrapSelection('*', '*')">I</button>
-            <button type="button" class="toolbar-btn" @click="wrapSelection('__', '__')">U</button>
-            <button type="button" class="toolbar-btn" @click="wrapSelection('~~', '~~')">S</button>
-            <button type="button" class="toolbar-btn" @click="insertMergeTag">Vars</button>
+            <button
+              type="button"
+              class="toolbar-btn"
+              @click="wrapSelection('**', '**')"
+            >
+              B
+            </button>
+            <button
+              type="button"
+              class="toolbar-btn"
+              @click="wrapSelection('*', '*')"
+            >
+              I
+            </button>
+            <button
+              type="button"
+              class="toolbar-btn"
+              @click="wrapSelection('__', '__')"
+            >
+              U
+            </button>
+            <button
+              type="button"
+              class="toolbar-btn"
+              @click="wrapSelection('~~', '~~')"
+            >
+              S
+            </button>
+            <button type="button" class="toolbar-btn" @click="insertMergeTag">
+              Vars
+            </button>
           </div>
           <textarea
             ref="editorRef"
@@ -97,7 +206,8 @@
             class="editor-area"
           ></textarea>
           <p class="editor-hint">
-            Recipients ready: {{ recipientCount }} | Use merge tags for personalization.
+            Recipients ready: {{ recipientCount }} | Use merge tags for
+            personalization.
           </p>
           <p class="word-count">{{ wordCount }} words</p>
         </div>
@@ -151,7 +261,11 @@
         <h3 class="sidebar-title">Merge Tags</h3>
         <ul class="merge-tags">
           <li v-for="m in mergeTags" :key="m.tag">
-            <button type="button" class="merge-tag-btn" @click="appendText(m.tag)">
+            <button
+              type="button"
+              class="merge-tag-btn"
+              @click="appendText(m.tag)"
+            >
               <code>{{ m.tag }}</code> - {{ m.desc }}
             </button>
           </li>
@@ -172,7 +286,11 @@
       <div class="success-popup-icon">✓</div>
       <h2 id="send-success-title">Sending Successful</h2>
       <p>{{ sendSuccessPopup.message }}</p>
-      <button type="button" class="btn btn--primary" @click="closeSendSuccessPopup">
+      <button
+        type="button"
+        class="btn btn--primary"
+        @click="closeSendSuccessPopup"
+      >
         OK
       </button>
     </div>
@@ -182,11 +300,15 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
+import { contactsApi } from "../api/contactsApi";
 import { emailAccountsApi } from "../api/emailAccountsApi";
 import type { AiImageResult } from "../api/aiMediaApi";
 import { ApiClientError } from "../api/http";
 import { individualEmailsApi } from "../api/individualEmailsApi";
-import { templateDesignerApi, type TemplateLayout } from "../api/templateDesignerApi";
+import {
+  templateDesignerApi,
+  type TemplateLayout,
+} from "../api/templateDesignerApi";
 import { templatesApi } from "../api/templatesApi";
 import AIMediaGenerator from "../components/AIMediaGenerator.vue";
 import { useNotice } from "../composables/useNotice";
@@ -210,19 +332,34 @@ const recipients = ref(draft.recipients);
 const selectedAccountId = ref(draft.emailAccountId);
 const selectedTemplateId = ref(draft.templateId);
 const accounts = ref<Array<Record<string, unknown>>>([]);
+const contacts = ref<Array<Record<string, unknown>>>([]);
 const templates = ref<Array<Record<string, unknown>>>([]);
+const contactSearch = ref("");
+const selectedContactIds = ref<string[]>([]);
 const isSending = ref(false);
 const isPreviewing = ref(false);
 const templateHtmlContent = ref("");
+const loadedTemplatePlainContent = ref("");
 const sendSuccessPopup = ref({
   visible: false,
   message: "",
 });
 
 const mergeTags = [
-  { tag: "{{name}}", desc: "Customer Name" },
+  { tag: "{{name}}", desc: "Name" },
   { tag: "{{email}}", desc: "Email Address" },
+  { tag: "{{first_name}}", desc: "First Name" },
+  { tag: "{{firstName}}", desc: "First Name" },
+  { tag: "{{last_name}}", desc: "Last Name" },
+  { tag: "{{lastName}}", desc: "Last Name" },
+  { tag: "{{full_name}}", desc: "Full Name" },
+  { tag: "{{fullName}}", desc: "Full Name" },
   { tag: "{{phone}}", desc: "Phone Number" },
+  { tag: "{{company}}", desc: "Company" },
+  { tag: "{{city}}", desc: "City" },
+  { tag: "{{country}}", desc: "Country" },
+  { tag: "{{language}}", desc: "Language" },
+  { tag: "{{source}}", desc: "Source" },
   { tag: "{{unsubscribe_url}}", desc: "Unsubscribe Link" },
 ];
 
@@ -241,18 +378,46 @@ const wordCount = computed(() => {
   return text ? text.split(/\s+/).filter(Boolean).length : 0;
 });
 
-const recipientCount = computed(() =>
-  recipients.value
-    .split(/[\n,;]/)
-    .map((value) => value.trim())
-    .filter(Boolean).length,
+const recipientCount = computed(
+  () =>
+    recipients.value
+      .split(/[\n,;]/)
+      .map((value) => value.trim())
+      .filter(Boolean).length,
 );
-const selectedTemplate = computed(() =>
-  templates.value.find((template) => String(template.id || "") === selectedTemplateId.value) ||
-  null,
+const filteredContacts = computed(() => {
+  const query = contactSearch.value.trim().toLowerCase();
+  return contacts.value.filter((contact) => {
+    if (!query) return true;
+    return [
+      contactDisplayName(contact),
+      contact.email,
+      contact.company,
+      contact.city,
+      contact.country,
+      contact.source,
+    ]
+      .map((item) => String(item || "").toLowerCase())
+      .some((value) => value.includes(query));
+  });
+});
+const selectedContactEmails = computed(() => {
+  const selected = new Set(selectedContactIds.value);
+  return contacts.value
+    .filter((contact) => selected.has(String(contact.id || "")))
+    .map((contact) => String(contact.email || "").trim())
+    .filter(Boolean);
+});
+const selectedTemplate = computed(
+  () =>
+    templates.value.find(
+      (template) => String(template.id || "") === selectedTemplateId.value,
+    ) || null,
 );
-const canEditSelectedTemplate = computed(() =>
-  !selectedTemplate.value || canManageTemplate(selectedTemplate.value, auth.state.user),
+const canEditSelectedTemplate = computed(
+  () =>
+    !selectedTemplate.value ||
+    canManageTemplate(selectedTemplate.value, auth.state.user),
 );
 const isEditorStarterDisabled = computed(
   () => !!selectedTemplateId.value && !canEditSelectedTemplate.value,
@@ -303,6 +468,7 @@ watch([recipients, selectedAccountId, selectedTemplateId], () => {
 watch(selectedTemplateId, (value, previousValue) => {
   if (value !== previousValue) {
     templateHtmlContent.value = "";
+    loadedTemplatePlainContent.value = "";
   }
 });
 
@@ -327,13 +493,113 @@ function escapeHtmlAttribute(value: string) {
     .replace(/>/g, "&gt;");
 }
 
+function escapeHtmlText(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function renderPlainTextEmailHtml(value: string) {
+  const paragraphs = value
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+
+  const bodyHtml = paragraphs.length
+    ? paragraphs
+        .map((paragraph) => {
+          const lines = escapeHtmlText(paragraph).replace(/\n/g, "<br />");
+          return `<p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:#334155;">${lines}</p>`;
+        })
+        .join("")
+    : `<p style="margin:0;font-size:16px;line-height:1.6;color:#334155;">${escapeHtmlText(value)}</p>`;
+
+  return `<!doctype html>
+<html>
+  <body style="margin:0;padding:0;background:#f8fafc;font-family:Arial,Helvetica,sans-serif;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f8fafc;">
+      <tr>
+        <td align="center" style="padding:28px 16px;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;background:#ffffff;border-radius:16px;border:1px solid #e5e7eb;">
+            <tr>
+              <td style="padding:32px;">
+                ${bodyHtml}
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+}
+
+function hasEditedLoadedTemplateContent() {
+  if (!selectedTemplateId.value) return false;
+  if (!loadedTemplatePlainContent.value) return true;
+  return content.value.trim() !== loadedTemplatePlainContent.value.trim();
+}
+
 function resolveDefaultAccountId(rows: Array<Record<string, unknown>>) {
-  const defaultAccount = rows.find((item) => item.is_default === true) || rows[0];
+  const defaultAccount =
+    rows.find((item) => item.is_default === true) || rows[0];
   return defaultAccount ? String(defaultAccount.id || "") : "";
 }
 
-function accountExists(accountId: string, rows: Array<Record<string, unknown>>) {
+function accountExists(
+  accountId: string,
+  rows: Array<Record<string, unknown>>,
+) {
   return rows.some((item) => String(item.id || "") === accountId);
+}
+
+function contactDisplayName(contact: Record<string, unknown>) {
+  const firstName = String(
+    contact.first_name || contact.firstName || "",
+  ).trim();
+  const lastName = String(contact.last_name || contact.lastName || "").trim();
+  const fullName = [firstName, lastName].filter(Boolean).join(" ");
+  return fullName || String(contact.email || "Unknown contact");
+}
+
+function syncContactSelectionFromRecipients() {
+  const recipientEmails = new Set(parseRecipientInput(recipients.value));
+  selectedContactIds.value = contacts.value
+    .filter((contact) =>
+      recipientEmails.has(
+        String(contact.email || "")
+          .trim()
+          .toLowerCase(),
+      ),
+    )
+    .map((contact) => String(contact.id || ""))
+    .filter(Boolean);
+}
+
+function selectVisibleContacts() {
+  const next = new Set(selectedContactIds.value);
+  filteredContacts.value.forEach((contact) => {
+    const id = String(contact.id || "");
+    if (id) next.add(id);
+  });
+  selectedContactIds.value = [...next];
+}
+
+function clearSelectedContacts() {
+  selectedContactIds.value = [];
+}
+
+function applySelectedContacts() {
+  if (!selectedContactEmails.value.length) {
+    notice.show("Select at least one contact first.", "error");
+    return;
+  }
+  recipients.value = selectedContactEmails.value.join("\n");
+  notice.show(
+    `${selectedContactEmails.value.length} contact recipient(s) selected.`,
+    "success",
+  );
 }
 
 async function loadDependencies() {
@@ -343,13 +609,19 @@ async function loadDependencies() {
   }
 
   try {
-    const [accountsRes, templatesRes] = await Promise.all([
+    const [accountsRes, templatesRes, contactsRes] = await Promise.all([
       emailAccountsApi.list(auth.state.token),
       templatesApi.listTemplates(auth.state.token, { pageSize: 100 }),
+      contactsApi.listContacts(auth.state.token, {
+        pageSize: 20,
+        status: "active",
+      }),
     ]);
 
     accounts.value = accountsRes.data || [];
     templates.value = templatesRes.data.items || [];
+    contacts.value = contactsRes.data.items || [];
+    syncContactSelectionFromRecipients();
 
     if (
       !selectedAccountId.value ||
@@ -359,7 +631,9 @@ async function loadDependencies() {
     }
   } catch (error) {
     const message =
-      error instanceof ApiClientError ? error.message : "Failed to load compose data";
+      error instanceof ApiClientError
+        ? error.message
+        : "Failed to load compose data";
     notice.show(message, "error");
   }
 }
@@ -377,13 +651,23 @@ async function selectTemplate() {
       Number(selectedTemplateId.value),
     );
     const template = response.data;
-    subject.value = String(template.subject || template.template_name || "").trim();
-    content.value = String(template.content_text || "").trim() || stripHtml(template.content_html);
+    subject.value = String(
+      template.subject || template.template_name || "",
+    ).trim();
+    content.value =
+      String(template.content_text || "").trim() ||
+      stripHtml(template.content_html);
     templateHtmlContent.value = String(template.content_html || "").trim();
-    notice.show(`Loaded template "${String(template.template_name || "Template")}".`, "success");
+    loadedTemplatePlainContent.value = content.value;
+    notice.show(
+      `Loaded template "${String(template.template_name || "Template")}".`,
+      "success",
+    );
   } catch (error) {
     const message =
-      error instanceof ApiClientError ? error.message : "Failed to load template";
+      error instanceof ApiClientError
+        ? error.message
+        : "Failed to load template";
     notice.show(message, "error");
   }
 }
@@ -393,8 +677,12 @@ async function resolveHtmlContentForDelivery() {
     return content.value;
   }
 
+  if (!selectedTemplateId.value || hasEditedLoadedTemplateContent()) {
+    return renderPlainTextEmailHtml(content.value);
+  }
+
   if (!auth.state.token || !selectedTemplateId.value) {
-    return undefined;
+    return renderPlainTextEmailHtml(content.value);
   }
 
   try {
@@ -481,7 +769,8 @@ async function useEditorStarter() {
 
     if (!nextTemplateId) {
       const nextTemplateName =
-        subject.value.trim() || `Compose Draft ${new Date().toLocaleDateString()}`;
+        subject.value.trim() ||
+        `Compose Draft ${new Date().toLocaleDateString()}`;
 
       const created = await templatesApi.createTemplate(token, {
         templateName: nextTemplateName,
@@ -500,7 +789,10 @@ async function useEditorStarter() {
       });
 
       selectedTemplateId.value = nextTemplateId;
-      notice.show("Created a new template draft and opened Email Editor.", "success");
+      notice.show(
+        "Created a new template draft and opened Email Editor.",
+        "success",
+      );
     } else {
       notice.show("Opening Email Editor for the selected template.", "info");
     }
@@ -588,6 +880,7 @@ function resetForm() {
   previewEmail.value = "";
   selectedTemplateId.value = "";
   templateHtmlContent.value = "";
+  loadedTemplatePlainContent.value = "";
   resetIndividualEmailDraft();
   recipients.value = "";
   selectedAccountId.value = resolveDefaultAccountId(accounts.value);
@@ -637,7 +930,9 @@ async function sendEmails() {
       emailAccountId: Number(selectedAccountId.value),
     });
     const sentCount = Number(response.data.sentCount || 0);
-    const requestedCount = Number(response.data.requestedCount || parsedRecipients.length);
+    const requestedCount = Number(
+      response.data.requestedCount || parsedRecipients.length,
+    );
     const failedCount = Number(response.data.failedCount || 0);
 
     if (failedCount === 0 && sentCount > 0) {
@@ -722,6 +1017,115 @@ onMounted(() => {
   display: flex;
   gap: 12px;
   margin-bottom: 20px;
+}
+
+.contact-picker {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 20px;
+  padding: 16px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 14px;
+  background: var(--color-bg-surface-soft);
+}
+
+.contact-picker__head,
+.contact-picker__controls {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.contact-picker__title {
+  margin: 0 0 4px;
+  color: var(--color-text-main);
+  font-size: 16px;
+}
+
+.contact-picker__hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.contact-picker__count {
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: var(--color-primary-bg-soft);
+  color: var(--color-primary-text);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.contact-picker__search {
+  flex: 1 1 280px;
+  min-height: 40px;
+  box-sizing: border-box;
+  padding: 0 12px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 10px;
+  background: var(--color-control-bg);
+  color: var(--color-text-main);
+  font: inherit;
+}
+
+.contact-picker__list {
+  display: grid;
+  gap: 8px;
+  max-height: 260px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.contact-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 10px;
+  background: var(--color-control-bg);
+}
+
+.contact-option__main {
+  display: grid;
+  min-width: 0;
+}
+
+.contact-option__main strong,
+.contact-option__main small,
+.contact-option__meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contact-option__main strong {
+  color: var(--color-text-main);
+  font-size: 13px;
+}
+
+.contact-option__main small,
+.contact-option__meta,
+.contact-picker__empty {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.contact-option__meta {
+  max-width: 180px;
+  font-weight: 700;
+}
+
+.contact-picker__empty {
+  padding: 14px;
+  border: 1px dashed var(--color-border-subtle);
+  border-radius: 10px;
+  text-align: center;
 }
 
 .btn--yellow {
@@ -891,6 +1295,21 @@ onMounted(() => {
 
   .compose-config {
     grid-template-columns: 1fr;
+  }
+
+  .contact-picker__controls .btn,
+  .contact-picker__search {
+    width: 100%;
+    flex-basis: 100%;
+  }
+
+  .contact-option {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .contact-option__meta {
+    grid-column: 2;
+    max-width: none;
   }
 }
 </style>
