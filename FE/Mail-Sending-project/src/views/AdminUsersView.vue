@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <section class="content__header header-row">
     <div>
       <p class="eyebrow">Administration</p>
@@ -8,9 +8,7 @@
         {{ notice.message }}
       </p>
     </div>
-    <button type="button" class="btn btn--secondary" @click="loadUsers">
-      Refresh
-    </button>
+    <button type="button" class="btn btn--secondary" @click="loadUsers">Refresh</button>
   </section>
 
   <section class="grid stats-grid">
@@ -118,19 +116,20 @@ const filteredUsers = computed(() => {
   return users.value.filter((user) => {
     const matchesSearch =
       !query ||
-      String(user.name || "").toLowerCase().includes(query) ||
-      String(user.email || "").toLowerCase().includes(query);
+      String(user.name || "")
+        .toLowerCase()
+        .includes(query) ||
+      String(user.email || "")
+        .toLowerCase()
+        .includes(query);
     const matchesRole = !roleFilter.value || roleOf(user) === roleFilter.value;
     const matchesStatus =
-      !statusFilter.value ||
-      (statusFilter.value === "active" ? isActive(user) : !isActive(user));
+      !statusFilter.value || (statusFilter.value === "active" ? isActive(user) : !isActive(user));
     return matchesSearch && matchesRole && matchesStatus;
   });
 });
 
-const adminCount = computed(
-  () => users.value.filter((user) => roleOf(user) === "admin").length,
-);
+const adminCount = computed(() => users.value.filter((user) => roleOf(user) === "admin").length);
 const activeCount = computed(() => users.value.filter(isActive).length);
 
 function extractUsers(data: AdminUsersResponse) {

@@ -83,10 +83,7 @@ type ApiEnvelope<T> = {
   details?: unknown;
 };
 
-const API_BASE = String(import.meta.env.VITE_API_BASE_URL || "/api/v1").replace(
-  /\/$/,
-  "",
-);
+const API_BASE = String(import.meta.env.VITE_API_BASE_URL || "/api/v1").replace(/\/$/, "");
 
 function buildHeaders(token: string) {
   return {
@@ -126,11 +123,7 @@ async function requestJson<T>(
         ? (payload as { details?: unknown }).details
         : undefined;
     const detailsText =
-      typeof details === "string"
-        ? details
-        : details
-          ? JSON.stringify(details)
-          : "";
+      typeof details === "string" ? details : details ? JSON.stringify(details) : "";
     const message =
       typeof payload === "object" &&
       payload !== null &&
@@ -162,11 +155,7 @@ export const templateDesignerApi = {
     );
   },
 
-  saveDraft(
-    templateId: string,
-    token: string,
-    payload: SaveDesignerDraftPayload,
-  ) {
+  saveDraft(templateId: string, token: string, payload: SaveDesignerDraftPayload) {
     return requestJson<DesignerLoadResponse>(
       `/templates/${encodeURIComponent(templateId)}/designer`,
       {
@@ -196,13 +185,10 @@ export const templateDesignerApi = {
     const response = await requestJson<{
       items: DesignerVersionItem[];
       pagination?: Record<string, unknown>;
-    }>(
-      `/templates/${encodeURIComponent(templateId)}/designer/versions`,
-      {
-        method: "GET",
-        token,
-      },
-    );
+    }>(`/templates/${encodeURIComponent(templateId)}/designer/versions`, {
+      method: "GET",
+      token,
+    });
     return response.items || [];
   },
 

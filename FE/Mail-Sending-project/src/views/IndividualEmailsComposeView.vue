@@ -1,9 +1,7 @@
 <template>
   <section class="content__header">
     <h1 class="page-title">Compose Email</h1>
-    <p class="page-subtitle">
-      Compose your email with subject, content and optional template.
-    </p>
+    <p class="page-subtitle">Compose your email with subject, content and optional template.</p>
     <p v-if="notice.message" class="notice" :class="`notice--${notice.tone}`">
       {{ notice.message }}
     </p>
@@ -60,98 +58,16 @@
           >
             Use Email Editor
           </button>
+          <button type="button" class="btn btn--secondary" @click="previewModalOpen = true">
+            Preview Email
+          </button>
         </div>
 
-        <section class="contact-picker">
-          <div class="contact-picker__head">
-            <div>
-              <h2 class="contact-picker__title">Recipient Contacts</h2>
-              <p class="contact-picker__hint">
-                Choose contacts from your saved list. Their email addresses
-                become recipients for merge-tag personalization.
-              </p>
-            </div>
-            <span class="contact-picker__count">
-              {{ selectedContactIds.length }} selected
-            </span>
-          </div>
-
-          <div class="contact-picker__controls">
-            <input
-              v-model="contactSearch"
-              type="search"
-              placeholder="Search contacts by name, email, company, or city"
-              class="contact-picker__search"
-            />
-            <button
-              type="button"
-              class="btn btn--secondary"
-              @click="selectVisibleContacts"
-            >
-              Select visible
-            </button>
-            <button
-              type="button"
-              class="btn btn--secondary"
-              @click="clearSelectedContacts"
-            >
-              Clear
-            </button>
-            <button
-              type="button"
-              class="btn btn--primary"
-              @click="applySelectedContacts"
-            >
-              Use selected contacts
-            </button>
-          </div>
-
-          <div v-if="filteredContacts.length" class="contact-picker__list">
-            <label
-              v-for="contact in filteredContacts"
-              :key="String(contact.id)"
-              class="contact-option"
-            >
-              <input
-                v-model="selectedContactIds"
-                type="checkbox"
-                :value="String(contact.id)"
-              />
-              <span class="contact-option__main">
-                <strong>{{ contactDisplayName(contact) }}</strong>
-                <small>{{ contact.email }}</small>
-              </span>
-              <span class="contact-option__meta">
-                {{
-                  contact.company ||
-                  contact.city ||
-                  contact.email_status ||
-                  "contact"
-                }}
-              </span>
-            </label>
-          </div>
-          <div v-else class="contact-picker__empty">
-            No contacts found. Add contacts in Email Contacts first.
-          </div>
-
-          <div class="input-wrap">
-            <label>Recipients *</label>
-            <textarea
-              v-model="recipients"
-              rows="4"
-              placeholder="Select contacts above, or paste emails separated by comma, semicolon, or new lines."
-            ></textarea>
-          </div>
-        </section>
+        <ContactPicker :contacts="contacts as any" v-model="recipients" />
 
         <div class="input-wrap">
           <label>Email Subject *</label>
-          <input
-            v-model="subject"
-            type="text"
-            placeholder="Enter your email subject line."
-          />
+          <input v-model="subject" type="text" placeholder="Enter your email subject line." />
         </div>
 
         <div class="input-wrap">
@@ -166,37 +82,11 @@
             <select class="editor-select">
               <option>14px</option>
             </select>
-            <button
-              type="button"
-              class="toolbar-btn"
-              @click="wrapSelection('**', '**')"
-            >
-              B
-            </button>
-            <button
-              type="button"
-              class="toolbar-btn"
-              @click="wrapSelection('*', '*')"
-            >
-              I
-            </button>
-            <button
-              type="button"
-              class="toolbar-btn"
-              @click="wrapSelection('__', '__')"
-            >
-              U
-            </button>
-            <button
-              type="button"
-              class="toolbar-btn"
-              @click="wrapSelection('~~', '~~')"
-            >
-              S
-            </button>
-            <button type="button" class="toolbar-btn" @click="insertMergeTag">
-              Vars
-            </button>
+            <button type="button" class="toolbar-btn" @click="wrapSelection('**', '**')">B</button>
+            <button type="button" class="toolbar-btn" @click="wrapSelection('*', '*')">I</button>
+            <button type="button" class="toolbar-btn" @click="wrapSelection('__', '__')">U</button>
+            <button type="button" class="toolbar-btn" @click="wrapSelection('~~', '~~')">S</button>
+            <button type="button" class="toolbar-btn" @click="insertMergeTag">Vars</button>
           </div>
           <textarea
             ref="editorRef"
@@ -206,8 +96,7 @@
             class="editor-area"
           ></textarea>
           <p class="editor-hint">
-            Recipients ready: {{ recipientCount }} | Use merge tags for
-            personalization.
+            Recipients ready: {{ recipientCount }} | Use merge tags for personalization.
           </p>
           <p class="word-count">{{ wordCount }} words</p>
         </div>
@@ -220,15 +109,8 @@
       </div>
 
       <div class="compose-footer">
-        <button type="button" class="btn btn--secondary" @click="resetForm">
-          Reset Form
-        </button>
-        <button
-          type="button"
-          class="btn btn--primary"
-          :disabled="isSending"
-          @click="sendEmails"
-        >
+        <button type="button" class="btn btn--secondary" @click="resetForm">Reset Form</button>
+        <button type="button" class="btn btn--primary" :disabled="isSending" @click="sendEmails">
           {{ isSending ? "Sending..." : "Send Emails" }}
         </button>
       </div>
@@ -238,11 +120,7 @@
       <div class="card card--sidebar">
         <h3 class="sidebar-title">Send Preview Email</h3>
         <div class="input-wrap">
-          <input
-            v-model="previewEmail"
-            type="email"
-            placeholder="your-email@example.com"
-          />
+          <input v-model="previewEmail" type="email" placeholder="your-email@example.com" />
         </div>
         <button
           type="button"
@@ -252,20 +130,14 @@
         >
           {{ isPreviewing ? "Sending..." : "Send Preview" }}
         </button>
-        <p class="sidebar-hint">
-          Send a preview first to verify the content before bulk send.
-        </p>
+        <p class="sidebar-hint">Send a preview first to verify the content before bulk send.</p>
       </div>
 
       <div class="card card--sidebar">
         <h3 class="sidebar-title">Merge Tags</h3>
         <ul class="merge-tags">
           <li v-for="m in mergeTags" :key="m.tag">
-            <button
-              type="button"
-              class="merge-tag-btn"
-              @click="appendText(m.tag)"
-            >
+            <button type="button" class="merge-tag-btn" @click="appendText(m.tag)">
               <code>{{ m.tag }}</code> - {{ m.desc }}
             </button>
           </li>
@@ -286,15 +158,19 @@
       <div class="success-popup-icon">✓</div>
       <h2 id="send-success-title">Sending Successful</h2>
       <p>{{ sendSuccessPopup.message }}</p>
-      <button
-        type="button"
-        class="btn btn--primary"
-        @click="closeSendSuccessPopup"
-      >
-        OK
-      </button>
+      <button type="button" class="btn btn--primary" @click="closeSendSuccessPopup">OK</button>
     </div>
   </div>
+
+  <EmailPreviewModal
+    :is-open="previewModalOpen"
+    :subject="subject"
+    :sender-email="selectedAccountEmail"
+    :html-content="previewRenderedHtml"
+    :is-sending-test="isPreviewing"
+    @close="previewModalOpen = false"
+    @send-test="handleSendTestFromModal"
+  />
 </template>
 
 <script setup lang="ts">
@@ -305,12 +181,11 @@ import { emailAccountsApi } from "../api/emailAccountsApi";
 import type { AiImageResult } from "../api/aiMediaApi";
 import { ApiClientError } from "../api/http";
 import { individualEmailsApi } from "../api/individualEmailsApi";
-import {
-  templateDesignerApi,
-  type TemplateLayout,
-} from "../api/templateDesignerApi";
+import { templateDesignerApi, type TemplateLayout } from "../api/templateDesignerApi";
 import { templatesApi } from "../api/templatesApi";
 import AIMediaGenerator from "../components/AIMediaGenerator.vue";
+import ContactPicker from "../components/emails/ContactPicker.vue";
+import EmailPreviewModal from "../components/emails/EmailPreviewModal.vue";
 import { useNotice } from "../composables/useNotice";
 import { auth } from "../stores/auth";
 import {
@@ -334,16 +209,29 @@ const selectedTemplateId = ref(draft.templateId);
 const accounts = ref<Array<Record<string, unknown>>>([]);
 const contacts = ref<Array<Record<string, unknown>>>([]);
 const templates = ref<Array<Record<string, unknown>>>([]);
-const contactSearch = ref("");
-const selectedContactIds = ref<string[]>([]);
 const isSending = ref(false);
 const isPreviewing = ref(false);
 const templateHtmlContent = ref("");
 const loadedTemplatePlainContent = ref("");
+const previewModalOpen = ref(false);
 const sendSuccessPopup = ref({
   visible: false,
   message: "",
 });
+
+const selectedAccount = computed(() =>
+  accounts.value.find((a) => String(a.id) === selectedAccountId.value),
+);
+const selectedAccountEmail = computed(() => String(selectedAccount.value?.email_address || ""));
+const previewRenderedHtml = computed(() => {
+  if (templateHtmlContent.value) return templateHtmlContent.value;
+  return renderPlainTextEmailHtml(content.value || "Email content preview");
+});
+
+async function handleSendTestFromModal(email: string) {
+  previewEmail.value = email;
+  await sendPreview();
+}
 
 const mergeTags = [
   { tag: "{{name}}", desc: "Name" },
@@ -385,58 +273,26 @@ const recipientCount = computed(
       .map((value) => value.trim())
       .filter(Boolean).length,
 );
-const filteredContacts = computed(() => {
-  const query = contactSearch.value.trim().toLowerCase();
-  return contacts.value.filter((contact) => {
-    if (!query) return true;
-    return [
-      contactDisplayName(contact),
-      contact.email,
-      contact.company,
-      contact.city,
-      contact.country,
-      contact.source,
-    ]
-      .map((item) => String(item || "").toLowerCase())
-      .some((value) => value.includes(query));
-  });
-});
-const selectedContactEmails = computed(() => {
-  const selected = new Set(selectedContactIds.value);
-  return contacts.value
-    .filter((contact) => selected.has(String(contact.id || "")))
-    .map((contact) => String(contact.email || "").trim())
-    .filter(Boolean);
-});
 const selectedTemplate = computed(
   () =>
-    templates.value.find(
-      (template) => String(template.id || "") === selectedTemplateId.value,
-    ) || null,
+    templates.value.find((template) => String(template.id || "") === selectedTemplateId.value) ||
+    null,
 );
 const canEditSelectedTemplate = computed(
-  () =>
-    !selectedTemplate.value ||
-    canManageTemplate(selectedTemplate.value, auth.state.user),
+  () => !selectedTemplate.value || canManageTemplate(selectedTemplate.value, auth.state.user),
 );
 const isEditorStarterDisabled = computed(
   () => !!selectedTemplateId.value && !canEditSelectedTemplate.value,
 );
 const editorStarterTitle = computed(() =>
-  isEditorStarterDisabled.value
-    ? "Only the template owner can edit this template."
-    : "",
+  isEditorStarterDisabled.value ? "Only the template owner can edit this template." : "",
 );
 
 function getApiErrorMessage(error: unknown, fallback: string) {
   if (error instanceof ApiClientError) {
     const details = error.details as
-      | { reason?: string; results?: Array<{ error?: string }> }
-      | undefined;
-    const reason =
-      details?.reason ||
-      details?.results?.find((item) => item.error)?.error ||
-      "";
+      { reason?: string; results?: Array<{ error?: string }> } | undefined;
+    const reason = details?.reason || details?.results?.find((item) => item.error)?.error || "";
     return reason ? `${error.message}: ${reason}` : error.message;
   }
 
@@ -494,10 +350,7 @@ function escapeHtmlAttribute(value: string) {
 }
 
 function escapeHtmlText(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 function renderPlainTextEmailHtml(value: string) {
@@ -542,64 +395,12 @@ function hasEditedLoadedTemplateContent() {
 }
 
 function resolveDefaultAccountId(rows: Array<Record<string, unknown>>) {
-  const defaultAccount =
-    rows.find((item) => item.is_default === true) || rows[0];
+  const defaultAccount = rows.find((item) => item.is_default === true) || rows[0];
   return defaultAccount ? String(defaultAccount.id || "") : "";
 }
 
-function accountExists(
-  accountId: string,
-  rows: Array<Record<string, unknown>>,
-) {
+function accountExists(accountId: string, rows: Array<Record<string, unknown>>) {
   return rows.some((item) => String(item.id || "") === accountId);
-}
-
-function contactDisplayName(contact: Record<string, unknown>) {
-  const firstName = String(
-    contact.first_name || contact.firstName || "",
-  ).trim();
-  const lastName = String(contact.last_name || contact.lastName || "").trim();
-  const fullName = [firstName, lastName].filter(Boolean).join(" ");
-  return fullName || String(contact.email || "Unknown contact");
-}
-
-function syncContactSelectionFromRecipients() {
-  const recipientEmails = new Set(parseRecipientInput(recipients.value));
-  selectedContactIds.value = contacts.value
-    .filter((contact) =>
-      recipientEmails.has(
-        String(contact.email || "")
-          .trim()
-          .toLowerCase(),
-      ),
-    )
-    .map((contact) => String(contact.id || ""))
-    .filter(Boolean);
-}
-
-function selectVisibleContacts() {
-  const next = new Set(selectedContactIds.value);
-  filteredContacts.value.forEach((contact) => {
-    const id = String(contact.id || "");
-    if (id) next.add(id);
-  });
-  selectedContactIds.value = [...next];
-}
-
-function clearSelectedContacts() {
-  selectedContactIds.value = [];
-}
-
-function applySelectedContacts() {
-  if (!selectedContactEmails.value.length) {
-    notice.show("Select at least one contact first.", "error");
-    return;
-  }
-  recipients.value = selectedContactEmails.value.join("\n");
-  notice.show(
-    `${selectedContactEmails.value.length} contact recipient(s) selected.`,
-    "success",
-  );
 }
 
 async function loadDependencies() {
@@ -621,19 +422,12 @@ async function loadDependencies() {
     accounts.value = accountsRes.data || [];
     templates.value = templatesRes.data.items || [];
     contacts.value = contactsRes.data.items || [];
-    syncContactSelectionFromRecipients();
 
-    if (
-      !selectedAccountId.value ||
-      !accountExists(selectedAccountId.value, accounts.value)
-    ) {
+    if (!selectedAccountId.value || !accountExists(selectedAccountId.value, accounts.value)) {
       selectedAccountId.value = resolveDefaultAccountId(accounts.value);
     }
   } catch (error) {
-    const message =
-      error instanceof ApiClientError
-        ? error.message
-        : "Failed to load compose data";
+    const message = error instanceof ApiClientError ? error.message : "Failed to load compose data";
     notice.show(message, "error");
   }
 }
@@ -651,23 +445,13 @@ async function selectTemplate() {
       Number(selectedTemplateId.value),
     );
     const template = response.data;
-    subject.value = String(
-      template.subject || template.template_name || "",
-    ).trim();
-    content.value =
-      String(template.content_text || "").trim() ||
-      stripHtml(template.content_html);
+    subject.value = String(template.subject || template.template_name || "").trim();
+    content.value = String(template.content_text || "").trim() || stripHtml(template.content_html);
     templateHtmlContent.value = String(template.content_html || "").trim();
     loadedTemplatePlainContent.value = content.value;
-    notice.show(
-      `Loaded template "${String(template.template_name || "Template")}".`,
-      "success",
-    );
+    notice.show(`Loaded template "${String(template.template_name || "Template")}".`, "success");
   } catch (error) {
-    const message =
-      error instanceof ApiClientError
-        ? error.message
-        : "Failed to load template";
+    const message = error instanceof ApiClientError ? error.message : "Failed to load template";
     notice.show(message, "error");
   }
 }
@@ -769,8 +553,7 @@ async function useEditorStarter() {
 
     if (!nextTemplateId) {
       const nextTemplateName =
-        subject.value.trim() ||
-        `Compose Draft ${new Date().toLocaleDateString()}`;
+        subject.value.trim() || `Compose Draft ${new Date().toLocaleDateString()}`;
 
       const created = await templatesApi.createTemplate(token, {
         templateName: nextTemplateName,
@@ -789,10 +572,7 @@ async function useEditorStarter() {
       });
 
       selectedTemplateId.value = nextTemplateId;
-      notice.show(
-        "Created a new template draft and opened Email Editor.",
-        "success",
-      );
+      notice.show("Created a new template draft and opened Email Editor.", "success");
     } else {
       notice.show("Opening Email Editor for the selected template.", "info");
     }
@@ -820,11 +600,7 @@ function wrapSelection(prefix: string, suffix: string) {
   const end = element.selectionEnd ?? content.value.length;
   const selected = content.value.slice(start, end) || "text";
   content.value =
-    content.value.slice(0, start) +
-    prefix +
-    selected +
-    suffix +
-    content.value.slice(end);
+    content.value.slice(0, start) + prefix + selected + suffix + content.value.slice(end);
 }
 
 function insertMergeTag() {
@@ -930,9 +706,7 @@ async function sendEmails() {
       emailAccountId: Number(selectedAccountId.value),
     });
     const sentCount = Number(response.data.sentCount || 0);
-    const requestedCount = Number(
-      response.data.requestedCount || parsedRecipients.length,
-    );
+    const requestedCount = Number(response.data.requestedCount || parsedRecipients.length);
     const failedCount = Number(response.data.failedCount || 0);
 
     if (failedCount === 0 && sentCount > 0) {

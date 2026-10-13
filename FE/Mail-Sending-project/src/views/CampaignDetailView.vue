@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <section class="content__header detail-hero" v-if="campaign">
     <div>
       <p class="eyebrow">Campaign Detail</p>
@@ -7,20 +7,13 @@
         ID #{{ route.params.id }} - {{ campaign.template_name || "No template" }} -
         {{ campaign.sender_email || "No sender" }}
       </p>
-      <p v-if="isAdmin && ownerText" class="page-subtitle">
-        Owner: {{ ownerText }}
-      </p>
+      <p v-if="isAdmin && ownerText" class="page-subtitle">Owner: {{ ownerText }}</p>
       <p v-if="notice.message" class="notice" :class="`notice--${notice.tone}`">
         {{ notice.message }}
       </p>
     </div>
     <div class="hero-actions">
-      <button
-        v-if="canStartCampaign"
-        type="button"
-        class="btn btn--primary"
-        @click="startCampaign"
-      >
+      <button v-if="canStartCampaign" type="button" class="btn btn--primary" @click="startCampaign">
         Start
       </button>
       <button
@@ -137,15 +130,11 @@
       <h2 class="section-title">Actions</h2>
       <p>Refresh live data or inspect every recipient in this campaign.</p>
       <div class="stack">
-        <button type="button" class="btn btn--secondary" @click="loadCampaign()">
-          Refresh
-        </button>
+        <button type="button" class="btn btn--secondary" @click="loadCampaign()">Refresh</button>
         <RouterLink :to="`/campaigns/${route.params.id}/recipients`" class="btn btn--secondary">
           View Recipients
         </RouterLink>
-        <RouterLink to="/campaigns" class="btn btn--secondary">
-          Back to Campaigns
-        </RouterLink>
+        <RouterLink to="/campaigns" class="btn btn--secondary"> Back to Campaigns </RouterLink>
       </div>
     </article>
   </section>
@@ -164,10 +153,7 @@ import { campaignsApi } from "../api/campaignsApi";
 import { ApiClientError } from "../api/http";
 import { useNotice } from "../composables/useNotice";
 import { auth } from "../stores/auth";
-import {
-  canManageOwnRecord,
-  recordOwnerLabel,
-} from "../utils/recordOwnership";
+import { canManageOwnRecord, recordOwnerLabel } from "../utils/recordOwnership";
 
 const route = useRoute();
 const router = useRouter();
@@ -185,14 +171,10 @@ const sentRate = computed(() => {
 });
 
 const isAdmin = computed(() => auth.state.user?.role === "admin");
-const canManageCampaign = computed(() =>
-  canManageOwnRecord(campaign.value, auth.state.user),
-);
+const canManageCampaign = computed(() => canManageOwnRecord(campaign.value, auth.state.user));
 const campaignStatus = computed(() => String(campaign.value?.status || "draft"));
 const canStartCampaign = computed(
-  () =>
-    canManageCampaign.value &&
-    STARTABLE_CAMPAIGN_STATUSES.includes(campaignStatus.value),
+  () => canManageCampaign.value && STARTABLE_CAMPAIGN_STATUSES.includes(campaignStatus.value),
 );
 const canPauseCampaign = computed(
   () =>
@@ -200,14 +182,10 @@ const canPauseCampaign = computed(
     PAUSABLE_CAMPAIGN_STATUSES.includes(campaignStatus.value),
 );
 const canResumeCampaign = computed(
-  () =>
-    (isAdmin.value || canManageCampaign.value) &&
-    campaignStatus.value === "paused",
+  () => (isAdmin.value || canManageCampaign.value) && campaignStatus.value === "paused",
 );
 const canDeleteCampaign = computed(
-  () =>
-    (isAdmin.value || canManageCampaign.value) &&
-    campaignStatus.value !== "sending",
+  () => (isAdmin.value || canManageCampaign.value) && campaignStatus.value !== "sending",
 );
 const ownerText = computed(() => recordOwnerLabel(campaign.value));
 
@@ -261,8 +239,7 @@ async function loadCampaign(silent = false) {
     campaign.value = response.data;
   } catch (error) {
     if (silent) return;
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to load campaign";
+    const message = error instanceof ApiClientError ? error.message : "Failed to load campaign";
     notice.show(message, "error");
   }
 }
@@ -278,8 +255,7 @@ async function startCampaign() {
     notice.show("Campaign started.", "success");
     await loadCampaign();
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to start campaign";
+    const message = error instanceof ApiClientError ? error.message : "Failed to start campaign";
     notice.show(message, "error");
   }
 }
@@ -295,8 +271,7 @@ async function pauseCampaign() {
     notice.show("Campaign paused.", "success");
     await loadCampaign();
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to pause campaign";
+    const message = error instanceof ApiClientError ? error.message : "Failed to pause campaign";
     notice.show(message, "error");
   }
 }
@@ -312,8 +287,7 @@ async function resumeCampaign() {
     notice.show("Campaign continued.", "success");
     await loadCampaign();
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to continue campaign";
+    const message = error instanceof ApiClientError ? error.message : "Failed to continue campaign";
     notice.show(message, "error");
   }
 }
@@ -330,8 +304,7 @@ async function deleteCampaign() {
     notice.show("Campaign deleted.", "success");
     router.push({ name: "campaigns" });
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to delete campaign";
+    const message = error instanceof ApiClientError ? error.message : "Failed to delete campaign";
     notice.show(message, "error");
   }
 }
@@ -361,7 +334,11 @@ onUnmounted(() => {
   border: 1px solid var(--color-border-subtle);
   border-radius: 28px;
   background:
-    radial-gradient(circle at 12% 10%, var(--color-primary-glow-strong), var(--color-transparent) 30%),
+    radial-gradient(
+      circle at 12% 10%,
+      var(--color-primary-glow-strong),
+      var(--color-transparent) 30%
+    ),
     linear-gradient(135deg, var(--color-surface-glass-soft), var(--color-info-glass));
   box-shadow: var(--shadow-elevated);
 }
@@ -422,11 +399,23 @@ onUnmounted(() => {
   font-weight: 800;
 }
 
-.badge--sent { background: var(--color-success-bg); color: var(--color-success-text-strong); }
+.badge--sent {
+  background: var(--color-success-bg);
+  color: var(--color-success-text-strong);
+}
 .badge--sending,
-.badge--scheduled { background: var(--color-chip-yellow-bg); color: var(--color-chip-yellow-text); }
-.badge--paused { background: var(--color-slate-bg); color: var(--color-text-secondary); }
-.badge--failed { background: var(--color-danger-bg-subtle); color: var(--color-danger-text); }
+.badge--scheduled {
+  background: var(--color-chip-yellow-bg);
+  color: var(--color-chip-yellow-text);
+}
+.badge--paused {
+  background: var(--color-slate-bg);
+  color: var(--color-text-secondary);
+}
+.badge--failed {
+  background: var(--color-danger-bg-subtle);
+  color: var(--color-danger-text);
+}
 
 .progress-ring {
   display: grid;

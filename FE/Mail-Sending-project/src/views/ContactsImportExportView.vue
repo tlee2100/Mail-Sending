@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <section class="content__header">
     <h1 class="page-title">Contacts Import & Export</h1>
     <p class="page-subtitle">Backend file import/export for contacts</p>
@@ -83,8 +83,7 @@ async function importContacts() {
     );
     notice.show(response.message, "success");
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to import contacts";
+    const message = error instanceof ApiClientError ? error.message : "Failed to import contacts";
     notice.show(message, "error");
   }
 }
@@ -98,8 +97,7 @@ async function exportContacts() {
     downloadBlob(response.blob, response.fileName);
     notice.show(`Downloaded ${response.fileName}.`, "success");
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to export contacts";
+    const message = error instanceof ApiClientError ? error.message : "Failed to export contacts";
     notice.show(message, "error");
   }
 }

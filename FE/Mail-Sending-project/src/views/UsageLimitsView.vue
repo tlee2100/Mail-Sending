@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <section class="content__header">
     <h1 class="page-title">Usage & Limits</h1>
     <p class="page-subtitle">
@@ -43,7 +43,10 @@
             <span>{{ account.email_address }} - {{ account.status || "active" }}</span>
           </div>
           <div class="limit-box">
-            <span>{{ Number(account.sent_today || 0) }} / {{ Number(account.daily_limit || 0) || "unlimited" }}</span>
+            <span
+              >{{ Number(account.sent_today || 0) }} /
+              {{ Number(account.daily_limit || 0) || "unlimited" }}</span
+            >
             <div class="bar">
               <i :style="{ width: `${limitPercent(account)}%` }"></i>
             </div>

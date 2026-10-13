@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <section class="content__header">
     <h1 class="page-title">Campaign Recipients</h1>
     <p class="page-subtitle">
@@ -58,13 +58,11 @@
             {{ formatDate(selectedRecipient.sent_time) }}
           </p>
         </div>
-        <button type="button" class="btn btn--secondary" @click="closeDetail">
-          Close
-        </button>
+        <button type="button" class="btn btn--secondary" @click="closeDetail">Close</button>
       </div>
       <p class="preview-note">
-        Preview is read-only. Tracking links and the open pixel are disabled here so this view
-        does not count as recipient engagement.
+        Preview is read-only. Tracking links and the open pixel are disabled here so this view does
+        not count as recipient engagement.
       </p>
       <p v-if="selectedRecipient.error_message" class="error-note">
         Send error: {{ selectedRecipient.error_message }}
@@ -84,14 +82,21 @@
           <p class="eyebrow">Live Tracking</p>
           <h2>Recipient Activity</h2>
         </div>
-        <button type="button" class="btn btn--secondary" @click="refreshDetail">
-          Refresh
-        </button>
+        <button type="button" class="btn btn--secondary" @click="refreshDetail">Refresh</button>
       </div>
       <div class="tracking-metrics">
-        <div><strong>{{ selectedRecipient.open_count || 0 }}</strong><span>Opens</span></div>
-        <div><strong>{{ selectedRecipient.click_count || 0 }}</strong><span>Clicks</span></div>
-        <div><strong>{{ selectedRecipient.status }}</strong><span>Status</span></div>
+        <div>
+          <strong>{{ selectedRecipient.open_count || 0 }}</strong
+          ><span>Opens</span>
+        </div>
+        <div>
+          <strong>{{ selectedRecipient.click_count || 0 }}</strong
+          ><span>Clicks</span>
+        </div>
+        <div>
+          <strong>{{ selectedRecipient.status }}</strong
+          ><span>Status</span>
+        </div>
       </div>
       <div v-if="trackingEvents.length" class="timeline">
         <div v-for="event in trackingEvents" :key="event.id" class="timeline-row">
@@ -137,10 +142,7 @@ const previewHtml = computed(() => {
   if (!html) {
     return "<p style='font:14px Arial,sans-serif;color:#667085;padding:24px'>No rendered HTML was stored for this email.</p>";
   }
-  return html.replace(
-    /<img\b(?=[^>]*\/api\/v1\/tracking\/open\/)[^>]*>/gi,
-    "",
-  );
+  return html.replace(/<img\b(?=[^>]*\/api\/v1\/tracking\/open\/)[^>]*>/gi, "");
 });
 
 function lastTrackedEvent(row: Record<string, any>) {
@@ -167,15 +169,11 @@ function formatEvent(eventType?: string) {
 async function loadRecipients(silent = false) {
   if (!auth.state.token) return;
   try {
-    const response = await campaignsApi.recipients(
-      auth.state.token,
-      String(route.params.id),
-    );
+    const response = await campaignsApi.recipients(auth.state.token, String(route.params.id));
     rows.value = response.data.items;
   } catch (error) {
     if (silent) return;
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to load recipients";
+    const message = error instanceof ApiClientError ? error.message : "Failed to load recipients";
     notice.show(message, "error");
   }
 }
@@ -228,8 +226,13 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.card--table { border: 1px solid var(--color-border-subtle); }
-.table { width: 100%; border-collapse: collapse; }
+.card--table {
+  border: 1px solid var(--color-border-subtle);
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
 .table th,
 .table td {
   text-align: left;
@@ -238,13 +241,19 @@ onUnmounted(() => {
   font-size: 13px;
   color: var(--color-text-main);
 }
-.table th { color: var(--color-text-muted); font-weight: 600; }
+.table th {
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
 .error-cell {
   max-width: 280px;
   color: var(--color-danger-text);
   overflow-wrap: anywhere;
 }
-.empty-text { padding: 18px; color: var(--color-text-muted); }
+.empty-text {
+  padding: 18px;
+  color: var(--color-text-muted);
+}
 .link-action {
   border: 0;
   background: transparent;
@@ -259,7 +268,9 @@ onUnmounted(() => {
   margin-top: 20px;
 }
 .message-card,
-.tracking-card { border: 1px solid var(--color-border-subtle); }
+.tracking-card {
+  border: 1px solid var(--color-border-subtle);
+}
 .panel-title {
   display: flex;
   justify-content: space-between;
@@ -267,7 +278,10 @@ onUnmounted(() => {
   gap: 12px;
   margin-bottom: 16px;
 }
-.panel-title h2 { margin: 4px 0 6px; color: var(--color-text-main); }
+.panel-title h2 {
+  margin: 4px 0 6px;
+  color: var(--color-text-main);
+}
 .eyebrow {
   margin: 0;
   color: var(--color-accent-primary);
@@ -276,7 +290,10 @@ onUnmounted(() => {
   text-transform: uppercase;
 }
 .meta,
-.preview-note { color: var(--color-text-muted); font-size: 13px; }
+.preview-note {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
 .error-note {
   padding: 10px 12px;
   border-radius: 12px;
@@ -305,9 +322,19 @@ onUnmounted(() => {
   background: var(--color-bg-surface-soft);
   text-align: center;
 }
-.tracking-metrics strong { display: block; color: var(--color-text-main); font-size: 20px; }
-.tracking-metrics span { color: var(--color-text-muted); font-size: 12px; }
-.timeline { display: grid; gap: 12px; }
+.tracking-metrics strong {
+  display: block;
+  color: var(--color-text-main);
+  font-size: 20px;
+}
+.tracking-metrics span {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+.timeline {
+  display: grid;
+  gap: 12px;
+}
 .timeline-row {
   display: flex;
   justify-content: space-between;
@@ -317,13 +344,18 @@ onUnmounted(() => {
   color: var(--color-text-muted);
   font-size: 13px;
 }
-.timeline-row strong { display: block; color: var(--color-text-main); }
+.timeline-row strong {
+  display: block;
+  color: var(--color-text-main);
+}
 .timeline-row a {
   display: block;
   overflow-wrap: anywhere;
   color: var(--color-accent-primary);
 }
 @media (max-width: 1050px) {
-  .message-detail { grid-template-columns: 1fr; }
+  .message-detail {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

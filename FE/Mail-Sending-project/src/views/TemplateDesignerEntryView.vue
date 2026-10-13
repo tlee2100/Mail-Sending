@@ -1,24 +1,19 @@
-<template>
+﻿<template>
   <section class="content__header designer-picker-header">
     <div>
       <p class="eyebrow">Template Designer</p>
       <h1 class="page-title">Choose a Template</h1>
       <p class="page-subtitle">
-        Choose a shared template or one of your own templates to continue
-        designing.
+        Choose a shared template or one of your own templates to continue designing.
       </p>
     </div>
-    <RouterLink to="/email-templates" class="btn btn--secondary">
-      Manage Templates
-    </RouterLink>
+    <RouterLink to="/email-templates" class="btn btn--secondary"> Manage Templates </RouterLink>
   </section>
 
   <section class="content__section">
     <p v-if="requestError" class="notice notice--error">{{ requestError }}</p>
 
-    <div v-if="isLoading" class="card picker-state">
-      Loading templates...
-    </div>
+    <div v-if="isLoading" class="card picker-state">Loading templates...</div>
 
     <template v-else>
       <div class="template-choice-grid">
@@ -27,8 +22,8 @@
             <div>
               <h2 class="section-title">Shared Templates</h2>
               <p class="panel-copy">
-                Start from approved shared templates. Changes are saved to your
-                own copy when needed.
+                Start from approved shared templates. Changes are saved to your own copy when
+                needed.
               </p>
             </div>
             <span class="count-pill">{{ commonTemplates.length }}</span>
@@ -49,18 +44,14 @@
               <span class="template-option__badge">Design</span>
             </button>
           </div>
-          <div v-else class="empty-panel">
-            No shared templates are available.
-          </div>
+          <div v-else class="empty-panel">No shared templates are available.</div>
         </article>
 
         <article class="card template-choice-panel">
           <div class="panel-head">
             <div>
               <h2 class="section-title">Your Templates</h2>
-              <p class="panel-copy">
-                Continue designing templates that belong to your account.
-              </p>
+              <p class="panel-copy">Continue designing templates that belong to your account.</p>
             </div>
             <span class="count-pill">{{ privateTemplates.length }}</span>
           </div>
@@ -109,7 +100,9 @@ const isLoading = ref(true);
 const requestError = ref("");
 
 function normalize(value: unknown) {
-  return String(value || "").trim().toLowerCase();
+  return String(value || "")
+    .trim()
+    .toLowerCase();
 }
 
 function nestedRecord(value: unknown) {

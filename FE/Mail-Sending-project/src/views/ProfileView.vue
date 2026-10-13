@@ -1,10 +1,8 @@
-<template>
+﻿<template>
   <section class="content__header header-with-badge">
     <div>
       <h1 class="page-title">Profile Settings</h1>
-      <p class="page-subtitle">
-        Manage your personal information and account details.
-      </p>
+      <p class="page-subtitle">Manage your personal information and account details.</p>
       <p v-if="notice.message" class="notice" :class="`notice--${notice.tone}`">
         {{ notice.message }}
       </p>
@@ -17,9 +15,7 @@
       <div class="avatar-lg">{{ initials }}</div>
       <div>
         <h2 class="profile-card-title">Personal Information</h2>
-        <p class="profile-card-sub">
-          Update your account details and personal information
-        </p>
+        <p class="profile-card-sub">Update your account details and personal information</p>
       </div>
     </div>
     <div class="profile-fields">
@@ -36,8 +32,8 @@
       <div>
         <h3 class="otp-title">Confirm New Email</h3>
         <p class="otp-copy">
-          We sent a 6-digit OTP to <strong>{{ pendingEmail }}</strong>. Enter it
-          below to finish updating your account email.
+          We sent a 6-digit OTP to <strong>{{ pendingEmail }}</strong
+          >. Enter it below to finish updating your account email.
         </p>
         <p v-if="debugOtp" class="otp-debug">Demo OTP: {{ debugOtp }}</p>
       </div>
@@ -99,9 +95,7 @@
     <div class="security-preview-icon">Lock</div>
     <div>
       <h2 class="profile-card-title">Security Settings</h2>
-      <p class="profile-card-sub">
-        Keep your account secure with a strong password
-      </p>
+      <p class="profile-card-sub">Keep your account secure with a strong password</p>
     </div>
     <RouterLink to="/security" class="btn btn--warning">Change Password</RouterLink>
   </div>
@@ -169,8 +163,7 @@ async function saveProfile() {
     email.value = auth.state.user?.email || email.value;
     notice.show("Profile updated successfully.", "success");
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Unable to update profile";
+    const message = error instanceof Error ? error.message : "Unable to update profile";
     notice.show(message, "error");
   }
 }
@@ -194,8 +187,7 @@ async function verifyEmailOtp() {
     email.value = auth.state.user?.email || "";
     notice.show("Profile email updated successfully.", "success");
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Unable to verify email OTP";
+    const message = error instanceof Error ? error.message : "Unable to verify email OTP";
     notice.show(message, "error");
   }
 }

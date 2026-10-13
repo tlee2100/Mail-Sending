@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <section class="content__header header-with-action">
     <div>
       <h1 class="page-title">Email Account Management</h1>
@@ -20,7 +20,8 @@
             {{ editingId ? "Edit Email Account" : "Add Email Account" }}
           </h2>
           <p class="editor-subtitle">
-            Enter full SMTP credentials. For Gmail, use an App Password instead of your normal password.
+            Enter full SMTP credentials. For Gmail, use an App Password instead of your normal
+            password.
           </p>
         </div>
       </div>
@@ -85,10 +86,13 @@
       </div>
 
       <div class="editor-actions">
-        <button type="button" class="btn btn--secondary" @click="closeForm">
-          Cancel
-        </button>
-        <button type="button" class="btn btn--secondary" :disabled="isTesting" @click="testConnection">
+        <button type="button" class="btn btn--secondary" @click="closeForm">Cancel</button>
+        <button
+          type="button"
+          class="btn btn--secondary"
+          :disabled="isTesting"
+          @click="testConnection"
+        >
           {{ isTesting ? "Testing..." : "Test SMTP Connection" }}
         </button>
         <button type="button" class="btn btn--primary" @click="saveAccount">
@@ -182,10 +186,7 @@ import { emailAccountsApi } from "../api/emailAccountsApi";
 import { ApiClientError } from "../api/http";
 import { useNotice } from "../composables/useNotice";
 import { auth } from "../stores/auth";
-import {
-  canManageOwnRecord,
-  recordOwnerLabel,
-} from "../utils/recordOwnership";
+import { canManageOwnRecord, recordOwnerLabel } from "../utils/recordOwnership";
 
 type AccountRow = {
   id: number;
@@ -225,9 +226,7 @@ const form = reactive({
 const activeAccounts = computed(
   () => accounts.value.filter((item) => item.status === "active").length,
 );
-const defaultAccounts = computed(
-  () => accounts.value.filter((item) => item.is_default).length,
-);
+const defaultAccounts = computed(() => accounts.value.filter((item) => item.is_default).length);
 const sentToday = computed(() =>
   accounts.value.reduce((sum, item) => sum + Number(item.sent_today || 0), 0),
 );
@@ -382,9 +381,7 @@ async function saveAccount() {
     notice.show(
       getApiErrorMessage(
         error,
-        editingId.value
-          ? "Failed to update email account"
-          : "Failed to create email account",
+        editingId.value ? "Failed to update email account" : "Failed to create email account",
       ),
       "error",
     );
@@ -402,8 +399,7 @@ function getApiErrorMessage(error: unknown, fallback: string) {
 function getApiDetailsMessage(details: unknown) {
   if (Array.isArray(details)) {
     const messages = details.flatMap((segment) => {
-      const errors = (segment as { errors?: Array<{ path?: string; message?: string }> })
-        .errors;
+      const errors = (segment as { errors?: Array<{ path?: string; message?: string }> }).errors;
       return Array.isArray(errors)
         ? errors.map((item) => {
             const label = fieldLabel(item.path || "");
@@ -423,15 +419,17 @@ function getApiDetailsMessage(details: unknown) {
 
 function fieldLabel(path: string) {
   return (
-    {
-      emailAddress: "Sender email",
-      smtpHost: "SMTP host",
-      smtpPort: "SMTP port",
-      smtpUsername: "SMTP username",
-      smtpPassword: "SMTP password",
-      dailyLimit: "Daily limit",
-    } as Record<string, string>
-  )[path] || path;
+    (
+      {
+        emailAddress: "Sender email",
+        smtpHost: "SMTP host",
+        smtpPort: "SMTP port",
+        smtpUsername: "SMTP username",
+        smtpPassword: "SMTP password",
+        dailyLimit: "Daily limit",
+      } as Record<string, string>
+    )[path] || path
+  );
 }
 
 async function testConnection() {
@@ -452,10 +450,7 @@ async function testConnection() {
     });
     notice.show("SMTP connection successful.", "success");
   } catch (error) {
-    notice.show(
-      getApiErrorMessage(error, "SMTP connection test failed"),
-      "error",
-    );
+    notice.show(getApiErrorMessage(error, "SMTP connection test failed"), "error");
   } finally {
     isTesting.value = false;
   }
@@ -498,8 +493,7 @@ async function toggleStatus(account: AccountRow) {
     notice.show("Account status updated.", "success");
     await loadAccounts();
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to update account";
+    const message = error instanceof ApiClientError ? error.message : "Failed to update account";
     notice.show(message, "error");
   }
 }
@@ -581,10 +575,18 @@ onMounted(() => {
   color: var(--color-text-main);
 }
 
-.card--blue { border-top: 3px solid var(--color-info-soft); }
-.card--green { border-top: 3px solid var(--color-success); }
-.card--cyan { border-top: 3px solid var(--color-primary-accent); }
-.card--yellow { border-top: 3px solid var(--color-warning-soft); }
+.card--blue {
+  border-top: 3px solid var(--color-info-soft);
+}
+.card--green {
+  border-top: 3px solid var(--color-success);
+}
+.card--cyan {
+  border-top: 3px solid var(--color-primary-accent);
+}
+.card--yellow {
+  border-top: 3px solid var(--color-warning-soft);
+}
 
 .card__icon {
   width: 54px;
@@ -597,8 +599,14 @@ onMounted(() => {
   font-weight: 700;
 }
 
-.card__label { font-size: 13px; color: var(--color-text-muted); }
-.card__value { font-size: 24px; font-weight: 600; }
+.card__label {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+.card__value {
+  font-size: 24px;
+  font-weight: 600;
+}
 
 .card--list {
   display: flex;
@@ -620,8 +628,14 @@ onMounted(() => {
   border-bottom: none;
 }
 
-.account-title { font-size: 15px; font-weight: 600; }
-.account-meta { font-size: 13px; color: var(--color-text-muted); }
+.account-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+.account-meta {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
 
 .account-actions {
   display: flex;
@@ -639,18 +653,41 @@ onMounted(() => {
   font-size: 11px;
 }
 
-.btn--small { padding: 6px 10px; font-size: 12px; }
-.card--empty-state { padding: 40px 24px; text-align: center; }
-.empty-title { font-size: 18px; font-weight: 600; margin: 0 0 8px; }
-.empty-desc { font-size: 14px; color: var(--color-text-muted); margin: 0 0 20px; }
+.btn--small {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+.card--empty-state {
+  padding: 40px 24px;
+  text-align: center;
+}
+.empty-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+.empty-desc {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin: 0 0 20px;
+}
 
 @media (max-width: 1024px) {
-  .grid--stats-four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .editor-grid { grid-template-columns: 1fr; }
+  .grid--stats-four {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .editor-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 768px) {
-  .grid--stats-four { grid-template-columns: 1fr; }
-  .account-row { flex-direction: column; align-items: flex-start; }
+  .grid--stats-four {
+    grid-template-columns: 1fr;
+  }
+  .account-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 </style>

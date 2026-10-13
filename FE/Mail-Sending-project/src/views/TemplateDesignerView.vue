@@ -4,8 +4,8 @@
       <span class="designer-eyebrow">Email Editor</span>
       <h1 class="page-title">Template Designer</h1>
       <p class="page-subtitle">
-        Build your email visually with reusable blocks, then preview desktop and
-        mobile output before saving the draft.
+        Build your email visually with reusable blocks, then preview desktop and mobile output
+        before saving the draft.
       </p>
       <div class="designer-meta">
         <span class="meta-pill">{{ templateDisplayName }}</span>
@@ -60,84 +60,31 @@
   </section>
 
   <section class="designer-shell">
-    <aside class="card toolbox-card">
-      <div class="toolbox-section">
-        <p class="toolbox-title">Block Library</p>
-        <button
-          v-for="type in palette"
-          :key="type"
-          type="button"
-          class="toolbox-item"
-          :class="`toolbox-item--${type}`"
-          draggable="true"
-          @click="addBlock(type)"
-          @dragstart="onPaletteDragStart(type, $event)"
-        >
-          <span class="toolbox-item__badge">{{ blockShort(type) }}</span>
-          <span>{{ prettyType(type) }}</span>
-        </button>
-      </div>
-
-      <div class="toolbox-divider"></div>
-
-      <div class="toolbox-section">
-        <p class="toolbox-title">Quick Samples</p>
-        <div class="input-wrap">
-          <select v-model="selectedSample">
-            <option
-              v-for="option in sampleOptions"
-              :key="option.key"
-              :value="option.key"
-            >
-              {{ option.label }}
-            </option>
-          </select>
-        </div>
-        <button type="button" class="btn btn--secondary toolbox-action" @click="loadSample">
-          Apply Sample
-        </button>
-      </div>
-
-      <div class="toolbox-divider"></div>
-
-      <div class="toolbox-section">
-        <p class="toolbox-title">Merge Tags</p>
-        <div class="tag-list">
-          <button
-            v-for="variable in variables"
-            :key="variable.key"
-            type="button"
-            class="tag-chip"
-            @click="insertVariable(variable.token)"
-          >
-            {{ variable.token }}
-          </button>
-        </div>
-      </div>
-
-      <div class="toolbox-note">
-        Click to add blocks quickly or drag them into the canvas. Select any block to
-        edit its properties on the right.
-      </div>
-    </aside>
+    <DesignerBlockLibrary
+      :palette="palette"
+      :sample-options="sampleOptions"
+      :variables="variables"
+      :initial-sample="selectedSample"
+      :pretty-type="prettyType"
+      :block-short="blockShort"
+      @add-block="addBlock($event as any)"
+      @drag-start="(type: any, event: DragEvent) => onPaletteDragStart(type, event)"
+      @load-sample="
+        (key: any) => {
+          selectedSample = key;
+          loadSample();
+        }
+      "
+      @insert-variable="insertVariable"
+    />
 
     <div class="workspace-column">
       <div class="card workspace-toolbar">
         <div class="toolbar-group">
-          <button
-            type="button"
-            class="btn btn--secondary"
-            @click="undo"
-            :disabled="!canUndo"
-          >
+          <button type="button" class="btn btn--secondary" @click="undo" :disabled="!canUndo">
             Undo
           </button>
-          <button
-            type="button"
-            class="btn btn--secondary"
-            @click="redo"
-            :disabled="!canRedo"
-          >
+          <button type="button" class="btn btn--secondary" @click="redo" :disabled="!canRedo">
             Redo
           </button>
         </div>
@@ -157,60 +104,18 @@
         @insert-html="insertAiHtmlBlock"
       />
 
-      <article class="card studio-card">
-        <div class="studio-head">
-          <div>
-            <h2 class="section-title">Canvas</h2>
-            <p class="studio-subtitle">
-              Arrange blocks in order, duplicate what works, and remove anything you do
-              not need.
-            </p>
-          </div>
-          <div class="canvas-counter">{{ canvasBlocks.length }} block{{ canvasBlocks.length === 1 ? "" : "s" }}</div>
-        </div>
-
-        <div class="canvas-surface" @dragover.prevent @drop="onCanvasDropToEnd">
-          <div
-            v-for="(block, index) in canvasBlocks"
-            :key="block.id"
-            class="designer-block-card"
-            :class="{ 'designer-block-card--active': selectedBlockIndex === index }"
-            draggable="true"
-            @click="selectedBlockIndex = index"
-            @dragstart="onCanvasDragStart(index, $event)"
-            @dragover.prevent
-            @drop="onCanvasDrop(index)"
-          >
-            <div class="designer-block-card__head">
-              <div>
-                <span class="block-type-pill">{{ prettyType(block.type) }}</span>
-                <p class="designer-block-card__summary">{{ blockSummary(block) }}</p>
-              </div>
-              <div class="block-actions">
-                <button
-                  type="button"
-                  class="block-action"
-                  @click.stop="duplicateBlock(index)"
-                >
-                  Duplicate
-                </button>
-                <button
-                  type="button"
-                  class="block-action block-action--danger"
-                  @click.stop="removeBlock(index)"
-                >
-                  Remove
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div v-if="canvasBlocks.length === 0" class="empty-canvas">
-            <h3>Start with a block</h3>
-            <p>Use the block library on the left or drag blocks here to build the email.</p>
-          </div>
-        </div>
-      </article>
+      <DesignerCanvas
+        :blocks="canvasBlocks as any"
+        :selected-block-index="selectedBlockIndex"
+        :pretty-type="prettyType"
+        :block-summary="blockSummary"
+        @select-block="selectedBlockIndex = $event"
+        @duplicate-block="duplicateBlock"
+        @remove-block="removeBlock"
+        @drag-start="onCanvasDragStart"
+        @drop-on-block="onCanvasDrop"
+        @drop-to-end="onCanvasDropToEnd"
+      />
 
       <details class="card source-card">
         <summary>Layout JSON and diagnostics</summary>
@@ -218,8 +123,8 @@
         <textarea v-model="layout" rows="14" class="layout-input"></textarea>
 
         <p class="source-note">
-          Backend can auto-render HTML/Text from this layout. Use the JSON source when
-          you need precise control over the structure.
+          Backend can auto-render HTML/Text from this layout. Use the JSON source when you need
+          precise control over the structure.
         </p>
         <p v-if="layoutError" class="notice notice--error source-notice">
           {{ layoutError }}
@@ -231,239 +136,14 @@
     </div>
 
     <aside class="right-column">
-      <article class="card inspector-card">
-        <div class="side-head">
-          <h2 class="section-title">Properties</h2>
-          <p class="side-copy">Select a block on the canvas to edit its settings.</p>
-        </div>
-
-        <div v-if="selectedBlock" class="inspector-fields">
-          <p class="inspector-type">Editing {{ prettyType(selectedBlock.type) }}</p>
-
-          <div class="input-wrap" v-if="selectedBlock.type === 'text'">
-            <label>Text content</label>
-            <textarea v-model="selectedBlock.props.content" rows="5"></textarea>
-            <div class="style-grid">
-              <div class="input-wrap">
-                <label>Font size (px)</label>
-                <input v-model="selectedBlock.props.fontSize" type="number" min="10" max="72" />
-              </div>
-              <div class="input-wrap">
-                <label>Color</label>
-                <input v-model="selectedBlock.props.color" type="color" />
-              </div>
-              <div class="input-wrap">
-                <label>Align</label>
-                <select v-model="selectedBlock.props.align">
-                  <option value="left">Left</option>
-                  <option value="center">Center</option>
-                  <option value="right">Right</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <template v-if="selectedBlock.type === 'button'">
-            <div class="input-wrap">
-              <label>Button label</label>
-              <input v-model="selectedBlock.props.label" type="text" />
-            </div>
-            <div class="input-wrap">
-              <label>Button href</label>
-              <input v-model="selectedBlock.props.href" type="text" />
-            </div>
-            <div class="style-grid">
-              <div class="input-wrap">
-                <label>Background color</label>
-                <input v-model="selectedBlock.props.backgroundColor" type="color" />
-              </div>
-              <div class="input-wrap">
-                <label>Text color</label>
-                <input v-model="selectedBlock.props.textColor" type="color" />
-              </div>
-              <div class="input-wrap">
-                <label>Border radius (px)</label>
-                <input v-model="selectedBlock.props.borderRadius" type="number" min="0" max="80" />
-              </div>
-              <div class="input-wrap">
-                <label>Padding</label>
-                <input v-model="selectedBlock.props.padding" type="text" />
-              </div>
-            </div>
-          </template>
-
-          <template v-if="selectedBlock.type === 'image'">
-            <div class="input-wrap">
-              <label>Image src</label>
-              <input v-model="selectedBlock.props.src" type="text" />
-            </div>
-            <div class="input-wrap">
-              <label>Image alt</label>
-              <input v-model="selectedBlock.props.alt" type="text" />
-            </div>
-            <div class="input-wrap">
-              <label>Image width (px)</label>
-              <input v-model="selectedBlock.props.width" type="number" min="120" max="1200" />
-            </div>
-          </template>
-
-          <template v-if="selectedBlock.type === 'imageCard'">
-            <div class="input-wrap">
-              <label>Image src</label>
-              <input v-model="selectedBlock.props.imageSrc" type="text" />
-            </div>
-            <div class="input-wrap">
-              <label>Image alt</label>
-              <input v-model="selectedBlock.props.imageAlt" type="text" />
-            </div>
-            <div class="input-wrap">
-              <label>Title</label>
-              <input v-model="selectedBlock.props.title" type="text" />
-            </div>
-            <div class="input-wrap">
-              <label>Description</label>
-              <textarea v-model="selectedBlock.props.description" rows="4"></textarea>
-            </div>
-            <div class="style-grid">
-              <div class="input-wrap">
-                <label>CTA label</label>
-                <input v-model="selectedBlock.props.ctaLabel" type="text" />
-              </div>
-              <div class="input-wrap">
-                <label>CTA href</label>
-                <input v-model="selectedBlock.props.ctaHref" type="text" />
-              </div>
-            </div>
-          </template>
-
-          <template v-if="selectedBlock.type === 'html'">
-            <div class="input-wrap">
-              <label>HTML</label>
-              <textarea v-model="selectedBlock.props.html" rows="6"></textarea>
-            </div>
-          </template>
-
-          <template v-if="selectedBlock.type === 'qrcode'">
-            <div class="input-wrap">
-              <label>QR content</label>
-              <textarea
-                v-model="selectedBlock.props.value"
-                rows="4"
-                placeholder="https://pay.example.com/{{email}}"
-              ></textarea>
-            </div>
-            <div class="input-wrap">
-              <label>Title</label>
-              <input v-model="selectedBlock.props.title" type="text" />
-            </div>
-            <div class="input-wrap">
-              <label>Caption</label>
-              <input v-model="selectedBlock.props.caption" type="text" />
-            </div>
-            <div class="style-grid">
-              <div class="input-wrap">
-                <label>QR size (px)</label>
-                <input v-model="selectedBlock.props.size" type="number" min="96" max="480" />
-              </div>
-            </div>
-          </template>
-
-          <template v-if="selectedBlock.type === 'columns'">
-            <div class="input-wrap">
-              <label>Left column text</label>
-              <textarea v-model="selectedBlock.props.leftContent" rows="3"></textarea>
-            </div>
-            <div class="input-wrap">
-              <label>Right column text</label>
-              <textarea v-model="selectedBlock.props.rightContent" rows="3"></textarea>
-            </div>
-            <div class="style-grid">
-              <div class="input-wrap">
-                <label>Gap (px)</label>
-                <input v-model="selectedBlock.props.gap" type="number" min="0" max="80" />
-              </div>
-              <div class="input-wrap">
-                <label>Text color</label>
-                <input v-model="selectedBlock.props.color" type="color" />
-              </div>
-            </div>
-          </template>
-
-          <template v-if="selectedBlock.type === 'twoColumnGrid'">
-            <p class="inspector-type">Left card</p>
-            <div class="input-wrap">
-              <label>Left image src</label>
-              <input v-model="selectedBlock.props.leftImageSrc" type="text" />
-            </div>
-            <div class="input-wrap">
-              <label>Left title</label>
-              <input v-model="selectedBlock.props.leftTitle" type="text" />
-            </div>
-            <div class="input-wrap">
-              <label>Left description</label>
-              <textarea v-model="selectedBlock.props.leftDescription" rows="3"></textarea>
-            </div>
-            <div class="style-grid">
-              <div class="input-wrap">
-                <label>Left CTA label</label>
-                <input v-model="selectedBlock.props.leftCtaLabel" type="text" />
-              </div>
-              <div class="input-wrap">
-                <label>Left CTA href</label>
-                <input v-model="selectedBlock.props.leftCtaHref" type="text" />
-              </div>
-            </div>
-
-            <p class="inspector-type inspector-type--spaced">Right card</p>
-            <div class="input-wrap">
-              <label>Right image src</label>
-              <input v-model="selectedBlock.props.rightImageSrc" type="text" />
-            </div>
-            <div class="input-wrap">
-              <label>Right title</label>
-              <input v-model="selectedBlock.props.rightTitle" type="text" />
-            </div>
-            <div class="input-wrap">
-              <label>Right description</label>
-              <textarea v-model="selectedBlock.props.rightDescription" rows="3"></textarea>
-            </div>
-            <div class="style-grid">
-              <div class="input-wrap">
-                <label>Right CTA label</label>
-                <input v-model="selectedBlock.props.rightCtaLabel" type="text" />
-              </div>
-              <div class="input-wrap">
-                <label>Right CTA href</label>
-                <input v-model="selectedBlock.props.rightCtaHref" type="text" />
-              </div>
-            </div>
-
-            <div class="style-grid">
-              <div class="input-wrap">
-                <label>Gap (px)</label>
-                <input v-model="selectedBlock.props.gap" type="number" min="0" max="80" />
-              </div>
-              <div class="input-wrap">
-                <label>Image height (px)</label>
-                <input v-model="selectedBlock.props.imageHeight" type="number" min="120" max="420" />
-              </div>
-            </div>
-          </template>
-
-          <div v-if="selectedBlock.type === 'divider'" class="empty-inspector-state">
-            Divider block does not need extra properties.
-          </div>
-        </div>
-
-        <div v-else class="empty-inspector-state">
-          Choose a block from the center canvas and its editable fields will appear here.
-        </div>
-      </article>
+      <DesignerBlockInspector :block="selectedBlock as any" :pretty-type="prettyType" />
 
       <article class="card preview-card">
         <div class="side-head">
           <h2 class="section-title">Preview</h2>
-          <p class="side-copy">Switch view mode and device size before publishing. Click the preview to enlarge.</p>
+          <p class="side-copy">
+            Switch view mode and device size before publishing. Click the preview to enlarge.
+          </p>
         </div>
 
         <div class="preview-toggle-grid">
@@ -537,7 +217,7 @@
           @click="openPreviewModal"
           @keydown.enter.prevent="openPreviewModal"
           @keydown.space.prevent="openPreviewModal"
-        >{{ renderedHtml }}</pre>
+          >{{ renderedHtml }}</pre>
         <pre
           v-else
           class="preview-code preview-code--clickable"
@@ -547,26 +227,20 @@
           @click="openPreviewModal"
           @keydown.enter.prevent="openPreviewModal"
           @keydown.space.prevent="openPreviewModal"
-        >{{ renderedText }}</pre>
+          >{{ renderedText }}</pre>
       </article>
     </aside>
   </section>
 
   <Teleport to="body">
-    <div
-      v-if="isPreviewModalOpen"
-      class="preview-modal-backdrop"
-      @click.self="closePreviewModal"
-    >
+    <div v-if="isPreviewModalOpen" class="preview-modal-backdrop" @click.self="closePreviewModal">
       <section class="preview-modal" aria-label="Large email preview">
         <header class="preview-modal__header">
           <div>
             <p class="designer-eyebrow">Preview</p>
             <h2 class="preview-modal__title">{{ previewModalTitle }}</h2>
           </div>
-          <button type="button" class="preview-modal__close" @click="closePreviewModal">
-            x
-          </button>
+          <button type="button" class="preview-modal__close" @click="closePreviewModal">x</button>
         </header>
 
         <div class="preview-modal__toolbar">
@@ -623,9 +297,15 @@
             class="preview-modal__frame-shell"
             :class="{ 'preview-modal__frame-shell--mobile': previewDevice === 'mobile' }"
           >
-            <iframe class="preview-modal__frame" :srcdoc="renderedHtml" title="Large email preview"></iframe>
+            <iframe
+              class="preview-modal__frame"
+              :srcdoc="renderedHtml"
+              title="Large email preview"
+            ></iframe>
           </div>
-          <pre v-else-if="previewMode === 'html'" class="preview-modal__code">{{ renderedHtml }}</pre>
+          <pre v-else-if="previewMode === 'html'" class="preview-modal__code">{{
+            renderedHtml
+          }}</pre>
           <pre v-else class="preview-modal__code">{{ renderedText }}</pre>
         </div>
       </section>
@@ -645,6 +325,9 @@ import {
 } from "../api/templateDesignerApi";
 import { templatesApi } from "../api/templatesApi";
 import AIMediaGenerator from "../components/AIMediaGenerator.vue";
+import DesignerBlockLibrary from "../components/designer/DesignerBlockLibrary.vue";
+import DesignerCanvas from "../components/designer/DesignerCanvas.vue";
+import DesignerBlockInspector from "../components/designer/DesignerBlockInspector.vue";
 import {
   canManageTemplate,
   hasTemplateOwner,
@@ -712,9 +395,7 @@ type AiHtmlInsertPayload = {
 };
 
 type DragPayload =
-  | { kind: "palette"; blockType: BlockType }
-  | { kind: "canvas"; index: number }
-  | null;
+  { kind: "palette"; blockType: BlockType } | { kind: "canvas"; index: number } | null;
 
 const sampleOptions = [
   { key: "contactProfile", label: "Contact Profile Email" },
@@ -834,12 +515,7 @@ function progressBars(
   );
 }
 
-function quoteBlock(
-  quote: string,
-  author: string,
-  bg: string,
-  accent: string,
-): LayoutNode {
+function quoteBlock(quote: string, author: string, bg: string, accent: string): LayoutNode {
   return sampleHtmlBlock(
     `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 28px;border-collapse:collapse;"><tr><td style="padding:24px;border-radius:24px;background:${bg};border-left:6px solid ${accent};"><div style="font-size:34px;line-height:1;color:${accent};font-weight:900;">"</div><p style="margin:0 0 14px;color:#111827;font-size:18px;line-height:1.55;font-weight:650;">${quote}</p><p style="margin:0;color:#64748b;font-size:14px;line-height:1.5;">${author}</p></td></tr></table>`,
   );
@@ -1142,8 +818,10 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
         {
           type: "columns",
           props: {
-            leftContent: "Included in your workspace: brand-safe prompts, reusable email blocks, campaign summaries, and AI image assets.",
-            rightContent: "Recommended next step: create one product announcement, one nurture email, and one social teaser from the same brief.",
+            leftContent:
+              "Included in your workspace: brand-safe prompts, reusable email blocks, campaign summaries, and AI image assets.",
+            rightContent:
+              "Recommended next step: create one product announcement, one nurture email, and one social teaser from the same brief.",
             gap: "24",
             color: "#3c4043",
           },
@@ -1166,7 +844,8 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
         {
           type: "text",
           props: {
-            content: "You are receiving this because {{email}} is connected to {{company}}. Unsubscribe: {{unsubscribe_url}}",
+            content:
+              "You are receiving this because {{email}} is connected to {{company}}. Unsubscribe: {{unsubscribe_url}}",
             fontSize: "12",
             color: "#80868b",
             align: "center",
@@ -1314,7 +993,8 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
         {
           type: "text",
           props: {
-            content: "Need help? Reply to this email and our onboarding team will guide you through setup.",
+            content:
+              "Need help? Reply to this email and our onboarding team will guide you through setup.",
             fontSize: "13",
             color: "#6b7280",
             align: "center",
@@ -1373,7 +1053,8 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
           type: "columns",
           props: {
             leftContent: "Use code SPRING30 at checkout. Valid until Sunday at 11:59 PM.",
-            rightContent: "Your current plan keeps working as usual. Upgrade only when you are ready.",
+            rightContent:
+              "Your current plan keeps working as usual. Upgrade only when you are ready.",
             gap: "24",
             color: "#374151",
           },
@@ -1507,7 +1188,8 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
           type: "columns",
           props: {
             leftContent: "Company: {{company}}\nBilling email: {{email}}\nSource: {{source}}",
-            rightContent: "Due date: In 2 days\nStatus: Awaiting payment\nSupport: billing@example.com",
+            rightContent:
+              "Due date: In 2 days\nStatus: Awaiting payment\nSupport: billing@example.com",
             gap: "30",
             color: "#374151",
           },
@@ -1748,7 +1430,8 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
         {
           type: "text",
           props: {
-            content: "You are subscribed as {{email}}. Manage preferences or unsubscribe: {{unsubscribe_url}}",
+            content:
+              "You are subscribed as {{email}}. Manage preferences or unsubscribe: {{unsubscribe_url}}",
             fontSize: "12",
             color: "#6b7280",
             align: "center",
@@ -1928,8 +1611,7 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
         {
           type: "text",
           props: {
-            content:
-              "You are invited: Growth Marketing Webinar",
+            content: "You are invited: Growth Marketing Webinar",
             fontSize: "32",
             color: "#111827",
             align: "center",
@@ -1948,8 +1630,10 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
         {
           type: "columns",
           props: {
-            leftContent: "Session 1: Improve inbox placement\nSession 2: Design better lifecycle emails",
-            rightContent: "Session 3: Measure campaign quality\nLive Q&A: Ask the panel your questions",
+            leftContent:
+              "Session 1: Improve inbox placement\nSession 2: Design better lifecycle emails",
+            rightContent:
+              "Session 3: Measure campaign quality\nLive Q&A: Ask the panel your questions",
             gap: "28",
             color: "#374151",
           },
@@ -2033,7 +1717,8 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
         {
           type: "text",
           props: {
-            content: "Can not attend live? Register anyway and we will send the recording to {{email}}.",
+            content:
+              "Can not attend live? Register anyway and we will send the recording to {{email}}.",
             fontSize: "13",
             color: "#6b7280",
             align: "center",
@@ -2065,8 +1750,7 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
         {
           type: "text",
           props: {
-            content:
-              "We saved your workspace, {{name}}",
+            content: "We saved your workspace, {{name}}",
             fontSize: "32",
             color: "#111827",
             align: "center",
@@ -2226,8 +1910,10 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
         {
           type: "columns",
           props: {
-            leftContent: "Tell us what worked: template design, sending workflows, analytics, or contact management.",
-            rightContent: "Tell us what felt slow: setup, approval, importing, previewing, or reporting.",
+            leftContent:
+              "Tell us what worked: template design, sending workflows, analytics, or contact management.",
+            rightContent:
+              "Tell us what felt slow: setup, approval, importing, previewing, or reporting.",
             gap: "28",
             color: "#374151",
           },
@@ -2316,9 +2002,7 @@ const samples: Record<SampleKey, { root: LayoutNode }> = {
 };
 
 const sampleFromQuery = String(route.query.sample || "contactProfile");
-const initialSample: SampleKey = isSampleKey(sampleFromQuery)
-  ? sampleFromQuery
-  : "contactProfile";
+const initialSample: SampleKey = isSampleKey(sampleFromQuery) ? sampleFromQuery : "contactProfile";
 
 const selectedSample = ref<SampleKey>(initialSample);
 const previewMode = ref<"email" | "html" | "text">("email");
@@ -2570,8 +2254,7 @@ function pushHistory() {
 
 const canUndo = computed(() => historyIndex.value > 0);
 const canRedo = computed(
-  () =>
-    historyIndex.value >= 0 && historyIndex.value < history.value.length - 1,
+  () => historyIndex.value >= 0 && historyIndex.value < history.value.length - 1,
 );
 
 function applyHistoryAt(index: number) {
@@ -2758,20 +2441,14 @@ function nodeToBlock(node: LayoutNode): DesignerBlock | null {
 
 function syncCanvasToJson() {
   const children = canvasBlocks.value.map((block) => blockToNode(block));
-  layout.value = JSON.stringify(
-    { root: { type: "section", children } },
-    null,
-    2,
-  );
+  layout.value = JSON.stringify({ root: { type: "section", children } }, null, 2);
 }
 
 function applyJsonToCanvas() {
   if (!parsedLayout.value?.root) return;
   const root = parsedLayout.value.root;
   const sourceNodes = root.type === "section" ? root.children || [] : [root];
-  const next = sourceNodes
-    .map((node) => nodeToBlock(node))
-    .filter((v): v is DesignerBlock => !!v);
+  const next = sourceNodes.map((node) => nodeToBlock(node)).filter((v): v is DesignerBlock => !!v);
   canvasBlocks.value = next;
   selectedBlockIndex.value = next.length ? 0 : null;
 }
@@ -2840,19 +2517,12 @@ function normalizeLayout(raw: TemplateLayout | string | null | undefined): strin
   if ("root" in raw && raw.root) {
     return JSON.stringify(raw, null, 2);
   }
-  if (
-    "blocks" in raw &&
-    Array.isArray((raw as unknown as { blocks?: unknown[] }).blocks)
-  ) {
+  if ("blocks" in raw && Array.isArray((raw as unknown as { blocks?: unknown[] }).blocks)) {
     const legacy = raw as unknown as { blocks: LayoutNode[] };
     if (legacy.blocks.length === 0) {
       return "";
     }
-    return JSON.stringify(
-      { root: { type: "section", children: legacy.blocks } },
-      null,
-      2,
-    );
+    return JSON.stringify({ root: { type: "section", children: legacy.blocks } }, null, 2);
   }
   return JSON.stringify(raw, null, 2);
 }
@@ -2934,8 +2604,7 @@ async function saveAsNewTemplate(token: string, shouldPublish: boolean) {
   const newTemplateId = extractTemplateId(createdTemplate);
 
   if (!newTemplateId) {
-    requestInfo.value =
-      "Template copy was created, but the API did not return its ID.";
+    requestInfo.value = "Template copy was created, but the API did not return its ID.";
     return;
   }
 
@@ -3259,7 +2928,9 @@ function escapeHtml(value: string) {
 
 function sanitizeCssValue(value: BlockPropValue | undefined, fallback: string) {
   if (value === undefined || value === null || value === "") return fallback;
-  const cleaned = String(value).replace(/[;"<>]/g, "").trim();
+  const cleaned = String(value)
+    .replace(/[;"<>]/g, "")
+    .trim();
   return cleaned || fallback;
 }
 
@@ -3269,7 +2940,12 @@ function px(value: BlockPropValue | undefined, fallback: number) {
   return `${Math.max(0, n)}px`;
 }
 
-function clampNumber(value: BlockPropValue | undefined, fallback: number, min: number, max: number) {
+function clampNumber(
+  value: BlockPropValue | undefined,
+  fallback: number,
+  min: number,
+  max: number,
+) {
   const n = Number(value);
   if (!Number.isFinite(n)) return fallback;
   return Math.max(min, Math.min(max, Math.round(n)));
@@ -3303,7 +2979,11 @@ function stripHtmlText(value: string) {
     .trim();
 }
 
-function renderCardImage(srcValue: BlockPropValue | undefined, altValue: BlockPropValue | undefined, heightValue: BlockPropValue | undefined) {
+function renderCardImage(
+  srcValue: BlockPropValue | undefined,
+  altValue: BlockPropValue | undefined,
+  heightValue: BlockPropValue | undefined,
+) {
   const src = escapeHtml(
     String(srcValue || "https://dummyimage.com/600x340/e8f0fe/1967d2&text=Email+Image"),
   );
@@ -3366,10 +3046,7 @@ function renderNode(node: LayoutNode): string {
   if (node.type === "button") {
     const label = escapeHtml(String(node.props?.label || "Open"));
     const href = escapeHtml(String(node.props?.href || "#"));
-    const backgroundColor = sanitizeCssValue(
-      node.props?.backgroundColor,
-      "#4f46e5",
-    );
+    const backgroundColor = sanitizeCssValue(node.props?.backgroundColor, "#4f46e5");
     const textColor = sanitizeCssValue(node.props?.textColor, "#ffffff");
     const borderRadius = px(node.props?.borderRadius, 8);
     const padding = sanitizeCssValue(node.props?.padding, "10px 16px");
@@ -3380,10 +3057,7 @@ function renderNode(node: LayoutNode): string {
   }
   if (node.type === "image") {
     const src = escapeHtml(
-      String(
-        node.props?.src ||
-        "https://dummyimage.com/640x220/e2e8f0/334155&text=Email+Banner",
-      ),
+      String(node.props?.src || "https://dummyimage.com/640x220/e2e8f0/334155&text=Email+Banner"),
     );
     const alt = escapeHtml(String(node.props?.alt || "Banner"));
     const rawWidth = Number(node.props?.width ?? 600);
@@ -3728,8 +3402,11 @@ onMounted(() => {
   border: 1px dashed var(--color-border-primary-soft);
   border-radius: 18px;
   padding: 18px;
-  background:
-    linear-gradient(180deg, var(--color-surface-glass-soft), var(--color-surface-glass-subtle));
+  background: linear-gradient(
+    180deg,
+    var(--color-surface-glass-soft),
+    var(--color-surface-glass-subtle)
+  );
 }
 
 .designer-block-card {
@@ -3739,7 +3416,10 @@ onMounted(() => {
   margin-bottom: 12px;
   background: var(--color-white);
   cursor: move;
-  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .designer-block-card:hover {

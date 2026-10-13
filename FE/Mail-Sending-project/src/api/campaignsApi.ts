@@ -36,30 +36,18 @@ export const campaignsApi = {
     }>(`/campaigns/${id}/recipients`, { token }, query);
   },
 
-  recipientDetail(
-    token: string,
-    campaignId: string | number,
-    recipientId: string | number,
-  ) {
-    return apiRequest<Record<string, any>>(
-      `/campaigns/${campaignId}/recipients/${recipientId}`,
-      { token },
-    );
+  recipientDetail(token: string, campaignId: string | number, recipientId: string | number) {
+    return apiRequest<Record<string, any>>(`/campaigns/${campaignId}/recipients/${recipientId}`, {
+      token,
+    });
   },
 
-  addRecipient(
-    token: string,
-    campaignId: string | number,
-    body: { email: string },
-  ) {
-    return apiRequest<Record<string, unknown>>(
-      `/campaigns/${campaignId}/recipients`,
-      {
-        method: "POST",
-        token,
-        body,
-      },
-    );
+  addRecipient(token: string, campaignId: string | number, body: { email: string }) {
+    return apiRequest<Record<string, unknown>>(`/campaigns/${campaignId}/recipients`, {
+      method: "POST",
+      token,
+      body,
+    });
   },
 
   updateRecipient(
@@ -78,18 +66,11 @@ export const campaignsApi = {
     );
   },
 
-  deleteRecipient(
-    token: string,
-    campaignId: string | number,
-    recipientId: string | number,
-  ) {
-    return apiRequest<{ deleted: boolean }>(
-      `/campaigns/${campaignId}/recipients/${recipientId}`,
-      {
-        method: "DELETE",
-        token,
-      },
-    );
+  deleteRecipient(token: string, campaignId: string | number, recipientId: string | number) {
+    return apiRequest<{ deleted: boolean }>(`/campaigns/${campaignId}/recipients/${recipientId}`, {
+      method: "DELETE",
+      token,
+    });
   },
 
   create(

@@ -4,16 +4,13 @@
       <span class="hero__eyebrow">Email command center</span>
       <h1 class="page-title">ChadMailer Dashboard</h1>
       <p class="page-subtitle">
-        Track sender health, campaign velocity and delivery performance in one
-        colorful workspace.
+        Track sender health, campaign velocity and delivery performance in one colorful workspace.
       </p>
       <div class="hero__actions">
         <RouterLink to="/individual-emails/compose" class="btn btn--primary">
           Compose Email
         </RouterLink>
-        <RouterLink to="/campaigns" class="btn btn--secondary">
-          View Campaigns
-        </RouterLink>
+        <RouterLink to="/campaigns" class="btn btn--secondary"> View Campaigns </RouterLink>
       </div>
       <p class="hero__scope">{{ scopeText }}</p>
     </div>
@@ -46,30 +43,10 @@
   </section>
 
   <section class="grid grid--stats">
-    <div class="card card--stat card--blue">
-      <div class="card__shine"></div>
-      <div class="card__icon">Accounts</div>
-      <div class="card__label">Total Accounts</div>
-      <div class="card__value">{{ stats.total_accounts }}</div>
-    </div>
-    <div class="card card--stat card--green">
-      <div class="card__shine"></div>
-      <div class="card__icon">Live</div>
-      <div class="card__label">Active Accounts</div>
-      <div class="card__value">{{ stats.active_accounts }}</div>
-    </div>
-    <div class="card card--stat card--indigo">
-      <div class="card__shine"></div>
-      <div class="card__icon">Default</div>
-      <div class="card__label">Default Account</div>
-      <div class="card__value">{{ defaultAccountCount }}</div>
-    </div>
-    <div class="card card--stat card--yellow">
-      <div class="card__shine"></div>
-      <div class="card__icon">Sent</div>
-      <div class="card__label">Emails Sent</div>
-      <div class="card__value">{{ stats.total_sent }}</div>
-    </div>
+    <StatCard label="Total Accounts" :value="stats.total_accounts" color="blue" />
+    <StatCard label="Active Accounts" :value="stats.active_accounts" color="green" />
+    <StatCard label="Default Account" :value="defaultAccountCount" color="indigo" />
+    <StatCard label="Emails Sent" :value="stats.total_sent" color="yellow" />
   </section>
 
   <section class="content__section">
@@ -110,11 +87,7 @@
           <RouterLink to="/campaigns" class="link-button">View All</RouterLink>
         </div>
         <ul class="activity-list" v-if="recentActivity.length">
-          <li
-            v-for="activity in recentActivity"
-            :key="String(activity.id)"
-            class="activity-item"
-          >
+          <li v-for="activity in recentActivity" :key="String(activity.id)" class="activity-item">
             <div class="activity__icon activity__icon--blue">Log</div>
             <div class="activity__body">
               <div class="activity__title">{{ activity.email || "Email log" }}</div>
@@ -174,6 +147,7 @@ import { emailAccountsApi } from "../api/emailAccountsApi";
 import { ApiClientError } from "../api/http";
 import { useNotice } from "../composables/useNotice";
 import { auth } from "../stores/auth";
+import StatCard from "../components/common/StatCard.vue";
 
 type DashboardStats = {
   total_accounts: number;
@@ -187,6 +161,7 @@ type DashboardStats = {
 };
 
 const notice = useNotice();
+const isLoading = ref(true);
 const stats = reactive<DashboardStats>({
   total_accounts: 0,
   active_accounts: 0,
@@ -231,6 +206,7 @@ async function loadDashboard() {
     return;
   }
 
+  isLoading.value = true;
   try {
     const [overviewRes, accountsRes] = await Promise.all([
       dashboardApi.overview(auth.state.token),
@@ -244,9 +220,10 @@ async function loadDashboard() {
       (item) => item.is_default === true,
     ).length;
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to load dashboard";
+    const message = error instanceof ApiClientError ? error.message : "Failed to load dashboard";
     notice.show(message, "error");
+  } finally {
+    isLoading.value = false;
   }
 }
 
@@ -376,8 +353,7 @@ onMounted(() => {
 
 :global(body.dark-mode) .mail-card {
   background:
-    linear-gradient(145deg, rgba(15, 23, 42, 0.88), rgba(30, 41, 59, 0.72)),
-    var(--gradient-brand);
+    linear-gradient(145deg, rgba(15, 23, 42, 0.88), rgba(30, 41, 59, 0.72)), var(--gradient-brand);
   border-color: rgba(148, 163, 184, 0.22);
 }
 
@@ -414,8 +390,7 @@ onMounted(() => {
 
 :global(body.dark-mode) .mail-card__envelope {
   background:
-    linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(236, 72, 153, 0.14)),
-    rgba(2, 6, 23, 0.42);
+    linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(236, 72, 153, 0.14)), rgba(2, 6, 23, 0.42);
 }
 
 .envelope__flap {
@@ -472,7 +447,12 @@ onMounted(() => {
   flex: 1;
   height: 3px;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--color-info-soft), var(--color-brand-pink), var(--color-success));
+  background: linear-gradient(
+    90deg,
+    var(--color-info-soft),
+    var(--color-brand-pink),
+    var(--color-success)
+  );
   background-size: 200% 100%;
   animation: routeFlow 2.6s linear infinite;
 }
@@ -613,7 +593,10 @@ onMounted(() => {
   gap: 8px;
   cursor: pointer;
   min-height: 150px;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
   text-decoration: none;
   color: inherit;
 }

@@ -57,10 +57,12 @@ export function resetIndividualEmailDraft() {
 }
 
 export function parseRecipientInput(value: string) {
-  return [...new Set(
-    value
-      .split(/[\n,;]/)
-      .map((item) => item.trim().toLowerCase())
-      .filter(Boolean),
-  )];
+  return [
+    ...new Set(
+      value
+        .split(/[\n,;]/)
+        .map((item) => item.trim().toLowerCase())
+        .filter(Boolean),
+    ),
+  ];
 }

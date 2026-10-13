@@ -1,9 +1,8 @@
-<template>
+﻿<template>
   <section class="content__header">
     <h1 class="page-title">Template Designer Versions</h1>
     <p class="page-subtitle">
-      Template ID: {{ route.params.id }} - inspect and restore historic
-      snapshots.
+      Template ID: {{ route.params.id }} - inspect and restore historic snapshots.
     </p>
     <p v-if="ownershipNotice" class="page-subtitle">
       {{ ownershipNotice }}
@@ -68,13 +67,9 @@
       </p>
       <p class="detail-meta">Summary: {{ selectedVersion.summary || "-" }}</p>
       <h3 class="mini-title">Rendered HTML</h3>
-      <pre class="detail-preview">{{
-        selectedVersion.renderedHtml || "(empty)"
-      }}</pre>
+      <pre class="detail-preview">{{ selectedVersion.renderedHtml || "(empty)" }}</pre>
       <h3 class="mini-title">Rendered Text</h3>
-      <pre class="detail-preview">{{
-        selectedVersion.renderedText || "(empty)"
-      }}</pre>
+      <pre class="detail-preview">{{ selectedVersion.renderedText || "(empty)" }}</pre>
       <h3 class="mini-title">Layout JSON</h3>
       <pre class="detail-preview">{{ selectedLayoutText }}</pre>
     </div>
@@ -200,10 +195,7 @@ async function loadVersions() {
 
     const templateRes = await templatesApi.getTemplate(token, templateId.value);
     currentTemplate.value = templateRes.data;
-    versions.value = await templateDesignerApi.getVersions(
-      templateId.value,
-      token,
-    );
+    versions.value = await templateDesignerApi.getVersions(templateId.value, token);
   } catch (err) {
     setRequestError(err);
   } finally {
@@ -258,11 +250,7 @@ async function restoreVersion(versionId: string) {
 
   isRequesting.value = true;
   try {
-    await templateDesignerApi.restoreVersion(
-      templateId.value,
-      versionId,
-      token,
-    );
+    await templateDesignerApi.restoreVersion(templateId.value, versionId, token);
     requestInfo.value = `Restored version ${versionId} to current draft.`;
     await loadVersions();
   } catch (err) {

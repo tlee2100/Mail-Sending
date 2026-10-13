@@ -1,10 +1,11 @@
-<template>
+﻿<template>
   <section class="content__header header-row">
     <div>
       <p class="eyebrow">Administration</p>
       <h1 class="page-title">Admin Dashboard</h1>
       <p class="page-subtitle">
-        Uses the normal list APIs. Admin tokens receive system-wide data, optionally filtered by user.
+        Uses the normal list APIs. Admin tokens receive system-wide data, optionally filtered by
+        user.
       </p>
       <p v-if="notice.message" class="notice" :class="`notice--${notice.tone}`">
         {{ notice.message }}
@@ -59,7 +60,11 @@
             >
               Continue
             </button>
-            <button type="button" class="btn btn--danger btn--small" @click="deleteCampaign(campaign)">
+            <button
+              type="button"
+              class="btn btn--danger btn--small"
+              @click="deleteCampaign(campaign)"
+            >
               Delete
             </button>
           </div>
@@ -77,9 +82,16 @@
         <div v-for="template in templates" :key="template.id" class="data-row">
           <div>
             <strong>{{ template.template_name || `Template #${template.id}` }}</strong>
-            <span>{{ ownerLabel(template) }} - {{ template.is_active === false ? "Inactive" : "Active" }}</span>
+            <span
+              >{{ ownerLabel(template) }} -
+              {{ template.is_active === false ? "Inactive" : "Active" }}</span
+            >
           </div>
-          <button type="button" class="btn btn--danger btn--small" @click="deleteTemplate(template)">
+          <button
+            type="button"
+            class="btn btn--danger btn--small"
+            @click="deleteTemplate(template)"
+          >
             Delete
           </button>
         </div>
@@ -111,7 +123,9 @@
       <div v-if="accounts.length" class="row-list">
         <div v-for="account in accounts" :key="account.id" class="data-row">
           <div>
-            <strong>{{ account.display_name || account.email_address || `Account #${account.id}` }}</strong>
+            <strong>{{
+              account.display_name || account.email_address || `Account #${account.id}`
+            }}</strong>
             <span>{{ ownerLabel(account) }} - {{ account.status || "active" }}</span>
           </div>
         </div>
@@ -163,9 +177,7 @@ function extractUsers(data: AdminUsersResponse) {
 
 function ownerLabel(item: DataRow) {
   const owner =
-    item.owner && typeof item.owner === "object"
-      ? (item.owner as Record<string, any>)
-      : null;
+    item.owner && typeof item.owner === "object" ? (item.owner as Record<string, any>) : null;
   const name = owner?.name || item.owner_name || item.user_name;
   const email = owner?.email || item.owner_email || item.user_email;
   const id = owner?.id || item.owner_id || item.user_id || item.userId;
@@ -186,14 +198,13 @@ async function loadAdminData() {
   const query = scopedUserId.value ? { userId: scopedUserId.value } : undefined;
 
   try {
-    const [overviewRes, contactsRes, templatesRes, campaignsRes, accountsRes] =
-      await Promise.all([
-        dashboardApi.overview(auth.state.token, query),
-        contactsApi.listContacts(auth.state.token, { pageSize: 5, ...(query || {}) }),
-        templatesApi.listTemplates(auth.state.token, { pageSize: 5, ...(query || {}) }),
-        campaignsApi.list(auth.state.token, { pageSize: 5, ...(query || {}) }),
-        emailAccountsApi.list(auth.state.token, query),
-      ]);
+    const [overviewRes, contactsRes, templatesRes, campaignsRes, accountsRes] = await Promise.all([
+      dashboardApi.overview(auth.state.token, query),
+      contactsApi.listContacts(auth.state.token, { pageSize: 5, ...(query || {}) }),
+      templatesApi.listTemplates(auth.state.token, { pageSize: 5, ...(query || {}) }),
+      campaignsApi.list(auth.state.token, { pageSize: 5, ...(query || {}) }),
+      emailAccountsApi.list(auth.state.token, query),
+    ]);
 
     Object.assign(stats, overviewRes.data.stats || {});
     contacts.value = contactsRes.data.items || [];

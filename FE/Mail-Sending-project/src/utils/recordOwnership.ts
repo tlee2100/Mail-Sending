@@ -16,11 +16,7 @@ export function recordOwnerId(record: RecordLike) {
   if (!record) return "";
   const owner = nestedOwner(record);
   return normalize(
-    record.user_id ||
-      record.userId ||
-      record.owner_id ||
-      record.ownerId ||
-      owner?.id,
+    record.user_id || record.userId || record.owner_id || record.ownerId || owner?.id,
   );
 }
 
@@ -58,23 +54,14 @@ export function recordOwnerLabel(record: RecordLike) {
   if (!record) return "";
   const owner = nestedOwner(record);
   const name =
-    record.owner_name ||
-    record.ownerName ||
-    record.user_name ||
-    record.userName ||
-    owner?.name;
+    record.owner_name || record.ownerName || record.user_name || record.userName || owner?.name;
   const email =
     record.owner_email ||
     record.ownerEmail ||
     record.user_email ||
     record.userEmail ||
     owner?.email;
-  const id =
-    record.owner_id ||
-    record.ownerId ||
-    record.user_id ||
-    record.userId ||
-    owner?.id;
+  const id = record.owner_id || record.ownerId || record.user_id || record.userId || owner?.id;
 
   if (name && email) return `${name} (${email})`;
   if (name || email) return String(name || email);

@@ -32,7 +32,8 @@
   </section>
 
   <section class="content__section">
-    <div class="campaign-board" v-if="campaigns.length">
+    <TableSkeleton v-if="isLoading" :rows="5" :columns="4" />
+    <div class="campaign-board" v-else-if="campaigns.length">
       <article v-for="item in campaigns" :key="item.id" class="campaign-row">
         <div class="campaign-main">
           <span class="status-dot" :class="`status-dot--${item.status || 'draft'}`"></span>
@@ -62,7 +63,10 @@
           <RouterLink :to="`/campaigns/${item.id}`" class="btn btn--secondary btn--small">
             Detail
           </RouterLink>
-          <RouterLink :to="`/campaigns/${item.id}/recipients`" class="btn btn--secondary btn--small">
+          <RouterLink
+            :to="`/campaigns/${item.id}/recipients`"
+            class="btn btn--secondary btn--small"
+          >
             Recipients
           </RouterLink>
           <button
@@ -100,190 +104,43 @@
         </div>
       </article>
     </div>
-    <div v-else class="empty-panel">
-      <div class="empty-icon">CM</div>
-      <h2>No campaigns found.</h2>
-      <p>Create your first campaign with a template, sender account and Excel recipient list.</p>
-      <button type="button" class="btn btn--primary" @click="openCreateModal">
-        Create Campaign
-      </button>
-    </div>
+    <EmptyState
+      v-else
+      title="No campaigns found"
+      description="Create your first campaign with a template, sender account and recipient list."
+    >
+      <template #actions>
+        <button type="button" class="btn btn--primary" @click="openCreateModal">
+          Create Campaign
+        </button>
+      </template>
+    </EmptyState>
   </section>
 
-  <Teleport to="body">
-    <div v-if="isModalOpen" class="modal-backdrop" @click.self="closeModal">
-      <form class="campaign-modal" @submit.prevent="submitCampaign">
-        <header class="modal-header">
-          <div>
-            <p class="eyebrow">{{ editingCampaign ? "Edit campaign" : "New campaign" }}</p>
-            <h2>{{ editingCampaign ? "Update campaign details" : "Create campaign" }}</h2>
-            <p>
-              Configure campaign info and optionally upload Excel recipients before sending.
-            </p>
-          </div>
-          <button type="button" class="icon-btn" @click="closeModal">x</button>
-        </header>
-
-        <div class="form-grid">
-          <label class="field field--wide">
-            <span>Campaign name *</span>
-            <input v-model.trim="form.campaignName" type="text" placeholder="Spring Launch" required />
-          </label>
-
-          <label class="field">
-            <span>Template *</span>
-            <select v-model="form.templateId" required>
-              <option disabled value="">Select template</option>
-              <option v-for="template in templates" :key="template.id" :value="String(template.id)">
-                {{ template.template_name }}
-              </option>
-            </select>
-          </label>
-
-          <label class="field">
-            <span>Sender account *</span>
-            <select v-model="form.emailAccountId" required>
-              <option disabled value="">Select sender</option>
-              <option v-for="account in accounts" :key="account.id" :value="String(account.id)">
-                {{ account.display_name || account.email_address }} - {{ account.email_address }}
-              </option>
-            </select>
-          </label>
-
-          <label class="field">
-            <span>Campaign type</span>
-            <select v-model="form.campaignType">
-              <option value="regular">Regular</option>
-              <option value="ab_test">A/B Test</option>
-              <option value="automated">Automated</option>
-            </select>
-          </label>
-
-          <label class="field">
-            <span>Schedule time</span>
-            <input v-model="form.scheduledTime" type="datetime-local" />
-          </label>
-        </div>
-
-        <section class="recipient-panel">
-          <div class="recipient-header">
-            <div>
-              <h3>Recipients</h3>
-              <p>
-                <template v-if="editingCampaign">
-                  Add, edit or remove pending/failed recipients. Sent recipients are locked.
-                </template>
-                <template v-else>
-                  Import `.xlsx`, `.xls`, or `.csv` with an <strong>email</strong> column.
-                  Leave empty to use all active contacts.
-                </template>
-              </p>
-            </div>
-            <label v-if="!editingCampaign" class="upload-btn">
-              Import Excel
-              <input type="file" accept=".xlsx,.xls,.csv" @change="onRecipientFileChange" />
-            </label>
-            <button
-              v-else
-              type="button"
-              class="btn btn--secondary"
-              :disabled="recipientsLoading"
-              @click="refreshRecipientManager"
-            >
-              {{ recipientsLoading ? "Loading..." : "Refresh recipients" }}
-            </button>
-          </div>
-
-          <template v-if="!editingCampaign">
-            <textarea
-              v-model="form.recipientsText"
-              rows="7"
-              placeholder="customer@example.com&#10;friend@example.com"
-              @input="recipientsDirty = true"
-            ></textarea>
-
-            <div class="recipient-summary">
-              <span>{{ parsedRecipients.length }} valid recipients in form</span>
-              <span v-if="importSummary">{{ importSummary }}</span>
-            </div>
-          </template>
-
-          <div v-else class="recipient-manager">
-            <div class="recipient-add-row">
-              <input
-                v-model.trim="newRecipientEmail"
-                type="email"
-                placeholder="new-recipient@example.com"
-                @keyup.enter.prevent="addRecipient"
-              />
-              <button
-                type="button"
-                class="btn btn--primary"
-                :disabled="recipientSavingId === 'new' || !isValidEmail(newRecipientEmail)"
-                @click="addRecipient"
-              >
-                {{ recipientSavingId === "new" ? "Adding..." : "Add recipient" }}
-              </button>
-            </div>
-
-            <p v-if="recipientManagerSummary" class="recipient-manager-summary">
-              {{ recipientManagerSummary }}
-            </p>
-
-            <div v-if="recipientRows.length" class="recipient-edit-list">
-              <div
-                v-for="row in recipientRows"
-                :key="row.id"
-                class="recipient-edit-row"
-              >
-                <div class="recipient-edit-main">
-                  <input
-                    v-model.trim="row.draftEmail"
-                    type="email"
-                    :disabled="!canEditRecipientRow(row) || recipientSavingId === row.id"
-                  />
-                  <span class="recipient-status" :class="`recipient-status--${row.status}`">
-                    {{ row.status }}
-                  </span>
-                  <small v-if="row.error_message" class="recipient-error">
-                    {{ row.error_message }}
-                  </small>
-                </div>
-                <div class="recipient-row-actions">
-                  <button
-                    type="button"
-                    class="btn btn--secondary btn--small"
-                    :disabled="!canSaveRecipientRow(row)"
-                    @click="saveRecipient(row)"
-                  >
-                    {{ recipientSavingId === row.id ? "Saving..." : "Save" }}
-                  </button>
-                  <button
-                    type="button"
-                    class="btn btn--danger btn--small"
-                    :disabled="!canEditRecipientRow(row) || recipientSavingId === row.id"
-                    @click="deleteRecipient(row)"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            </div>
-            <p v-else class="empty-text">
-              {{ recipientsLoading ? "Loading recipients..." : "No recipients in this campaign." }}
-            </p>
-          </div>
-        </section>
-
-        <footer class="modal-actions">
-          <button type="button" class="btn btn--secondary" @click="closeModal">Cancel</button>
-          <button type="submit" class="btn btn--primary" :disabled="saving">
-            {{ saving ? "Saving..." : editingCampaign ? "Save changes" : "Create campaign" }}
-          </button>
-        </footer>
-      </form>
-    </div>
-  </Teleport>
+  <CampaignModal
+    :is-open="isModalOpen"
+    :editing-campaign="editingCampaign"
+    :form="form"
+    :templates="templates as any"
+    :accounts="accounts as any"
+    :parsed-recipients="parsedRecipients"
+    :import-summary="importSummary"
+    :recipients-loading="recipientsLoading"
+    :recipient-rows="recipientRows"
+    :recipient-saving-id="recipientSavingId"
+    :recipient-manager-summary="recipientManagerSummary"
+    :is-submitting="saving"
+    :can-edit-recipient-row="canEditRecipientRow"
+    :can-save-recipient-row="canSaveRecipientRow"
+    :is-valid-email="isValidEmail"
+    @close="closeModal"
+    @submit="submitCampaign"
+    @file-change="onRecipientFileChange"
+    @refresh-recipients="refreshRecipientManager"
+    @add-recipient="addRecipient"
+    @save-recipient="saveRecipient"
+    @delete-recipient="deleteRecipient"
+  />
 </template>
 
 <script setup lang="ts">
@@ -296,10 +153,10 @@ import { templatesApi } from "../api/templatesApi";
 import { ApiClientError } from "../api/http";
 import { useNotice } from "../composables/useNotice";
 import { auth } from "../stores/auth";
-import {
-  canManageOwnRecord,
-  recordOwnerLabel,
-} from "../utils/recordOwnership";
+import TableSkeleton from "../components/common/TableSkeleton.vue";
+import EmptyState from "../components/common/EmptyState.vue";
+import CampaignModal from "../components/campaigns/CampaignModal.vue";
+import { canManageOwnRecord, recordOwnerLabel } from "../utils/recordOwnership";
 
 type CampaignRow = Record<string, any>;
 type RecipientRow = Record<string, any> & { draftEmail: string };
@@ -317,6 +174,7 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MUTABLE_RECIPIENT_STATUSES = ["pending", "failed", "bounced"];
 
 const notice = useNotice();
+const isLoading = ref(true);
 const campaigns = ref<CampaignRow[]>([]);
 const templates = ref<Array<Record<string, any>>>([]);
 const accounts = ref<Array<Record<string, any>>>([]);
@@ -477,13 +335,15 @@ async function loadOptions() {
 
 async function loadCampaigns() {
   if (!auth.state.token) return;
+  isLoading.value = true;
   try {
     const response = await campaignsApi.list(auth.state.token, { pageSize: 100 });
     campaigns.value = response.data.items;
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to load campaigns";
+    const message = error instanceof ApiClientError ? error.message : "Failed to load campaigns";
     notice.show(message, "error");
+  } finally {
+    isLoading.value = false;
   }
 }
 
@@ -576,8 +436,7 @@ async function startCampaign(item: CampaignRow) {
     notice.show("Campaign started.", "success");
     await loadCampaigns();
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to start campaign";
+    const message = error instanceof ApiClientError ? error.message : "Failed to start campaign";
     notice.show(message, "error");
   }
 }
@@ -593,8 +452,7 @@ async function pauseCampaign(item: CampaignRow) {
     notice.show("Campaign paused.", "success");
     await loadCampaigns();
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to pause campaign";
+    const message = error instanceof ApiClientError ? error.message : "Failed to pause campaign";
     notice.show(message, "error");
   }
 }
@@ -610,8 +468,7 @@ async function resumeCampaign(item: CampaignRow) {
     notice.show("Campaign continued.", "success");
     await loadCampaigns();
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to continue campaign";
+    const message = error instanceof ApiClientError ? error.message : "Failed to continue campaign";
     notice.show(message, "error");
   }
 }
@@ -628,8 +485,7 @@ async function deleteCampaign(item: CampaignRow) {
     notice.show("Campaign deleted.", "success");
     await loadCampaigns();
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to delete campaign";
+    const message = error instanceof ApiClientError ? error.message : "Failed to delete campaign";
     notice.show(message, "error");
   }
 }
@@ -660,9 +516,9 @@ async function refreshRecipientManager() {
   await loadRecipientsForEdit(editingCampaign.value.id);
 }
 
-async function addRecipient() {
+async function addRecipient(emailInput?: string) {
   if (!auth.state.token || !editingCampaign.value) return;
-  const email = normalizeRecipientEmail(newRecipientEmail.value);
+  const email = normalizeRecipientEmail(emailInput || newRecipientEmail.value);
   if (!isValidEmail(email)) {
     notice.show("Recipient email is invalid.", "error");
     return;
@@ -675,13 +531,9 @@ async function addRecipient() {
     });
     newRecipientEmail.value = "";
     notice.show("Recipient added.", "success");
-    await Promise.all([
-      loadRecipientsForEdit(editingCampaign.value.id),
-      loadCampaigns(),
-    ]);
+    await Promise.all([loadRecipientsForEdit(editingCampaign.value.id), loadCampaigns()]);
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to add recipient";
+    const message = error instanceof ApiClientError ? error.message : "Failed to add recipient";
     notice.show(message, "error");
   } finally {
     recipientSavingId.value = null;
@@ -694,20 +546,13 @@ async function saveRecipient(row: RecipientRow) {
 
   recipientSavingId.value = row.id;
   try {
-    await campaignsApi.updateRecipient(
-      auth.state.token,
-      editingCampaign.value.id,
-      row.id,
-      { email },
-    );
+    await campaignsApi.updateRecipient(auth.state.token, editingCampaign.value.id, row.id, {
+      email,
+    });
     notice.show("Recipient updated and reset to pending.", "success");
-    await Promise.all([
-      loadRecipientsForEdit(editingCampaign.value.id),
-      loadCampaigns(),
-    ]);
+    await Promise.all([loadRecipientsForEdit(editingCampaign.value.id), loadCampaigns()]);
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to update recipient";
+    const message = error instanceof ApiClientError ? error.message : "Failed to update recipient";
     notice.show(message, "error");
   } finally {
     recipientSavingId.value = null;
@@ -720,19 +565,11 @@ async function deleteRecipient(row: RecipientRow) {
 
   recipientSavingId.value = row.id;
   try {
-    await campaignsApi.deleteRecipient(
-      auth.state.token,
-      editingCampaign.value.id,
-      row.id,
-    );
+    await campaignsApi.deleteRecipient(auth.state.token, editingCampaign.value.id, row.id);
     notice.show("Recipient removed.", "success");
-    await Promise.all([
-      loadRecipientsForEdit(editingCampaign.value.id),
-      loadCampaigns(),
-    ]);
+    await Promise.all([loadRecipientsForEdit(editingCampaign.value.id), loadCampaigns()]);
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to delete recipient";
+    const message = error instanceof ApiClientError ? error.message : "Failed to delete recipient";
     notice.show(message, "error");
   } finally {
     recipientSavingId.value = null;
@@ -747,9 +584,7 @@ async function onRecipientFileChange(event: Event) {
 
   try {
     const response = await campaignsApi.importRecipients(auth.state.token, file);
-    const merged = [
-      ...new Set([...parsedRecipients.value, ...response.data.recipients]),
-    ];
+    const merged = [...new Set([...parsedRecipients.value, ...response.data.recipients])];
     form.recipientsText = merged.join("\n");
     recipientsDirty.value = true;
     importSummary.value = `Imported ${response.data.importedCount}/${response.data.totalRows} rows`;
@@ -757,8 +592,7 @@ async function onRecipientFileChange(event: Event) {
       importSummary.value += `, skipped ${response.data.invalidRows} invalid rows`;
     }
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to import recipients";
+    const message = error instanceof ApiClientError ? error.message : "Failed to import recipients";
     notice.show(message, "error");
   }
 }
@@ -796,8 +630,7 @@ async function submitCampaign() {
     closeModal();
     await loadCampaigns();
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to save campaign";
+    const message = error instanceof ApiClientError ? error.message : "Failed to save campaign";
     notice.show(message, "error");
   } finally {
     saving.value = false;
@@ -859,9 +692,15 @@ onMounted(() => {
   color: var(--color-text-main);
 }
 
-.stat-card--blue { border-top: 3px solid var(--color-info-soft); }
-.stat-card--green { border-top: 3px solid var(--color-success); }
-.stat-card--purple { border-top: 3px solid var(--color-primary-soft); }
+.stat-card--blue {
+  border-top: 3px solid var(--color-info-soft);
+}
+.stat-card--green {
+  border-top: 3px solid var(--color-success);
+}
+.stat-card--purple {
+  border-top: 3px solid var(--color-primary-soft);
+}
 
 .campaign-board {
   display: grid;
@@ -916,12 +755,24 @@ onMounted(() => {
   background: var(--color-text-faint);
 }
 
-.status-dot--draft { background: linear-gradient(180deg, var(--color-purple-soft), var(--color-primary-soft)); }
-.status-dot--scheduled { background: linear-gradient(180deg, var(--color-info-accent), var(--color-info)); }
-.status-dot--sending { background: linear-gradient(180deg, var(--color-warning-soft), var(--color-orange)); }
-.status-dot--sent { background: linear-gradient(180deg, var(--color-success-soft), var(--color-success-strong)); }
-.status-dot--paused { background: linear-gradient(180deg, var(--color-border-muted), var(--color-slate)); }
-.status-dot--failed { background: linear-gradient(180deg, var(--color-danger-soft), var(--color-danger)); }
+.status-dot--draft {
+  background: linear-gradient(180deg, var(--color-purple-soft), var(--color-primary-soft));
+}
+.status-dot--scheduled {
+  background: linear-gradient(180deg, var(--color-info-accent), var(--color-info));
+}
+.status-dot--sending {
+  background: linear-gradient(180deg, var(--color-warning-soft), var(--color-orange));
+}
+.status-dot--sent {
+  background: linear-gradient(180deg, var(--color-success-soft), var(--color-success-strong));
+}
+.status-dot--paused {
+  background: linear-gradient(180deg, var(--color-border-muted), var(--color-slate));
+}
+.status-dot--failed {
+  background: linear-gradient(180deg, var(--color-danger-soft), var(--color-danger));
+}
 
 .badge {
   display: inline-flex;
@@ -1191,10 +1042,16 @@ onMounted(() => {
   font-weight: 800;
 }
 
-.recipient-status--pending { color: var(--color-chip-yellow-text); }
-.recipient-status--sent { color: var(--color-success-text-strong); }
+.recipient-status--pending {
+  color: var(--color-chip-yellow-text);
+}
+.recipient-status--sent {
+  color: var(--color-success-text-strong);
+}
 .recipient-status--failed,
-.recipient-status--bounced { color: var(--color-danger-text); }
+.recipient-status--bounced {
+  color: var(--color-danger-text);
+}
 
 .recipient-error {
   color: var(--color-danger-text);

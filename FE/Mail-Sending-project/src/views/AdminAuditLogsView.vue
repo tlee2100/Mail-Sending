@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <section class="content__header header-row">
     <div>
       <p class="eyebrow">Administration</p>
@@ -10,20 +10,23 @@
         {{ notice.message }}
       </p>
     </div>
-    <button type="button" class="btn btn--secondary" @click="loadLogs">
-      Refresh
-    </button>
+    <button type="button" class="btn btn--secondary" @click="loadLogs">Refresh</button>
   </section>
 
   <section class="content__section">
     <div class="card log-card">
       <div v-if="logs.length" class="log-list">
-        <article v-for="log in logs" :key="String(log.id || log.sent_time || log.created_at)" class="log-row">
+        <article
+          v-for="log in logs"
+          :key="String(log.id || log.sent_time || log.created_at)"
+          class="log-row"
+        >
           <div class="log-marker"></div>
           <div class="log-body">
             <div class="log-title">{{ titleOf(log) }}</div>
             <div class="log-meta">
-              {{ ownerLabel(log) }} - {{ formatDate(log.sent_time || log.created_at || log.updated_at) }}
+              {{ ownerLabel(log) }} -
+              {{ formatDate(log.sent_time || log.created_at || log.updated_at) }}
             </div>
             <p>{{ log.message || log.status || log.event || "No message" }}</p>
           </div>
@@ -51,20 +54,13 @@ const logs = ref<LogRow[]>([]);
 
 function titleOf(log: LogRow) {
   return (
-    log.email ||
-    log.campaign_name ||
-    log.template_name ||
-    log.action ||
-    log.type ||
-    "Activity"
+    log.email || log.campaign_name || log.template_name || log.action || log.type || "Activity"
   );
 }
 
 function ownerLabel(log: LogRow) {
   const owner =
-    log.owner && typeof log.owner === "object"
-      ? (log.owner as Record<string, any>)
-      : null;
+    log.owner && typeof log.owner === "object" ? (log.owner as Record<string, any>) : null;
   const name = owner?.name || log.owner_name || log.user_name;
   const email = owner?.email || log.owner_email || log.user_email;
   const id = owner?.id || log.owner_id || log.user_id || log.userId;

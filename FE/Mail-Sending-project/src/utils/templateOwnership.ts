@@ -75,14 +75,15 @@ function getNestedOwner(template: Record<string, unknown>) {
 
 export function hasTemplateOwner(template: TemplateLike) {
   if (!template) return false;
-  const directOwner = [...OWNER_ID_KEYS, ...OWNER_EMAIL_KEYS, ...OWNER_NAME_KEYS]
-    .some((key) => hasValue(template[key]));
+  const directOwner = [...OWNER_ID_KEYS, ...OWNER_EMAIL_KEYS, ...OWNER_NAME_KEYS].some((key) =>
+    hasValue(template[key]),
+  );
   if (directOwner) return true;
 
   const nestedOwner = getNestedOwner(template);
   if (!nestedOwner) return false;
-  return ["id", ...OWNER_ID_KEYS, ...OWNER_EMAIL_KEYS, ...OWNER_NAME_KEYS].some(
-    (key) => hasValue(nestedOwner[key]),
+  return ["id", ...OWNER_ID_KEYS, ...OWNER_EMAIL_KEYS, ...OWNER_NAME_KEYS].some((key) =>
+    hasValue(nestedOwner[key]),
   );
 }
 
@@ -90,8 +91,10 @@ export function isTemplateOwnedByUser(template: TemplateLike, user: AuthLikeUser
   if (!template || !user) return false;
 
   const nestedOwner = getNestedOwner(template);
-  const ownerId = getAny(template, OWNER_ID_KEYS) || nestedOwner?.id || getAny(nestedOwner || {}, OWNER_ID_KEYS);
-  const ownerEmail = getAny(template, OWNER_EMAIL_KEYS) || getAny(nestedOwner || {}, OWNER_EMAIL_KEYS);
+  const ownerId =
+    getAny(template, OWNER_ID_KEYS) || nestedOwner?.id || getAny(nestedOwner || {}, OWNER_ID_KEYS);
+  const ownerEmail =
+    getAny(template, OWNER_EMAIL_KEYS) || getAny(nestedOwner || {}, OWNER_EMAIL_KEYS);
   const ownerName = getAny(template, OWNER_NAME_KEYS) || getAny(nestedOwner || {}, OWNER_NAME_KEYS);
 
   const userId = normalize(user.id);
@@ -122,8 +125,10 @@ export function templateOwnerLabel(template: TemplateLike) {
   if (!template) return "";
   const nestedOwner = getNestedOwner(template);
   const ownerName = getAny(template, OWNER_NAME_KEYS) || getAny(nestedOwner || {}, OWNER_NAME_KEYS);
-  const ownerEmail = getAny(template, OWNER_EMAIL_KEYS) || getAny(nestedOwner || {}, OWNER_EMAIL_KEYS);
-  const ownerId = getAny(template, OWNER_ID_KEYS) || nestedOwner?.id || getAny(nestedOwner || {}, OWNER_ID_KEYS);
+  const ownerEmail =
+    getAny(template, OWNER_EMAIL_KEYS) || getAny(nestedOwner || {}, OWNER_EMAIL_KEYS);
+  const ownerId =
+    getAny(template, OWNER_ID_KEYS) || nestedOwner?.id || getAny(nestedOwner || {}, OWNER_ID_KEYS);
 
   if (ownerName) return String(ownerName);
   if (ownerEmail) return String(ownerEmail);
