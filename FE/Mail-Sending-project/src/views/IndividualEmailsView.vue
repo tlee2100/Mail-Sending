@@ -1,9 +1,8 @@
-<template>
+﻿<template>
   <section class="content__header">
     <h1 class="page-title">Send Individual Emails</h1>
     <p class="page-subtitle">
-      Send personalized emails to specific recipients by entering their email
-      addresses.
+      Send personalized emails to specific recipients by entering their email addresses.
     </p>
     <p v-if="notice.message" class="notice" :class="`notice--${notice.tone}`">
       {{ notice.message }}
@@ -37,8 +36,7 @@
         <div>
           <p class="import-panel__title">Import recipients from Excel</p>
           <p class="import-panel__copy">
-            Upload `.xlsx`, `.xls`, or `.csv` with an `email` column to append
-            recipients.
+            Upload `.xlsx`, `.xls`, or `.csv` with an `email` column to append recipients.
           </p>
         </div>
         <div class="import-panel__controls">
@@ -96,15 +94,10 @@
           <div>
             <p class="import-panel__title">Use saved contacts</p>
             <p class="import-panel__copy">
-              Pick contacts from your address book, or create a new contact
-              here.
+              Pick contacts from your address book, or create a new contact here.
             </p>
           </div>
-          <button
-            type="button"
-            class="btn btn--primary"
-            @click="openCreateContactModal"
-          >
+          <button type="button" class="btn btn--primary" @click="openCreateContactModal">
             + Create Contact
           </button>
         </div>
@@ -116,11 +109,7 @@
             class="contact-search"
             placeholder="Search name, email, company, or city"
           />
-          <button
-            type="button"
-            class="btn btn--secondary"
-            @click="loadContacts"
-          >
+          <button type="button" class="btn btn--secondary" @click="loadContacts">
             Refresh Contacts
           </button>
           <button
@@ -134,36 +123,20 @@
         </div>
 
         <div v-if="filteredContacts.length" class="contact-list">
-          <label
-            v-for="contact in filteredContacts"
-            :key="contact.id"
-            class="contact-row"
-          >
-            <input
-              v-model="selectedContactIds"
-              type="checkbox"
-              :value="String(contact.id)"
-            />
+          <label v-for="contact in filteredContacts" :key="contact.id" class="contact-row">
+            <input v-model="selectedContactIds" type="checkbox" :value="String(contact.id)" />
             <span class="contact-row__main">
               <strong>{{ fullName(contact) }}</strong>
               <small>{{ contact.email }}</small>
             </span>
             <span class="contact-row__meta">
-              {{
-                contact.company ||
-                contact.city ||
-                contact.email_status ||
-                "contact"
-              }}
+              {{ contact.company || contact.city || contact.email_status || "contact" }}
             </span>
           </label>
         </div>
-        <p v-else-if="contactSearch" class="contact-empty">
-          No contacts match this search.
-        </p>
+        <p v-else-if="contactSearch" class="contact-empty">No contacts match this search.</p>
         <p v-else class="contact-empty">
-          No contacts returned by the API. Create one here or refresh after
-          creating contacts.
+          No contacts returned by the API. Create one here or refresh after creating contacts.
         </p>
       </div>
 
@@ -174,9 +147,7 @@
           placeholder="Enter email addresses (comma or newline separated)"
           rows="8"
         ></textarea>
-        <p class="input-hint">
-          e.g. john@example.com, jane@example.com, mike@example.com
-        </p>
+        <p class="input-hint">e.g. john@example.com, jane@example.com, mike@example.com</p>
       </div>
       <RouterLink to="/individual-emails/compose" class="btn btn--primary">
         Continue to Compose
@@ -200,13 +171,7 @@
         <h2>Sent Email History</h2>
         <p>Review delivered individual emails and live recipient tracking.</p>
       </div>
-      <button
-        type="button"
-        class="btn btn--secondary"
-        @click="loadSentEmails()"
-      >
-        Refresh
-      </button>
+      <button type="button" class="btn btn--secondary" @click="loadSentEmails()">Refresh</button>
     </div>
     <div class="card card--table">
       <table v-if="sentEmails.length" class="table">
@@ -230,11 +195,7 @@
             <td>{{ item.open_count || 0 }}</td>
             <td>{{ item.click_count || 0 }}</td>
             <td>
-              <button
-                type="button"
-                class="link-action"
-                @click="selectEmail(item.id)"
-              >
+              <button type="button" class="link-action" @click="selectEmail(item.id)">
                 View email
               </button>
             </td>
@@ -256,17 +217,12 @@
             {{ formatDate(selectedEmail.sent_time) }}
           </p>
         </div>
-        <button
-          type="button"
-          class="btn btn--secondary"
-          @click="selectedEmail = null"
-        >
+        <button type="button" class="btn btn--secondary" @click="selectedEmail = null">
           Close
         </button>
       </div>
       <p class="meta">
-        Preview is read-only. The tracking pixel and clickable links are
-        disabled here.
+        Preview is read-only. The tracking pixel and clickable links are disabled here.
       </p>
       <iframe
         class="email-preview"
@@ -283,11 +239,7 @@
           <p class="eyebrow">Live Tracking</p>
           <h2>Recipient Activity</h2>
         </div>
-        <button
-          type="button"
-          class="btn btn--secondary"
-          @click="refreshEmailDetail"
-        >
+        <button type="button" class="btn btn--secondary" @click="refreshEmailDetail">
           Refresh
         </button>
       </div>
@@ -306,11 +258,7 @@
         </div>
       </div>
       <div v-if="trackingEvents.length" class="timeline">
-        <div
-          v-for="event in trackingEvents"
-          :key="event.id"
-          class="timeline-row"
-        >
+        <div v-for="event in trackingEvents" :key="event.id" class="timeline-row">
           <div>
             <strong>{{ formatEvent(event.event_type) }}</strong>
             <a
@@ -325,29 +273,19 @@
           <span>{{ formatDate(event.event_time) }}</span>
         </div>
       </div>
-      <p v-else class="empty-text">
-        No tracking activity recorded for this email yet.
-      </p>
+      <p v-else class="empty-text">No tracking activity recorded for this email yet.</p>
     </article>
   </section>
 
-  <div
-    v-if="contactDialogOpen"
-    class="modal-backdrop"
-    @click.self="closeContactDialog"
-  >
+  <div v-if="contactDialogOpen" class="modal-backdrop" @click.self="closeContactDialog">
     <form class="modal-card modal-card--wide" @submit.prevent="saveContact">
       <header class="modal-head">
         <div>
           <p class="modal-kicker">New contact</p>
           <h2 class="modal-title">Create contact</h2>
-          <p class="modal-subtitle">
-            Recipient profile data is used for email merge tags.
-          </p>
+          <p class="modal-subtitle">Recipient profile data is used for email merge tags.</p>
         </div>
-        <button type="button" class="modal-close" @click="closeContactDialog">
-          x
-        </button>
+        <button type="button" class="modal-close" @click="closeContactDialog">x</button>
       </header>
 
       <div class="contact-form-grid">
@@ -362,51 +300,27 @@
         </label>
         <label class="field">
           <span>First name</span>
-          <input
-            v-model.trim="contactForm.firstName"
-            type="text"
-            placeholder="Tan"
-          />
+          <input v-model.trim="contactForm.firstName" type="text" placeholder="Tan" />
         </label>
         <label class="field">
           <span>Last name</span>
-          <input
-            v-model.trim="contactForm.lastName"
-            type="text"
-            placeholder="Le"
-          />
+          <input v-model.trim="contactForm.lastName" type="text" placeholder="Le" />
         </label>
         <label class="field">
           <span>Phone</span>
-          <input
-            v-model.trim="contactForm.phone"
-            type="text"
-            placeholder="090..."
-          />
+          <input v-model.trim="contactForm.phone" type="text" placeholder="090..." />
         </label>
         <label class="field">
           <span>Company</span>
-          <input
-            v-model.trim="contactForm.company"
-            type="text"
-            placeholder="ChadMailer"
-          />
+          <input v-model.trim="contactForm.company" type="text" placeholder="ChadMailer" />
         </label>
         <label class="field">
           <span>City</span>
-          <input
-            v-model.trim="contactForm.city"
-            type="text"
-            placeholder="Ho Chi Minh"
-          />
+          <input v-model.trim="contactForm.city" type="text" placeholder="Ho Chi Minh" />
         </label>
         <label class="field">
           <span>Country</span>
-          <input
-            v-model.trim="contactForm.country"
-            type="text"
-            placeholder="Vietnam"
-          />
+          <input v-model.trim="contactForm.country" type="text" placeholder="Vietnam" />
         </label>
         <label class="field">
           <span>Status</span>
@@ -419,27 +333,13 @@
         </label>
         <label class="field">
           <span>Source</span>
-          <input
-            v-model.trim="contactForm.source"
-            type="text"
-            placeholder="manual"
-          />
+          <input v-model.trim="contactForm.source" type="text" placeholder="manual" />
         </label>
       </div>
 
       <footer class="modal-actions">
-        <button
-          type="button"
-          class="btn btn--secondary"
-          @click="closeContactDialog"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          class="btn btn--primary"
-          :disabled="isSavingContact"
-        >
+        <button type="button" class="btn btn--secondary" @click="closeContactDialog">Cancel</button>
+        <button type="submit" class="btn btn--primary" :disabled="isSavingContact">
           {{ isSavingContact ? "Saving..." : "Create contact" }}
         </button>
       </footer>
@@ -530,8 +430,7 @@ const filteredContacts = computed(() => {
   });
 });
 const trackingEvents = computed(
-  () =>
-    (selectedEmail.value?.trackingEvents || []) as Array<Record<string, any>>,
+  () => (selectedEmail.value?.trackingEvents || []) as Array<Record<string, any>>,
 );
 const previewHtml = computed(() => {
   const html = String(selectedEmail.value?.content_html || "");
@@ -551,9 +450,7 @@ function onFileChange(event: Event) {
 }
 
 function fullName(contact: ContactRow) {
-  const name = [contact.first_name, contact.last_name]
-    .filter(Boolean)
-    .join(" ");
+  const name = [contact.first_name, contact.last_name].filter(Boolean).join(" ");
   return name || contact.email;
 }
 
@@ -603,21 +500,14 @@ function normalizeContactRow(raw: Record<string, unknown>): ContactRow {
   return {
     id: Number(raw.id || raw.contact_id || Date.now()),
     email: String(raw.email || contactForm.email),
-    first_name: String(
-      raw.first_name || raw.firstName || contactForm.firstName || "",
-    ),
-    last_name: String(
-      raw.last_name || raw.lastName || contactForm.lastName || "",
-    ),
+    first_name: String(raw.first_name || raw.firstName || contactForm.firstName || ""),
+    last_name: String(raw.last_name || raw.lastName || contactForm.lastName || ""),
     phone: String(raw.phone || contactForm.phone || ""),
     company: String(raw.company || contactForm.company || ""),
     city: String(raw.city || contactForm.city || ""),
     country: String(raw.country || contactForm.country || ""),
     email_status: String(
-      raw.email_status ||
-        raw.emailStatus ||
-        contactForm.emailStatus ||
-        "active",
+      raw.email_status || raw.emailStatus || contactForm.emailStatus || "active",
     ),
     source: String(raw.source || contactForm.source || "manual"),
   };
@@ -631,26 +521,18 @@ async function saveContact() {
 
   isSavingContact.value = true;
   try {
-    const created = await contactsApi.createContact(
-      auth.state.token,
-      contactPayload(),
-    );
+    const created = await contactsApi.createContact(auth.state.token, contactPayload());
     const createdContact = normalizeContactRow(created.data || {});
     contacts.value = [
       createdContact,
-      ...contacts.value.filter(
-        (contact) => contact.email !== createdContact.email,
-      ),
+      ...contacts.value.filter((contact) => contact.email !== createdContact.email),
     ];
     mergeRecipients([contactForm.email]);
     await Promise.all([loadContacts(), loadTags()]);
     closeContactDialog();
     notice.show("Contact created and added to recipients.", "success");
   } catch (error) {
-    const message =
-      error instanceof ApiClientError
-        ? error.message
-        : "Failed to create contact";
+    const message = error instanceof ApiClientError ? error.message : "Failed to create contact";
     notice.show(message, "error");
   } finally {
     isSavingContact.value = false;
@@ -691,10 +573,7 @@ async function importRecipients() {
   importSummary.value = "";
 
   try {
-    const result = await individualEmailsApi.importRecipients(
-      auth.state.token,
-      selectedFile.value,
-    );
+    const result = await individualEmailsApi.importRecipients(auth.state.token, selectedFile.value);
     mergeRecipients(result.recipients);
     importSummary.value = `Imported ${result.importedCount} recipient${result.importedCount === 1 ? "" : "s"} from ${result.totalRows} row${result.totalRows === 1 ? "" : "s"}. Invalid rows: ${result.invalidRows}.`;
     selectedFile.value = null;
@@ -727,10 +606,7 @@ async function appendTagRecipients() {
 
   isLoadingTagRecipients.value = true;
   try {
-    const response = await contactsApi.listTagRecipients(
-      auth.state.token,
-      selectedTagId.value,
-    );
+    const response = await contactsApi.listTagRecipients(auth.state.token, selectedTagId.value);
     const importedEmails = response.data.recipients
       .map((item) => String(item.email || "").trim())
       .filter(Boolean);
@@ -741,9 +617,7 @@ async function appendTagRecipients() {
     );
   } catch (error) {
     const message =
-      error instanceof ApiClientError
-        ? error.message
-        : "Failed to load tag recipients";
+      error instanceof ApiClientError ? error.message : "Failed to load tag recipients";
     notice.show(message, "error");
   } finally {
     isLoadingTagRecipients.value = false;
@@ -758,9 +632,7 @@ async function loadAccounts() {
     accountCount.value = (response.data || []).length;
   } catch (error) {
     const message =
-      error instanceof ApiClientError
-        ? error.message
-        : "Failed to load email accounts";
+      error instanceof ApiClientError ? error.message : "Failed to load email accounts";
     notice.show(message, "error");
   }
 }
@@ -772,8 +644,7 @@ async function loadTags() {
     const response = await contactsApi.listTags(auth.state.token);
     tags.value = (response.data || []) as TagRow[];
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to load tags";
+    const message = error instanceof ApiClientError ? error.message : "Failed to load tags";
     notice.show(message, "error");
   }
 }
@@ -788,10 +659,7 @@ async function loadContacts() {
     });
     contacts.value = (response.data.items || []) as ContactRow[];
   } catch (error) {
-    const message =
-      error instanceof ApiClientError
-        ? error.message
-        : "Failed to load contacts";
+    const message = error instanceof ApiClientError ? error.message : "Failed to load contacts";
     notice.show(message, "error");
   }
 }
@@ -814,10 +682,7 @@ async function loadSentEmails(silent = false) {
     sentEmails.value = response.data.items;
   } catch (error) {
     if (silent) return;
-    const message =
-      error instanceof ApiClientError
-        ? error.message
-        : "Failed to load sent emails";
+    const message = error instanceof ApiClientError ? error.message : "Failed to load sent emails";
     notice.show(message, "error");
   }
 }
@@ -829,10 +694,7 @@ async function loadEmailDetail(emailId: string | number, silent = false) {
     selectedEmail.value = response.data;
   } catch (error) {
     if (silent) return;
-    const message =
-      error instanceof ApiClientError
-        ? error.message
-        : "Failed to load sent email";
+    const message = error instanceof ApiClientError ? error.message : "Failed to load sent email";
     notice.show(message, "error");
   }
 }
@@ -848,12 +710,7 @@ function refreshEmailDetail() {
 }
 
 onMounted(() => {
-  void Promise.all([
-    loadAccounts(),
-    loadTags(),
-    loadContacts(),
-    loadSentEmails(),
-  ]);
+  void Promise.all([loadAccounts(), loadTags(), loadContacts(), loadSentEmails()]);
   historyTimer = window.setInterval(() => {
     void loadSentEmails(true);
     if (selectedEmail.value) {
@@ -921,11 +778,7 @@ onUnmounted(() => {
   margin-bottom: 18px;
   border: 1px solid var(--color-primary-border-subtle);
   border-radius: 16px;
-  background: linear-gradient(
-    180deg,
-    var(--color-indigo-glass),
-    var(--color-surface-glass-faint)
-  );
+  background: linear-gradient(180deg, var(--color-indigo-glass), var(--color-surface-glass-faint));
 }
 
 .import-panel__title {
@@ -956,20 +809,12 @@ onUnmounted(() => {
 }
 
 .import-panel--tag {
-  background: linear-gradient(
-    180deg,
-    var(--color-success-glass),
-    var(--color-surface-glass-light)
-  );
+  background: linear-gradient(180deg, var(--color-success-glass), var(--color-surface-glass-light));
   border-color: var(--color-success-border-soft);
 }
 
 .import-panel--contacts {
-  background: linear-gradient(
-    180deg,
-    var(--color-info-bg),
-    var(--color-surface-glass-light)
-  );
+  background: linear-gradient(180deg, var(--color-info-bg), var(--color-surface-glass-light));
   border-color: var(--color-info-border-soft);
 }
 
@@ -1223,11 +1068,7 @@ onUnmounted(() => {
   width: min(560px, 100%);
   border: 1px solid var(--color-modal-border);
   border-radius: 24px;
-  background: linear-gradient(
-    135deg,
-    var(--color-surface-glass),
-    var(--color-surface-glass-muted)
-  );
+  background: linear-gradient(135deg, var(--color-surface-glass), var(--color-surface-glass-muted));
   box-shadow: 0 28px 80px var(--shadow-modal-color);
   padding: 24px;
 }

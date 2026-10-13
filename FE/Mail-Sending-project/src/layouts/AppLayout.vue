@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="layout">
     <div class="layout__glow layout__glow--one"></div>
     <div class="layout__glow layout__glow--two"></div>
@@ -18,51 +18,27 @@
             <span class="nav__icon">DB</span>
             <span>Dashboard</span>
           </RouterLink>
-          <RouterLink
-            to="/instant-campaign"
-            class="nav__item"
-            active-class="nav__item--active"
-          >
+          <RouterLink to="/instant-campaign" class="nav__item" active-class="nav__item--active">
             <span class="nav__icon">IC</span>
             <span>Instant Campaign</span>
           </RouterLink>
-          <RouterLink
-            to="/individual-emails"
-            class="nav__item"
-            active-class="nav__item--active"
-          >
+          <RouterLink to="/individual-emails" class="nav__item" active-class="nav__item--active">
             <span class="nav__icon">EM</span>
             <span>Individual Emails</span>
           </RouterLink>
-          <RouterLink
-            to="/email-templates"
-            class="nav__item"
-            active-class="nav__item--active"
-          >
+          <RouterLink to="/email-templates" class="nav__item" active-class="nav__item--active">
             <span class="nav__icon">TP</span>
             <span>Email Templates</span>
           </RouterLink>
-          <RouterLink
-            to="/email-contacts"
-            class="nav__item"
-            active-class="nav__item--active"
-          >
+          <RouterLink to="/email-contacts" class="nav__item" active-class="nav__item--active">
             <span class="nav__icon">CT</span>
             <span>Email Contacts</span>
           </RouterLink>
-          <RouterLink
-            to="/contact-tags"
-            class="nav__item"
-            active-class="nav__item--active"
-          >
+          <RouterLink to="/contact-tags" class="nav__item" active-class="nav__item--active">
             <span class="nav__icon">TG</span>
             <span>Contact Tags</span>
           </RouterLink>
-          <RouterLink
-            to="/campaigns"
-            class="nav__item"
-            active-class="nav__item--active"
-          >
+          <RouterLink to="/campaigns" class="nav__item" active-class="nav__item--active">
             <span class="nav__icon">CP</span>
             <span>Campaigns</span>
           </RouterLink>
@@ -87,11 +63,7 @@
             <span class="nav__icon">FL</span>
             <span>Contact Fields</span>
           </RouterLink>
-          <RouterLink
-            to="/templates/designer"
-            class="nav__item"
-            active-class="nav__item--active"
-          >
+          <RouterLink to="/templates/designer" class="nav__item" active-class="nav__item--active">
             <span class="nav__icon">DS</span>
             <span>Template Designer</span>
           </RouterLink>
@@ -99,11 +71,7 @@
 
         <div class="nav__section">
           <div class="nav__title">Management</div>
-          <RouterLink
-            to="/email-accounts"
-            class="nav__item"
-            active-class="nav__item--active"
-          >
+          <RouterLink to="/email-accounts" class="nav__item" active-class="nav__item--active">
             <span class="nav__icon">SM</span>
             <span>Email Accounts</span>
           </RouterLink>
@@ -120,35 +88,19 @@
 
         <div v-if="isAdmin" class="nav__section">
           <div class="nav__title">Admin</div>
-          <RouterLink
-            to="/admin/dashboard"
-            class="nav__item"
-            active-class="nav__item--active"
-          >
+          <RouterLink to="/admin/dashboard" class="nav__item" active-class="nav__item--active">
             <span class="nav__icon">AD</span>
             <span>Admin Dashboard</span>
           </RouterLink>
-          <RouterLink
-            to="/admin/users"
-            class="nav__item"
-            active-class="nav__item--active"
-          >
+          <RouterLink to="/admin/users" class="nav__item" active-class="nav__item--active">
             <span class="nav__icon">US</span>
             <span>User Management</span>
           </RouterLink>
-          <RouterLink
-            to="/admin/audit-logs"
-            class="nav__item"
-            active-class="nav__item--active"
-          >
+          <RouterLink to="/admin/audit-logs" class="nav__item" active-class="nav__item--active">
             <span class="nav__icon">LG</span>
             <span>Audit Logs</span>
           </RouterLink>
-          <RouterLink
-            to="/admin/settings"
-            class="nav__item"
-            active-class="nav__item--active"
-          >
+          <RouterLink to="/admin/settings" class="nav__item" active-class="nav__item--active">
             <span class="nav__icon">ST</span>
             <span>System Settings</span>
           </RouterLink>
@@ -156,27 +108,15 @@
 
         <div class="nav__section">
           <div class="nav__title">Account</div>
-          <RouterLink
-            to="/usage"
-            class="nav__item"
-            active-class="nav__item--active"
-          >
+          <RouterLink to="/usage" class="nav__item" active-class="nav__item--active">
             <span class="nav__icon">QT</span>
             <span>Usage & Limits</span>
           </RouterLink>
-          <RouterLink
-            to="/profile"
-            class="nav__item"
-            active-class="nav__item--active"
-          >
+          <RouterLink to="/profile" class="nav__item" active-class="nav__item--active">
             <span class="nav__icon">PF</span>
             <span>Profile</span>
           </RouterLink>
-          <RouterLink
-            to="/security"
-            class="nav__item"
-            active-class="nav__item--active"
-          >
+          <RouterLink to="/security" class="nav__item" active-class="nav__item--active">
             <span class="nav__icon">SC</span>
             <span>Security</span>
           </RouterLink>
@@ -313,14 +253,10 @@ type MobileMenuLink = {
   exact?: boolean;
 };
 
-const breadcrumb = computed(
-  () => (route.meta.breadcrumb as string) || "Dashboard",
-);
+const breadcrumb = computed(() => (route.meta.breadcrumb as string) || "Dashboard");
 const displayName = computed(() => auth.state.user?.name || "User");
 const userEmail = computed(() => auth.state.user?.email || "Account");
-const userInitial = computed(() =>
-  displayName.value.trim().slice(0, 1).toUpperCase(),
-);
+const userInitial = computed(() => displayName.value.trim().slice(0, 1).toUpperCase());
 const isAdmin = computed(() => auth.state.user?.role === "admin");
 const roleLabel = computed(() => (isAdmin.value ? "Admin" : "User"));
 

@@ -10,69 +10,17 @@
         <span class="shell-mail shell-mail--three"></span>
       </div>
 
-      <section class="auth__visual">
-        <div class="auth__brand">
-          <div class="auth__logo auth__logo--visual">CM</div>
-          <span>ChadMailer</span>
-        </div>
-
-        <h2>Build a sender workspace that feels fast and premium.</h2>
-
-        <p>
-          Invite your team, connect email accounts and launch campaign flows
-          from one polished interface.
-        </p>
-
-        <div class="auth__chips">
-          <span>SMTP ready</span>
-          <span>Audience data</span>
-          <span>Campaign analytics</span>
-        </div>
-
-        <div class="auth-preview" aria-hidden="true">
-          <div class="auth-preview__header">
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-
-          <div class="auth-preview__card auth-preview__card--wide">
-            <div class="preview-mail__top">
-              <span>Workspace setup</span>
-              <strong>New</strong>
-            </div>
-            <div class="preview-mail__subject"></div>
-            <div class="preview-mail__line preview-mail__line--long"></div>
-            <div class="preview-mail__line"></div>
-          </div>
-
-          <div class="auth-preview__row">
-            <div class="auth-preview__card">
-              <div class="preview-stat__value">04</div>
-              <div class="preview-stat__label">Senders</div>
-              <div class="preview-stat__mini">
-                <span></span>
-                <span></span>
-                <span></span>
-              </div>
-            </div>
-
-            <div class="auth-preview__card auth-preview__card--hot">
-              <div class="preview-stat__value">AI</div>
-              <div class="preview-stat__label">Templates</div>
-              <div class="preview-stat__mini preview-stat__mini--hot">
-                <span></span>
-                <span></span>
-                <span></span>
-              </div>
-            </div>
-          </div>
-
-          <div class="auth-preview__progress">
-            <span></span>
-          </div>
-        </div>
-      </section>
+      <AuthHero
+        title="Build a sender workspace that feels fast and premium."
+        description="Invite your team, connect email accounts and launch campaign flows from one polished interface."
+        :chips="['SMTP ready', 'Audience data', 'Campaign analytics']"
+        card-title="Workspace setup"
+        card-badge="New"
+        stat1-value="04"
+        stat1-label="Senders"
+        stat2-value="AI"
+        stat2-label="Templates"
+      />
 
       <div class="auth__card">
         <div class="auth-card__scene" aria-hidden="true">
@@ -181,11 +129,7 @@
 
             <p v-if="errorMessage" class="auth__error">{{ errorMessage }}</p>
 
-            <button
-              class="btn btn--primary auth__submit"
-              type="submit"
-              :disabled="isSubmitting"
-            >
+            <button class="btn btn--primary auth__submit" type="submit" :disabled="isSubmitting">
               <span v-if="isSubmitting">
                 {{ otpSent ? "Verifying OTP..." : "Sending OTP..." }}
               </span>
@@ -218,6 +162,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { RouterLink, useRouter } from "vue-router";
+import AuthHero from "../components/auth/AuthHero.vue";
 import { auth } from "../stores/auth";
 
 const router = useRouter();
@@ -362,7 +307,13 @@ function resetOtpStep() {
   position: absolute;
   height: 3px;
   border-radius: 999px;
-  background: linear-gradient(90deg, transparent, rgba(125, 211, 252, 0.58), rgba(236, 72, 153, 0.44), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(125, 211, 252, 0.58),
+    rgba(236, 72, 153, 0.44),
+    transparent
+  );
   background-size: 240% 100%;
   filter: drop-shadow(0 0 12px rgba(14, 165, 233, 0.28));
   animation: routeSweep 3.8s linear infinite;
@@ -445,7 +396,6 @@ function resetOtpStep() {
   animation: shellMailThree 9s ease-in-out infinite;
 }
 
-.auth__visual,
 .auth__card {
   position: relative;
   z-index: 2;
@@ -455,241 +405,7 @@ function resetOtpStep() {
   color: var(--color-text-on-dark);
   border: 0;
   overflow: visible;
-}
-
-.auth__visual {
-  position: relative;
-  display: flex;
-  min-height: 0;
-  flex-direction: column;
-  justify-content: center;
-  padding: 26px;
-  background: transparent;
-  backdrop-filter: none;
-}
-
-.auth__card {
   order: -1;
-}
-
-.auth__visual::before {
-  content: "";
-  position: absolute;
-  inset: auto -80px -110px auto;
-  width: 320px;
-  height: 320px;
-  border-radius: 999px;
-  background: radial-gradient(circle, rgba(34, 211, 238, 0.32), transparent 66%);
-  animation: authGlow 8s ease-in-out infinite;
-}
-
-.auth__brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  color: var(--color-text-on-solid);
-  font-size: 14px;
-  font-weight: 900;
-}
-
-.auth__visual h2 {
-  position: relative;
-  z-index: 1;
-  max-width: 520px;
-  margin: 58px 0 12px;
-  font-size: clamp(30px, 4vw, 42px);
-  line-height: 1.08;
-  font-weight: 900;
-  letter-spacing: 0;
-}
-
-.auth__visual p {
-  position: relative;
-  z-index: 1;
-  max-width: 500px;
-  margin: 0;
-  color: rgba(226, 232, 240, 0.78);
-  font-size: 15px;
-}
-
-.auth__chips {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 22px;
-}
-
-.auth__chips span {
-  padding: 8px 12px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.88);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.auth-preview {
-  position: relative;
-  z-index: 1;
-  margin-top: 34px;
-  padding: 18px;
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.13);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  box-shadow: 0 24px 70px rgba(2, 6, 23, 0.28);
-  backdrop-filter: blur(14px);
-}
-
-.auth-preview__header {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 18px;
-}
-
-.auth-preview__header span {
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  background: var(--color-info-light);
-}
-
-.auth-preview__header span:nth-child(2) {
-  background: var(--color-brand-pink);
-}
-
-.auth-preview__header span:nth-child(3) {
-  background: var(--color-success);
-}
-
-.auth-preview__row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.auth-preview__card {
-  min-height: 64px;
-  position: relative;
-  padding: 14px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.42), rgba(99, 102, 241, 0.2));
-  overflow: hidden;
-}
-
-.auth-preview__card--wide {
-  min-height: 82px;
-  margin-bottom: 12px;
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.42), rgba(236, 72, 153, 0.26));
-}
-
-.auth-preview__card--hot {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.42), rgba(34, 197, 94, 0.22));
-}
-
-.preview-mail__top,
-.scene-dashboard__meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.preview-mail__top span,
-.preview-stat__label,
-.scene-dashboard__meta span {
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.preview-mail__top strong,
-.scene-dashboard__meta strong {
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
-  color: rgba(255, 255, 255, 0.92);
-  font-size: 10px;
-  font-weight: 900;
-}
-
-.preview-mail__subject {
-  width: min(220px, 72%);
-  height: 12px;
-  margin-top: 14px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.54);
-}
-
-.preview-mail__line {
-  width: 48%;
-  height: 7px;
-  margin-top: 9px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.26);
-}
-
-.preview-mail__line--long {
-  width: 82%;
-}
-
-.preview-stat__value {
-  color: rgba(255, 255, 255, 0.94);
-  font-size: 24px;
-  font-weight: 900;
-  line-height: 1;
-}
-
-.preview-stat__mini {
-  display: flex;
-  align-items: end;
-  gap: 5px;
-  height: 22px;
-  margin-top: 9px;
-}
-
-.preview-stat__mini span {
-  width: 18px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.36);
-}
-
-.preview-stat__mini span:nth-child(1) {
-  height: 11px;
-}
-
-.preview-stat__mini span:nth-child(2) {
-  height: 18px;
-}
-
-.preview-stat__mini span:nth-child(3) {
-  height: 14px;
-}
-
-.preview-stat__mini--hot span {
-  background: rgba(255, 255, 255, 0.42);
-}
-
-.auth-preview__progress {
-  height: 8px;
-  margin-top: 16px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
-  overflow: hidden;
-}
-
-.auth-preview__progress span {
-  display: block;
-  width: 72%;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--gradient-brand);
-  animation: authProgress 2.8s ease-in-out infinite;
-}
-
-.auth__card {
-  position: relative;
   align-self: stretch;
   display: flex;
   min-height: 0;
@@ -782,7 +498,13 @@ function resetOtpStep() {
 .scene__route {
   height: 3px;
   border-radius: 999px;
-  background: linear-gradient(90deg, transparent, rgba(79, 70, 229, 0.34), rgba(14, 165, 233, 0.38), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(79, 70, 229, 0.34),
+    rgba(14, 165, 233, 0.38),
+    transparent
+  );
   background-size: 220% 100%;
   transform-origin: left center;
   animation: routeSweep 3.2s linear infinite;
@@ -876,7 +598,12 @@ function resetOtpStep() {
 .scene-dashboard__bar {
   height: 9px;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--color-primary), var(--color-info-accent), var(--color-success));
+  background: linear-gradient(
+    90deg,
+    var(--color-primary),
+    var(--color-info-accent),
+    var(--color-success)
+  );
   background-size: 220% 100%;
   animation: routeSweep 2.8s linear infinite;
 }

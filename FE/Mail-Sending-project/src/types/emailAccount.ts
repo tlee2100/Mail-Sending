@@ -1,0 +1,31 @@
+export type EmailAccountStatus = "active" | "inactive" | "error";
+
+export type EmailAccount = {
+  id: number;
+  userId?: number;
+  user_id?: number;
+  emailAddress: string;
+  email_address?: string;
+  displayName?: string | null;
+  display_name?: string | null;
+  smtpHost?: string;
+  smtp_host?: string;
+  smtpPort?: number;
+  smtp_port?: number;
+  smtpUsername?: string;
+  smtp_username?: string;
+  useTls?: boolean;
+  use_tls?: boolean;
+  isDefault?: boolean;
+  is_default?: boolean;
+  status?: EmailAccountStatus | string;
+  dailyLimit?: number;
+  daily_limit?: number;
+  sentToday?: number;
+  sent_today?: number;
+  lastUsedAt?: string | null;
+  last_used_at?: string | null;
+  createdAt?: string;
+  created_at?: string;
+  [key: string]: unknown;
+};

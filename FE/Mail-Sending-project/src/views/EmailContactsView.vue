@@ -42,177 +42,49 @@
           {{ tag.tag_name }} ({{ tag.contact_count || 0 }})
         </option>
       </select>
-      <input
-        v-model="filterCity"
-        type="text"
-        placeholder="City"
-        class="filter-input"
-      />
-      <button type="button" class="btn btn--primary" @click="loadContacts">
-        Filter
-      </button>
-      <button type="button" class="btn btn--secondary" @click="clearFilters">
-        Clear
-      </button>
+      <input v-model="filterCity" type="text" placeholder="City" class="filter-input" />
+      <button type="button" class="btn btn--primary" @click="loadContacts">Filter</button>
+      <button type="button" class="btn btn--secondary" @click="clearFilters">Clear</button>
     </div>
 
-    <div class="card card--table" v-if="contacts.length">
-      <div class="card__header">
-        <h3 class="card__title">Contacts ({{ pagination.total }})</h3>
-        <button type="button" class="btn btn--secondary btn--sm" @click="loadContacts">
-          Refresh
+    <TableSkeleton v-if="isLoading" :rows="6" :columns="6" />
+
+    <ContactTable
+      v-else-if="contacts.length"
+      :contacts="contacts"
+      :is-admin="isAdmin"
+      :pagination="pagination"
+      :full-name="fullName"
+      :owner-text="ownerText"
+      :can-manage-contact="canManageContact"
+      :manage-blocked-title="manageBlockedTitle"
+      @refresh="loadContacts"
+      @edit="openEditContactModal"
+      @manage-tags="openTagManager"
+      @delete="openDeleteContactModal"
+      @page-change="handlePageChange"
+    />
+
+    <EmptyState
+      v-else
+      title="No Contacts Found"
+      description="No contacts match your current filters. Add a new contact to get started."
+    >
+      <template #actions>
+        <button type="button" class="btn btn--primary" @click="openCreateContactModal">
+          + Add Contact
         </button>
-      </div>
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Status</th>
-            <th v-if="isAdmin">Owner</th>
-            <th>Tags</th>
-            <th>Company</th>
-            <th>City</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="contact in contacts" :key="contact.id">
-            <td>{{ fullName(contact) }}</td>
-            <td data-label="Email">{{ contact.email }}</td>
-            <td data-label="Status">{{ contact.email_status || "active" }}</td>
-            <td v-if="isAdmin" data-label="Owner">{{ ownerText(contact) || "-" }}</td>
-            <td data-label="Tags">
-              <div class="tag-stack" v-if="contact.tags?.length">
-                <span
-                  v-for="tag in contact.tags"
-                  :key="tag.id"
-                  class="contact-tag"
-                  :style="{ backgroundColor: `${tag.color}20`, color: tag.color }"
-                >
-                  {{ tag.tag_name }}
-                </span>
-              </div>
-              <span v-else class="muted">No tags</span>
-            </td>
-            <td data-label="Company">{{ contact.company || "-" }}</td>
-            <td data-label="City">{{ contact.city || "-" }}</td>
-            <td>
-              <button
-                type="button"
-                class="btn btn--secondary btn--sm"
-                :disabled="!canManageContact(contact)"
-                :title="manageBlockedTitle(contact)"
-                @click="openEditContactModal(contact)"
-              >
-                Edit
-              </button>
-              <button
-                type="button"
-                class="btn btn--secondary btn--sm"
-                :disabled="!canManageContact(contact)"
-                :title="manageBlockedTitle(contact)"
-                @click="openTagManager(contact)"
-              >
-                Tags
-              </button>
-              <RouterLink
-                v-if="canManageContact(contact)"
-                :to="`/contacts/${contact.id}/fields`"
-                class="btn btn--secondary btn--sm"
-              >
-                Fields
-              </RouterLink>
-              <button v-else type="button" class="btn btn--secondary btn--sm" disabled>
-                Fields
-              </button>
-              <button
-                type="button"
-                class="btn btn--danger btn--sm"
-                :disabled="!canManageContact(contact)"
-                :title="manageBlockedTitle(contact)"
-                @click="openDeleteContactModal(contact)"
-              >
-                Delete
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="card card--table" v-else>
-      <div class="empty-state-inline">
-        <div class="empty-icon">List</div>
-        <h4 class="empty-title">No Contacts Found</h4>
-        <p class="empty-desc">Create a contact or adjust filters.</p>
-      </div>
-    </div>
+      </template>
+    </EmptyState>
   </section>
 
-  <div v-if="contactDialogOpen" class="modal-backdrop" @click.self="closeContactDialog">
-    <form class="modal-card modal-card--wide" @submit.prevent="saveContact">
-      <header class="modal-head">
-        <div>
-          <p class="modal-kicker">{{ editingContact ? "Edit contact" : "New contact" }}</p>
-          <h2 class="modal-title">{{ editingContact ? "Update contact" : "Add contact" }}</h2>
-          <p class="modal-subtitle">Manage recipient profile data used for merge tags.</p>
-        </div>
-        <button type="button" class="modal-close" @click="closeContactDialog">x</button>
-      </header>
-
-      <div class="contact-form-grid">
-        <label class="field field--wide">
-          <span>Email *</span>
-          <input v-model.trim="contactForm.email" type="email" required placeholder="customer@example.com" />
-        </label>
-        <label class="field">
-          <span>First name</span>
-          <input v-model.trim="contactForm.firstName" type="text" placeholder="Tan" />
-        </label>
-        <label class="field">
-          <span>Last name</span>
-          <input v-model.trim="contactForm.lastName" type="text" placeholder="Le" />
-        </label>
-        <label class="field">
-          <span>Phone</span>
-          <input v-model.trim="contactForm.phone" type="text" placeholder="090..." />
-        </label>
-        <label class="field">
-          <span>Company</span>
-          <input v-model.trim="contactForm.company" type="text" placeholder="ChadMailer" />
-        </label>
-        <label class="field">
-          <span>City</span>
-          <input v-model.trim="contactForm.city" type="text" placeholder="Ho Chi Minh" />
-        </label>
-        <label class="field">
-          <span>Country</span>
-          <input v-model.trim="contactForm.country" type="text" placeholder="Vietnam" />
-        </label>
-        <label class="field">
-          <span>Status</span>
-          <select v-model="contactForm.emailStatus">
-            <option value="active">Active</option>
-            <option value="unsubscribed">Unsubscribed</option>
-            <option value="bounced">Bounced</option>
-            <option value="blocked">Blocked</option>
-          </select>
-        </label>
-        <label class="field">
-          <span>Source</span>
-          <input v-model.trim="contactForm.source" type="text" placeholder="manual" />
-        </label>
-      </div>
-
-      <footer class="modal-actions">
-        <button type="button" class="btn btn--secondary" @click="closeContactDialog">Cancel</button>
-        <button type="submit" class="btn btn--primary" :disabled="isSavingContact">
-          {{ isSavingContact ? "Saving..." : editingContact ? "Save changes" : "Create contact" }}
-        </button>
-      </footer>
-    </form>
-  </div>
+  <ContactFormModal
+    :is-open="contactDialogOpen"
+    :contact="editingContact"
+    :is-saving="isSavingContact"
+    @close="closeContactDialog"
+    @save="saveContactWithPayload"
+  />
 
   <div v-if="deleteContactTarget" class="modal-backdrop" @click.self="deleteContactTarget = null">
     <section class="modal-card">
@@ -228,7 +100,12 @@
         <button type="button" class="btn btn--secondary" @click="deleteContactTarget = null">
           Cancel
         </button>
-        <button type="button" class="btn btn--danger" :disabled="isSavingContact" @click="deleteContact">
+        <button
+          type="button"
+          class="btn btn--danger"
+          :disabled="isSavingContact"
+          @click="deleteContact"
+        >
           Delete contact
         </button>
       </footer>
@@ -252,11 +129,7 @@
           class="tag-option"
           :style="{ borderColor: `${tag.color}55` }"
         >
-          <input
-            v-model="selectedTagIds"
-            type="checkbox"
-            :value="tag.id"
-          />
+          <input v-model="selectedTagIds" type="checkbox" :value="tag.id" />
           <span
             class="contact-tag"
             :style="{ backgroundColor: `${tag.color}20`, color: tag.color }"
@@ -269,9 +142,7 @@
       <p v-else class="empty-desc">Create tags first before assigning contacts.</p>
 
       <footer class="modal-actions">
-        <button type="button" class="btn btn--secondary" @click="closeTagManager">
-          Cancel
-        </button>
+        <button type="button" class="btn btn--secondary" @click="closeTagManager">Cancel</button>
         <button
           type="button"
           class="btn btn--primary"
@@ -292,10 +163,11 @@ import { contactsApi } from "../api/contactsApi";
 import { ApiClientError } from "../api/http";
 import { useNotice } from "../composables/useNotice";
 import { auth } from "../stores/auth";
-import {
-  canManageOwnRecord,
-  recordOwnerLabel,
-} from "../utils/recordOwnership";
+import TableSkeleton from "../components/common/TableSkeleton.vue";
+import EmptyState from "../components/common/EmptyState.vue";
+import ContactTable from "../components/contacts/ContactTable.vue";
+import ContactFormModal from "../components/contacts/ContactFormModal.vue";
+import { canManageOwnRecord, recordOwnerLabel } from "../utils/recordOwnership";
 
 type ContactRow = {
   id: number;
@@ -322,6 +194,7 @@ type TagRow = {
 
 const notice = useNotice();
 const route = useRoute();
+const isLoading = ref(true);
 const contacts = ref<ContactRow[]>([]);
 const tags = ref<TagRow[]>([]);
 const searchQuery = ref("");
@@ -373,12 +246,18 @@ function fullName(contact: ContactRow) {
   return name || contact.email;
 }
 
+function handlePageChange(newPage: number) {
+  pagination.page = newPage;
+  void loadContacts();
+}
+
 async function loadContacts() {
   if (!auth.state.token) {
     notice.show("Missing auth token. Please login again.", "error");
     return;
   }
 
+  isLoading.value = true;
   try {
     const response = await contactsApi.listContacts(auth.state.token, {
       page: pagination.page,
@@ -392,9 +271,10 @@ async function loadContacts() {
     contacts.value = response.data.items as ContactRow[];
     Object.assign(pagination, response.data.pagination);
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to load contacts";
+    const message = error instanceof ApiClientError ? error.message : "Failed to load contacts";
     notice.show(message, "error");
+  } finally {
+    isLoading.value = false;
   }
 }
 
@@ -404,8 +284,7 @@ async function loadTags() {
     const response = await contactsApi.listTags(auth.state.token);
     tags.value = response.data as TagRow[];
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to load tags";
+    const message = error instanceof ApiClientError ? error.message : "Failed to load tags";
     notice.show(message, "error");
   }
 }
@@ -453,21 +332,17 @@ function closeContactDialog() {
   contactDialogOpen.value = false;
 }
 
-function contactPayload() {
-  return {
-    email: contactForm.email,
-    firstName: contactForm.firstName || undefined,
-    lastName: contactForm.lastName || undefined,
-    phone: contactForm.phone || undefined,
-    company: contactForm.company || undefined,
-    city: contactForm.city || undefined,
-    country: contactForm.country || undefined,
-    emailStatus: contactForm.emailStatus || "active",
-    source: contactForm.source || "manual",
-  };
-}
-
-async function saveContact() {
+async function saveContactWithPayload(payload: {
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  company?: string;
+  city?: string;
+  country?: string;
+  emailStatus?: string;
+  source?: string;
+}) {
   if (!auth.state.token || isSavingContact.value) {
     notice.show("Missing auth token. Please login again.", "error");
     return;
@@ -475,22 +350,29 @@ async function saveContact() {
 
   isSavingContact.value = true;
   try {
+    const data = {
+      email: payload.email,
+      firstName: payload.firstName || undefined,
+      lastName: payload.lastName || undefined,
+      phone: payload.phone || undefined,
+      company: payload.company || undefined,
+      city: payload.city || undefined,
+      country: payload.country || undefined,
+      emailStatus: payload.emailStatus || "active",
+      source: payload.source || "manual",
+    };
+
     if (editingContact.value) {
-      await contactsApi.updateContact(
-        auth.state.token,
-        editingContact.value.id,
-        contactPayload(),
-      );
+      await contactsApi.updateContact(auth.state.token, editingContact.value.id, data);
       notice.show("Contact updated.", "success");
     } else {
-      await contactsApi.createContact(auth.state.token, contactPayload());
+      await contactsApi.createContact(auth.state.token, data);
       notice.show("Contact created.", "success");
     }
     closeContactDialog();
     await loadContacts();
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to save contact";
+    const message = error instanceof ApiClientError ? error.message : "Failed to save contact";
     notice.show(message, "error");
   } finally {
     isSavingContact.value = false;
@@ -518,8 +400,7 @@ async function deleteContact() {
     deleteContactTarget.value = null;
     await Promise.all([loadContacts(), loadTags()]);
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to delete contact";
+    const message = error instanceof ApiClientError ? error.message : "Failed to delete contact";
     notice.show(message, "error");
   } finally {
     isSavingContact.value = false;
@@ -565,8 +446,7 @@ async function saveContactTags() {
     closeTagManager();
     await Promise.all([loadContacts(), loadTags()]);
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to update tags";
+    const message = error instanceof ApiClientError ? error.message : "Failed to update tags";
     notice.show(message, "error");
   } finally {
     isSavingTags.value = false;

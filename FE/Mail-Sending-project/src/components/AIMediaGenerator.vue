@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <section class="ai-media-generator">
     <div class="ai-media-generator__head">
       <h2 class="ai-media-generator__title">AI Media</h2>
@@ -36,22 +36,14 @@
 
         <div class="input-wrap">
           <label>Alt text</label>
-          <input
-            v-model="imageAltText"
-            type="text"
-            placeholder="Mô tả ngắn cho ảnh"
-          />
+          <input v-model="imageAltText" type="text" placeholder="Mô tả ngắn cho ảnh" />
         </div>
 
         <div class="ai-media-generator__options">
           <div class="input-wrap">
             <label>Size</label>
             <select v-model="imageSize">
-              <option
-                v-for="option in imageSizeOptions"
-                :key="option.value"
-                :value="option.value"
-              >
+              <option v-for="option in imageSizeOptions" :key="option.value" :value="option.value">
                 {{ option.label }}
               </option>
             </select>
@@ -59,13 +51,7 @@
 
           <div class="input-wrap">
             <label>Email width</label>
-            <input
-              v-model.number="imageEmailWidth"
-              type="number"
-              min="120"
-              max="1200"
-              step="10"
-            />
+            <input v-model.number="imageEmailWidth" type="number" min="120" max="1200" step="10" />
           </div>
         </div>
 
@@ -126,11 +112,7 @@
           <div class="input-wrap">
             <label>Size</label>
             <select v-model="videoSize">
-              <option
-                v-for="option in videoSizeOptions"
-                :key="option.value"
-                :value="option.value"
-              >
+              <option v-for="option in videoSizeOptions" :key="option.value" :value="option.value">
                 {{ option.label }}
               </option>
             </select>
@@ -138,13 +120,7 @@
 
           <div class="input-wrap">
             <label>Seconds</label>
-            <input
-              v-model.number="videoSeconds"
-              type="number"
-              min="1"
-              max="20"
-              step="1"
-            />
+            <input v-model.number="videoSeconds" type="number" min="1" max="20" step="1" />
           </div>
         </div>
 

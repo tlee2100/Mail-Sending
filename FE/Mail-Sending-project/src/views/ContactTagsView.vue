@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <section class="content__header header-with-action">
     <div>
       <p class="eyebrow">Audience labels</p>
@@ -8,9 +8,7 @@
         {{ notice.message }}
       </p>
     </div>
-    <button type="button" class="btn btn--primary" @click="openCreateModal">
-      + Create Tag
-    </button>
+    <button type="button" class="btn btn--primary" @click="openCreateModal">+ Create Tag</button>
   </section>
 
   <section class="content__section">
@@ -59,7 +57,9 @@
         <header class="modal-head">
           <div>
             <p class="eyebrow">{{ editingTag ? "Edit tag" : "New tag" }}</p>
-            <h2 class="modal-title">{{ editingTag ? "Update contact tag" : "Create contact tag" }}</h2>
+            <h2 class="modal-title">
+              {{ editingTag ? "Update contact tag" : "Create contact tag" }}
+            </h2>
             <p class="modal-subtitle">Use tags to segment contacts before sending campaigns.</p>
           </div>
           <button type="button" class="modal-close" @click="closeForm">x</button>
@@ -97,12 +97,16 @@
           <div>
             <p class="eyebrow">Delete tag</p>
             <h2 class="modal-title">Delete {{ deleteTarget.tag_name }}?</h2>
-            <p class="modal-subtitle">This removes the tag mapping from contacts. Contacts will not be deleted.</p>
+            <p class="modal-subtitle">
+              This removes the tag mapping from contacts. Contacts will not be deleted.
+            </p>
           </div>
           <button type="button" class="modal-close" @click="deleteTarget = null">x</button>
         </header>
         <footer class="modal-actions">
-          <button type="button" class="btn btn--secondary" @click="deleteTarget = null">Cancel</button>
+          <button type="button" class="btn btn--secondary" @click="deleteTarget = null">
+            Cancel
+          </button>
           <button type="button" class="btn btn--danger" :disabled="saving" @click="deleteTag">
             Delete tag
           </button>
@@ -140,9 +144,7 @@ const form = reactive({
 });
 
 function defaultTagColor() {
-  return getComputedStyle(document.documentElement)
-    .getPropertyValue("--color-primary")
-    .trim();
+  return getComputedStyle(document.documentElement).getPropertyValue("--color-primary").trim();
 }
 
 function formatDate(value: string) {
@@ -160,8 +162,7 @@ async function loadTags() {
     const response = await contactsApi.listTags(auth.state.token);
     tags.value = response.data as TagRow[];
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to load tags";
+    const message = error instanceof ApiClientError ? error.message : "Failed to load tags";
     notice.show(message, "error");
   }
 }
@@ -207,8 +208,7 @@ async function submitTag() {
     closeForm();
     await loadTags();
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to save tag";
+    const message = error instanceof ApiClientError ? error.message : "Failed to save tag";
     notice.show(message, "error");
   } finally {
     saving.value = false;
@@ -224,8 +224,7 @@ async function deleteTag() {
     deleteTarget.value = null;
     await loadTags();
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to delete tag";
+    const message = error instanceof ApiClientError ? error.message : "Failed to delete tag";
     notice.show(message, "error");
   } finally {
     saving.value = false;

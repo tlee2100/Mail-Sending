@@ -1,63 +1,20 @@
-import { computed, reactive } from "vue";
-import { mockApi } from "../api/mockApi";
-import { mockWorkspace } from "./mockWorkspace";
+import { computed, ref } from "vue";
+import { defineStore } from "pinia";
+import { authApi } from "../api/authApi";
+import { ApiClientError, setTokenProvider, setUnauthorizedHandler } from "../api/http";
+import type {
+  AuthRole,
+  AuthUser,
+  LoginPayload,
+  RegisterPayload,
+  OtpVerifyPayload,
+  ProfileUpdatePayload,
+} from "../types/auth";
 
-type AuthState = {
-  token: string | null;
-  user: AuthUser | null;
-  isReady: boolean;
-  isLoading: boolean;
-  error: string | null;
-  mode: "api" | "mock" | null;
-};
-
-export type AuthRole = "admin" | "user";
-
-export type AuthUser = {
-  id: number;
-  name: string;
-  email: string;
-  role: AuthRole;
-  isActive: boolean;
-  createdAt?: string | null;
-  updatedAt?: string | null;
-  lastLogin?: string | null;
-};
-
-type ApiEnvelope<T> = {
-  success: boolean;
-  message: string;
-  data: T;
-  details?: unknown;
-};
-
-type AuthPayload = {
-  user: AuthUser;
-  token: string;
-};
-
-type OtpRequestPayload = {
-  email: string;
-  expiresInMinutes: number;
-  requiresOtp: boolean;
-  debugOtp?: string;
-};
-
-type ProfileUpdatePayload = {
-  user?: AuthUser;
-  email?: string;
-  expiresInMinutes?: number;
-  requiresOtp: boolean;
-  debugOtp?: string;
-};
+export type { AuthRole, AuthUser };
 
 const LS_TOKEN = "auth.token.v1";
-const LS_MODE = "auth.mode.v1";
 const LS_PROFILE_OVERRIDE = "auth.profile.override.v1";
-const API_BASE = String(import.meta.env.VITE_API_BASE_URL || "/api/v1").replace(
-  /\/$/,
-  "",
-);
 
 function readToken(): string | null {
   try {
@@ -69,26 +26,11 @@ function readToken(): string | null {
 
 function writeToken(token: string | null) {
   try {
-    if (!token) localStorage.removeItem(LS_TOKEN);
-    else localStorage.setItem(LS_TOKEN, token);
-  } catch {
-    // ignore
-  }
-}
-
-function readMode(): AuthState["mode"] {
-  try {
-    const mode = localStorage.getItem(LS_MODE);
-    return mode === "api" || mode === "mock" ? mode : null;
-  } catch {
-    return null;
-  }
-}
-
-function writeMode(mode: AuthState["mode"]) {
-  try {
-    if (!mode) localStorage.removeItem(LS_MODE);
-    else localStorage.setItem(LS_MODE, mode);
+    if (!token) {
+      localStorage.removeItem(LS_TOKEN);
+    } else {
+      localStorage.setItem(LS_TOKEN, token);
+    }
   } catch {
     // ignore
   }
@@ -108,66 +50,34 @@ function writeProfileOverride(payload: Partial<AuthUser> | null) {
   try {
     if (!payload) {
       localStorage.removeItem(LS_PROFILE_OVERRIDE);
-      return;
+    } else {
+      localStorage.setItem(LS_PROFILE_OVERRIDE, JSON.stringify(payload));
     }
-    localStorage.setItem(LS_PROFILE_OVERRIDE, JSON.stringify(payload));
   } catch {
     // ignore
   }
 }
 
-function getErrorMessage(err: unknown) {
-  if (
-    err &&
-    typeof err === "object" &&
-    "message" in err &&
-    typeof (err as any).message === "string"
-  ) {
-    return (err as any).message as string;
-  }
-  return "Something went wrong";
+function normalizeRole(value: unknown): AuthRole {
+  return String(value || "")
+    .trim()
+    .toLowerCase() === "admin"
+    ? "admin"
+    : "user";
 }
 
-async function parseEnvelope<T>(res: Response): Promise<ApiEnvelope<T>> {
-  const json = (await res.json().catch(() => null)) as ApiEnvelope<T> | null;
-  if (!json) {
-    throw new Error(res.statusText || "Request failed");
-  }
-  if (!res.ok || !json.success) {
-    const detailsText =
-      typeof json.details === "string"
-        ? json.details
-        : json.details
-          ? JSON.stringify(json.details)
-          : "";
-    const message = json.message || res.statusText || "Request failed";
-    throw new Error(detailsText ? `${message}: ${detailsText}` : message);
-  }
-  return json;
-}
-
-async function authRequest<T>(
-  path: string,
-  options: {
-    method: "GET" | "POST" | "PATCH";
-    token?: string;
-    body?: unknown;
-  },
-) {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
+function normalizeAuthUser(user: Partial<AuthUser> & Record<string, unknown>): AuthUser {
+  return {
+    id: Number(user.id || 0),
+    name: String(user.name || ""),
+    email: String(user.email || "").toLowerCase(),
+    role: normalizeRole(user.role),
+    isActive: user.isActive !== false && user.is_active !== false,
+    avatarUrl: (user.avatarUrl as string) || (user.avatar_url as string) || null,
+    createdAt: (user.createdAt as string) || (user.created_at as string) || null,
+    updatedAt: (user.updatedAt as string) || (user.updated_at as string) || null,
+    lastLogin: (user.lastLogin as string) || (user.last_login as string) || null,
   };
-  if (options.token) {
-    headers.Authorization = `Bearer ${options.token}`;
-  }
-
-  const res = await fetch(`${API_BASE}${path}`, {
-    method: options.method,
-    headers,
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
-  });
-
-  return parseEnvelope<T>(res);
 }
 
 function applyProfileOverride(user: AuthUser | null): AuthUser | null {
@@ -180,702 +90,245 @@ function applyProfileOverride(user: AuthUser | null): AuthUser | null {
   };
 }
 
-function syncProfileShadow(user: AuthUser | null) {
-  if (!user) return;
-  mockWorkspace.syncProfile(user.name, user.email);
-}
+export const useAuthStore = defineStore("auth", () => {
+  const token = ref<string | null>(readToken());
+  const user = ref<AuthUser | null>(null);
+  const isReady = ref(false);
+  const isLoading = ref(false);
+  const error = ref<string | null>(null);
 
-function normalizeRole(value: unknown): AuthRole {
-  return String(value || "").trim().toLowerCase() === "admin" ? "admin" : "user";
-}
+  const isAuthenticated = computed(() => Boolean(token.value && user.value));
+  const isAdmin = computed(() => user.value?.role === "admin");
 
-type RawAuthUser = Partial<AuthUser> & {
-  id: string | number;
-  is_active?: boolean;
-  created_at?: string | null;
-  updated_at?: string | null;
-  last_login?: string | null;
-};
+  // Wire token provider and 401 handler into http.ts
+  setTokenProvider(() => token.value);
+  setUnauthorizedHandler(() => {
+    logout();
+  });
 
-function normalizeAuthUser(user: RawAuthUser): AuthUser {
-  return {
-    id: Number(user.id),
-    name: String(user.name || ""),
-    email: String(user.email || ""),
-    role: normalizeRole(user.role),
-    isActive: user.isActive !== false && user.is_active !== false,
-    createdAt: user.createdAt ?? user.created_at ?? null,
-    updatedAt: user.updatedAt ?? user.updated_at ?? null,
-    lastLogin: user.lastLogin ?? user.last_login ?? null,
-  };
-}
+  function setSession(newToken: string, rawUser: Partial<AuthUser> & Record<string, unknown>) {
+    token.value = newToken;
+    writeToken(newToken);
+    const normalized = normalizeAuthUser(rawUser);
+    user.value = applyProfileOverride(normalized);
+  }
 
-function normalizeMockUser(
-  user: {
-    id: string;
-    name: string;
+  async function restore(): Promise<AuthUser | null> {
+    if (isReady.value && user.value) {
+      return user.value;
+    }
+
+    const savedToken = token.value || readToken();
+    if (!savedToken) {
+      isReady.value = true;
+      user.value = null;
+      return null;
+    }
+
+    token.value = savedToken;
+    isLoading.value = true;
+    error.value = null;
+
+    try {
+      const res = await authApi.me(savedToken);
+      const normalized = normalizeAuthUser(res.data as Record<string, unknown>);
+      user.value = applyProfileOverride(normalized);
+      isReady.value = true;
+      return user.value;
+    } catch {
+      token.value = null;
+      user.value = null;
+      writeToken(null);
+      isReady.value = true;
+      return null;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  async function login(payload: LoginPayload): Promise<AuthUser> {
+    isLoading.value = true;
+    error.value = null;
+    try {
+      const res = await authApi.login(payload);
+      setSession(res.data.token, res.data.user as Record<string, unknown>);
+      isReady.value = true;
+      return user.value!;
+    } catch (err) {
+      const message = err instanceof ApiClientError ? err.message : "Login failed";
+      error.value = message;
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  async function register(payload: RegisterPayload) {
+    isLoading.value = true;
+    error.value = null;
+    try {
+      const res = await authApi.register(payload);
+      return res.data;
+    } catch (err) {
+      const message = err instanceof ApiClientError ? err.message : "Registration failed";
+      error.value = message;
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  async function verifyRegisterOtp(payload: OtpVerifyPayload): Promise<AuthUser> {
+    isLoading.value = true;
+    error.value = null;
+    try {
+      const res = await authApi.verifyRegisterOtp(payload);
+      setSession(res.data.token, res.data.user as Record<string, unknown>);
+      isReady.value = true;
+      return user.value!;
+    } catch (err) {
+      const message = err instanceof ApiClientError ? err.message : "OTP verification failed";
+      error.value = message;
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  function logout() {
+    token.value = null;
+    user.value = null;
+    writeToken(null);
+    writeProfileOverride(null);
+    isReady.value = true;
+  }
+
+  async function requestPasswordChangeOtp(payload: {
+    oldPassword?: string;
+    currentPassword?: string;
+    newPassword?: string;
+  }) {
+    const res = await authApi.requestPasswordChangeOtp(payload);
+    return res.data;
+  }
+
+  async function verifyPasswordChangeOtp(payload: { email?: string; otp: string }) {
+    const res = await authApi.verifyPasswordChangeOtp(payload);
+    return res.data;
+  }
+
+  async function requestPasswordResetOtp(payload: string | { email: string }) {
+    const res = await authApi.requestPasswordResetOtp(payload);
+    return res.data;
+  }
+
+  async function verifyPasswordResetOtp(payload: {
     email: string;
-    role?: string;
-    isActive?: boolean;
-  },
-  role?: AuthRole,
-): AuthUser {
-  const numericId = Number.parseInt(user.id.replace(/\D/g, "").slice(0, 9), 10);
+    otp: string;
+    newPassword?: string;
+  }) {
+    const res = await authApi.verifyPasswordResetOtp(payload);
+    return res.data;
+  }
+
+  async function updateProfile(payload: ProfileUpdatePayload) {
+    const res = await authApi.updateProfile(payload);
+    const data = res.data;
+    if (data && "id" in data) {
+      const normalized = normalizeAuthUser(data as Record<string, unknown>);
+      user.value = applyProfileOverride(normalized);
+    }
+    return data;
+  }
+
+  async function verifyProfileEmailOtp(payload: string | { email?: string; otp: string }) {
+    const res = await authApi.verifyProfileEmailOtp(payload);
+    const normalized = normalizeAuthUser(res.data as Record<string, unknown>);
+    user.value = applyProfileOverride(normalized);
+    return user.value;
+  }
+
   return {
-    id: Number.isFinite(numericId) ? numericId : Date.now(),
-    name: user.name,
-    email: user.email,
-    role: role || normalizeRole(user.role),
-    isActive: user.isActive !== false,
+    token,
+    user,
+    isReady,
+    isLoading,
+    error,
+    isAuthenticated,
+    isAdmin,
+    restore,
+    login,
+    register,
+    verifyRegisterOtp,
+    logout,
+    requestPasswordChangeOtp,
+    verifyPasswordChangeOtp,
+    requestPasswordResetOtp,
+    verifyPasswordResetOtp,
+    updateProfile,
+    verifyProfileEmailOtp,
   };
-}
-
-function shouldFallbackToMock(err: unknown) {
-  return (
-    err instanceof TypeError ||
-    (err &&
-      typeof err === "object" &&
-      "message" in err &&
-      typeof (err as { message?: unknown }).message === "string" &&
-      /fetch|network|failed/i.test(String((err as { message?: unknown }).message)))
-  );
-}
-
-const state = reactive<AuthState>({
-  token: readToken(),
-  user: null,
-  isReady: false,
-  isLoading: false,
-  error: null,
-  mode: readMode(),
 });
 
-const isAuthenticated = computed(() => !!state.token && !!state.user);
-const isAdmin = computed(() => state.user?.role === "admin");
-const MOCK_OTP = "123456";
-let mockPendingRegistration:
-  | { name: string; email: string; password: string; role?: string }
-  | null = null;
-let mockPendingPasswordChange:
-  | { currentPassword: string; newPassword: string }
-  | null = null;
-let mockPendingProfileUpdate: { name: string; email: string } | null = null;
-let mockPendingPasswordReset: { email: string } | null = null;
-
-async function restore() {
-  state.isLoading = true;
-  state.error = null;
-  try {
-    const token = readToken();
-    state.token = token;
-    state.mode = readMode();
-    if (!token) {
-      state.user = null;
-      return;
-    }
-    if (state.mode === "mock" || token.startsWith("mock.")) {
-      const user = await mockApi.me(token);
-      state.user = applyProfileOverride(normalizeMockUser(user));
-    } else {
-      const res = await authRequest<AuthUser>("/auth/me", {
-        method: "GET",
-        token,
-      });
-      state.user = normalizeAuthUser(res.data);
-      writeProfileOverride(null);
-    }
-    syncProfileShadow(state.user);
-  } catch (e) {
-    state.user = null;
-    state.token = null;
-    state.mode = null;
-    writeToken(null);
-    writeMode(null);
-    state.error = getErrorMessage(e);
-  } finally {
-    state.isLoading = false;
-    state.isReady = true;
-  }
-}
-
-async function login(payload: { email: string; password: string }) {
-  state.isLoading = true;
-  state.error = null;
-  try {
-    try {
-      const res = await authRequest<AuthPayload>("/auth/login", {
-        method: "POST",
-        body: payload,
-      });
-      state.token = res.data.token;
-      state.user = normalizeAuthUser(res.data.user);
-      state.mode = "api";
-      writeToken(res.data.token);
-      writeMode("api");
-      writeProfileOverride(null);
-      syncProfileShadow(state.user);
-      return state.user;
-    } catch (error) {
-      if (!shouldFallbackToMock(error)) {
-        throw error;
-      }
-
-      const res = await mockApi.login(payload);
-      state.token = res.token;
-      state.user = applyProfileOverride(normalizeMockUser(res.user));
-      state.mode = "mock";
-      writeToken(res.token);
-      writeMode("mock");
-      syncProfileShadow(state.user);
-      return state.user;
-    }
-  } catch (e) {
-    state.error = getErrorMessage(e);
-    throw e;
-  } finally {
-    state.isLoading = false;
-    state.isReady = true;
-  }
-}
-
-async function register(payload: {
-  name: string;
-  email: string;
-  password: string;
-  role?: string;
-}) {
-  state.isLoading = true;
-  state.error = null;
-  try {
-    try {
-      const res = await authRequest<AuthPayload>("/auth/register", {
-        method: "POST",
-        body: {
-          ...payload,
-          role: normalizeRole(payload.role),
-        },
-      });
-      state.token = res.data.token;
-      state.user = normalizeAuthUser(res.data.user);
-      state.mode = "api";
-      writeToken(res.data.token);
-      writeMode("api");
-      writeProfileOverride(null);
-      syncProfileShadow(state.user);
-      return state.user;
-    } catch (error) {
-      if (!shouldFallbackToMock(error)) {
-        throw error;
-      }
-
-      const res = await mockApi.register({
-        name: payload.name,
-        email: payload.email,
-        password: payload.password,
-        role: normalizeRole(payload.role),
-      });
-      state.token = res.token;
-      state.user = applyProfileOverride(normalizeMockUser(res.user));
-      state.mode = "mock";
-      writeToken(res.token);
-      writeMode("mock");
-      syncProfileShadow(state.user);
-      return state.user;
-    }
-  } catch (e) {
-    state.error = getErrorMessage(e);
-    throw e;
-  } finally {
-    state.isLoading = false;
-    state.isReady = true;
-  }
-}
-
-async function requestRegisterOtp(payload: {
-  name: string;
-  email: string;
-  password: string;
-  role?: string;
-}) {
-  state.isLoading = true;
-  state.error = null;
-  try {
-    try {
-      const res = await authRequest<OtpRequestPayload>("/auth/register", {
-        method: "POST",
-        body: {
-          ...payload,
-          role: normalizeRole(payload.role),
-        },
-      });
-      return res.data;
-    } catch (error) {
-      if (!shouldFallbackToMock(error)) {
-        throw error;
-      }
-
-      mockPendingRegistration = {
-        name: payload.name,
-        email: payload.email,
-        password: payload.password,
-        role: normalizeRole(payload.role),
-      };
-      return {
-        email: payload.email,
-        expiresInMinutes: 10,
-        requiresOtp: true,
-        debugOtp: MOCK_OTP,
-      };
-    }
-  } catch (e) {
-    state.error = getErrorMessage(e);
-    throw e;
-  } finally {
-    state.isLoading = false;
-  }
-}
-
-async function verifyRegisterOtp(payload: { email: string; otp: string }) {
-  state.isLoading = true;
-  state.error = null;
-  try {
-    try {
-      const res = await authRequest<AuthPayload>("/auth/register/verify-otp", {
-        method: "POST",
-        body: payload,
-      });
-      state.token = res.data.token;
-      state.user = normalizeAuthUser(res.data.user);
-      state.mode = "api";
-      writeToken(res.data.token);
-      writeMode("api");
-      writeProfileOverride(null);
-      syncProfileShadow(state.user);
-      return state.user;
-    } catch (error) {
-      if (!shouldFallbackToMock(error)) {
-        throw error;
-      }
-
-      if (!mockPendingRegistration) {
-        throw new Error("No pending registration OTP request");
-      }
-      if (payload.otp.trim() !== MOCK_OTP) {
-        throw new Error("OTP is invalid or expired");
-      }
-
-      const res = await mockApi.register({
-        name: mockPendingRegistration.name,
-        email: mockPendingRegistration.email,
-        password: mockPendingRegistration.password,
-        role: normalizeRole(mockPendingRegistration.role),
-      });
-      mockPendingRegistration = null;
-      state.token = res.token;
-      state.user = applyProfileOverride(normalizeMockUser(res.user));
-      state.mode = "mock";
-      writeToken(res.token);
-      writeMode("mock");
-      syncProfileShadow(state.user);
-      return state.user;
-    }
-  } catch (e) {
-    state.error = getErrorMessage(e);
-    throw e;
-  } finally {
-    state.isLoading = false;
-    state.isReady = true;
-  }
-}
-
-async function logout() {
-  state.isLoading = true;
-  state.error = null;
-  try {
-    if (state.mode === "mock" && state.token) {
-      await mockApi.logout(state.token);
-    }
-  } finally {
-    state.token = null;
-    state.user = null;
-    state.mode = null;
-    writeToken(null);
-    writeMode(null);
-    state.isLoading = false;
-    state.isReady = true;
-  }
-}
-
-async function changePassword(payload: {
-  currentPassword: string;
-  newPassword: string;
-}) {
-  if (!state.user) {
-    throw new Error("Unauthorized");
-  }
-  if (!payload.currentPassword.trim()) {
-    throw new Error("Current password is required");
-  }
-  if (payload.newPassword.trim().length < 6) {
-    throw new Error("New password must be at least 6 characters");
-  }
-
-  if (state.mode === "mock" && state.token) {
-    await mockApi.changePassword({
-      token: state.token,
-      currentPassword: payload.currentPassword,
-      newPassword: payload.newPassword,
-    });
-  }
-
-  mockWorkspace.changePassword({
-    currentPassword: payload.currentPassword,
-    newPassword: payload.newPassword,
-  });
-}
-
-async function requestPasswordChangeOtp(payload: {
-  currentPassword: string;
-  newPassword: string;
-}) {
-  if (!state.user || !state.token) {
-    throw new Error("Unauthorized");
-  }
-  if (!payload.currentPassword.trim()) {
-    throw new Error("Current password is required");
-  }
-  if (payload.newPassword.trim().length < 8) {
-    throw new Error("New password must be at least 8 characters");
-  }
-
-  state.isLoading = true;
-  state.error = null;
-  try {
-    if (state.mode === "mock") {
-      mockPendingPasswordChange = {
-        currentPassword: payload.currentPassword,
-        newPassword: payload.newPassword,
-      };
-      return {
-        email: state.user.email,
-        expiresInMinutes: 10,
-        requiresOtp: true,
-        debugOtp: MOCK_OTP,
-      };
-    }
-
-    const res = await authRequest<OtpRequestPayload>("/auth/password/request-otp", {
-      method: "POST",
-      token: state.token,
-      body: payload,
-    });
-    return res.data;
-  } catch (e) {
-    state.error = getErrorMessage(e);
-    throw e;
-  } finally {
-    state.isLoading = false;
-  }
-}
-
-async function verifyPasswordChangeOtp(payload: { otp: string }) {
-  if (!state.user || !state.token) {
-    throw new Error("Unauthorized");
-  }
-
-  state.isLoading = true;
-  state.error = null;
-  try {
-    if (state.mode === "mock") {
-      if (!mockPendingPasswordChange) {
-        throw new Error("No pending password change OTP request");
-      }
-      if (payload.otp.trim() !== MOCK_OTP) {
-        throw new Error("OTP is invalid or expired");
-      }
-      await mockApi.changePassword({
-        token: state.token,
-        currentPassword: mockPendingPasswordChange.currentPassword,
-        newPassword: mockPendingPasswordChange.newPassword,
-      });
-      mockWorkspace.changePassword(mockPendingPasswordChange);
-      mockPendingPasswordChange = null;
-      return { ok: true };
-    }
-
-    const res = await authRequest<{ ok: boolean }>("/auth/password/verify-otp", {
-      method: "POST",
-      token: state.token,
-      body: payload,
-    });
-    return res.data;
-  } catch (e) {
-    state.error = getErrorMessage(e);
-    throw e;
-  } finally {
-    state.isLoading = false;
-  }
-}
-
-async function requestPasswordResetOtp(payload: { email: string }) {
-  const email = payload.email.trim().toLowerCase();
-  if (!email) {
-    throw new Error("Email is required");
-  }
-
-  state.isLoading = true;
-  state.error = null;
-  try {
-    try {
-      const res = await authRequest<OtpRequestPayload>(
-        "/auth/password/forgot/request-otp",
-        {
-          method: "POST",
-          body: { email },
-        },
-      );
-      return res.data;
-    } catch (error) {
-      if (!shouldFallbackToMock(error)) {
-        throw error;
-      }
-
-      mockPendingPasswordReset = { email };
-      return {
-        email,
-        expiresInMinutes: 10,
-        requiresOtp: true,
-        debugOtp: MOCK_OTP,
-      };
-    }
-  } catch (e) {
-    state.error = getErrorMessage(e);
-    throw e;
-  } finally {
-    state.isLoading = false;
-  }
-}
-
-async function verifyPasswordResetOtp(payload: {
-  email: string;
-  otp: string;
-  newPassword: string;
-}) {
-  const email = payload.email.trim().toLowerCase();
-  if (!email) {
-    throw new Error("Email is required");
-  }
-  if (!/^\d{6}$/.test(payload.otp.trim())) {
-    throw new Error("OTP must be 6 digits");
-  }
-  if (payload.newPassword.trim().length < 8) {
-    throw new Error("New password must be at least 8 characters");
-  }
-
-  state.isLoading = true;
-  state.error = null;
-  try {
-    try {
-      const res = await authRequest<{ ok: boolean }>(
-        "/auth/password/forgot/verify-otp",
-        {
-          method: "POST",
-          body: {
-            email,
-            otp: payload.otp.trim(),
-            newPassword: payload.newPassword,
-          },
-        },
-      );
-      return res.data;
-    } catch (error) {
-      if (!shouldFallbackToMock(error)) {
-        throw error;
-      }
-
-      if (!mockPendingPasswordReset) {
-        throw new Error("No pending password reset OTP request");
-      }
-      if (
-        mockPendingPasswordReset.email !== email ||
-        payload.otp.trim() !== MOCK_OTP
-      ) {
-        throw new Error("OTP is invalid or expired");
-      }
-      await mockApi.resetPassword({
-        email,
-        newPassword: payload.newPassword,
-      });
-      mockPendingPasswordReset = null;
-      return { ok: true };
-    }
-  } catch (e) {
-    state.error = getErrorMessage(e);
-    throw e;
-  } finally {
-    state.isLoading = false;
-  }
-}
-
-async function updateProfile(payload: { name: string; email?: string }) {
-  if (!state.user || !state.token) {
-    throw new Error("Unauthorized");
-  }
-
-  const currentUser = state.user;
-  const token = state.token;
-  const nextName = payload.name.trim();
-  const nextEmail = payload.email?.trim().toLowerCase() || currentUser.email;
-  if (!nextName) {
-    throw new Error("Name is required");
-  }
-  if (!nextEmail) {
-    throw new Error("Email is required");
-  }
-
-  state.isLoading = true;
-  state.error = null;
-  try {
-    if (state.mode === "mock") {
-      if (nextEmail !== currentUser.email.toLowerCase()) {
-        mockPendingProfileUpdate = {
-          name: nextName,
-          email: nextEmail,
-        };
-        return {
-          email: nextEmail,
-          expiresInMinutes: 10,
-          requiresOtp: true,
-          debugOtp: MOCK_OTP,
-        } satisfies ProfileUpdatePayload;
-      }
-
-      const user = await mockApi.updateProfile({
-        token,
-        name: nextName,
-        email: nextEmail,
-      });
-      const updatedUser = normalizeMockUser(user, currentUser.role);
-      state.user = updatedUser;
-      writeProfileOverride({
-        name: updatedUser.name,
-        email: updatedUser.email,
-      });
-      syncProfileShadow(updatedUser);
-      return {
-        requiresOtp: false,
-        user: updatedUser,
-      } satisfies ProfileUpdatePayload;
-    }
-
-    const res = await authRequest<ProfileUpdatePayload>("/auth/profile", {
-      method: "PATCH",
-      token,
-      body: {
-        name: nextName,
-        email: nextEmail,
-      },
-    });
-
-    if (res.data.requiresOtp) {
-      return res.data;
-    }
-
-    if (res.data.user) {
-      state.user = normalizeAuthUser(res.data.user);
-      writeProfileOverride(null);
-      syncProfileShadow(state.user);
-    }
-    return res.data;
-  } catch (e) {
-    state.error = getErrorMessage(e);
-    throw e;
-  } finally {
-    state.isLoading = false;
-  }
-}
-
-async function verifyProfileEmailOtp(payload: { email: string; otp: string }) {
-  if (!state.user || !state.token) {
-    throw new Error("Unauthorized");
-  }
-
-  const currentUser = state.user;
-  const token = state.token;
-  state.isLoading = true;
-  state.error = null;
-  try {
-    if (state.mode === "mock") {
-      if (!mockPendingProfileUpdate) {
-        throw new Error("No pending profile email OTP request");
-      }
-      if (payload.otp.trim() !== MOCK_OTP) {
-        throw new Error("OTP is invalid or expired");
-      }
-      if (
-        payload.email.trim().toLowerCase() !==
-        mockPendingProfileUpdate.email.toLowerCase()
-      ) {
-        throw new Error("OTP is invalid or expired");
-      }
-
-      const user = await mockApi.updateProfile({
-        token,
-        name: mockPendingProfileUpdate.name,
-        email: mockPendingProfileUpdate.email,
-      });
-      mockPendingProfileUpdate = null;
-      const updatedUser = normalizeMockUser(user, currentUser.role);
-      state.user = updatedUser;
-      writeProfileOverride({
-        name: updatedUser.name,
-        email: updatedUser.email,
-      });
-      syncProfileShadow(updatedUser);
-      return {
-        requiresOtp: false,
-        user: updatedUser,
-      } satisfies ProfileUpdatePayload;
-    }
-
-    const res = await authRequest<ProfileUpdatePayload>(
-      "/auth/profile/verify-email-otp",
-      {
-        method: "POST",
-        token,
-        body: payload,
-      },
-    );
-
-    if (res.data.user) {
-      state.user = normalizeAuthUser(res.data.user);
-      writeProfileOverride(null);
-      syncProfileShadow(state.user);
-    }
-    return res.data;
-  } catch (e) {
-    state.error = getErrorMessage(e);
-    throw e;
-  } finally {
-    state.isLoading = false;
-  }
-}
-
+// Backward-compatibility bridge for existing views accessing `auth.state` or `auth.login()` directly
 export const auth = {
-  state,
-  isAuthenticated,
-  isAdmin,
-  restore,
-  login,
-  register,
-  requestRegisterOtp,
-  verifyRegisterOtp,
-  logout,
-  changePassword,
-  requestPasswordChangeOtp,
-  verifyPasswordChangeOtp,
-  requestPasswordResetOtp,
-  verifyPasswordResetOtp,
-  updateProfile,
-  verifyProfileEmailOtp,
+  get state() {
+    const store = useAuthStore();
+    return {
+      get token() {
+        return store.token;
+      },
+      set token(val: string | null) {
+        store.token = val;
+      },
+      get user() {
+        return store.user;
+      },
+      set user(val: AuthUser | null) {
+        store.user = val;
+      },
+      get isReady() {
+        return store.isReady;
+      },
+      set isReady(val: boolean) {
+        store.isReady = val;
+      },
+      get isLoading() {
+        return store.isLoading;
+      },
+      set isLoading(val: boolean) {
+        store.isLoading = val;
+      },
+      get error() {
+        return store.error;
+      },
+      set error(val: string | null) {
+        store.error = val;
+      },
+      mode: "api" as const,
+    };
+  },
+  get isAuthenticated() {
+    return computed(() => useAuthStore().isAuthenticated);
+  },
+  restore: () => useAuthStore().restore(),
+  login: (payload: LoginPayload) => useAuthStore().login(payload),
+  register: (payload: RegisterPayload) => useAuthStore().register(payload),
+  requestRegisterOtp: (payload: RegisterPayload) => useAuthStore().register(payload),
+  verifyRegisterOtp: (payload: OtpVerifyPayload) => useAuthStore().verifyRegisterOtp(payload),
+  logout: () => useAuthStore().logout(),
+  requestPasswordChangeOtp: (payload: {
+    oldPassword?: string;
+    currentPassword?: string;
+    newPassword?: string;
+  }) => useAuthStore().requestPasswordChangeOtp(payload),
+  verifyPasswordChangeOtp: (payload: { email?: string; otp: string }) =>
+    useAuthStore().verifyPasswordChangeOtp(payload),
+  requestPasswordResetOtp: (payload: string | { email: string }) =>
+    useAuthStore().requestPasswordResetOtp(payload),
+  verifyPasswordResetOtp: (payload: { email: string; otp: string; newPassword?: string }) =>
+    useAuthStore().verifyPasswordResetOtp(payload),
+  updateProfile: (payload: ProfileUpdatePayload) => useAuthStore().updateProfile(payload),
+  verifyProfileEmailOtp: (payload: string | { email?: string; otp: string }) =>
+    useAuthStore().verifyProfileEmailOtp(payload),
 };

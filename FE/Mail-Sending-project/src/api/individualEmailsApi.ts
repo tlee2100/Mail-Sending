@@ -52,13 +52,15 @@ export const individualEmailsApi = {
       );
     }
 
-    return payload.data || {
-      totalRows: 0,
-      importedCount: 0,
-      invalidRows: 0,
-      recipients: [],
-      errors: [],
-    };
+    return (
+      payload.data || {
+        totalRows: 0,
+        importedCount: 0,
+        invalidRows: 0,
+        recipients: [],
+        errors: [],
+      }
+    );
   },
 
   sendPreview(

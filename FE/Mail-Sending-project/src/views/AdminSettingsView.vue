@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <section class="content__header">
     <p class="eyebrow">Administration</p>
     <h1 class="page-title">System Settings</h1>
@@ -36,9 +36,7 @@
         <span>Show owner columns on admin lists</span>
       </label>
       <footer class="actions">
-        <button type="button" class="btn btn--secondary" @click="resetSettings">
-          Reset
-        </button>
+        <button type="button" class="btn btn--secondary" @click="resetSettings">Reset</button>
         <button type="submit" class="btn btn--primary">Save Settings</button>
       </footer>
     </form>
@@ -56,7 +54,9 @@
         </div>
         <div>
           <dt>Dangerous actions</dt>
-          <dd>Role changes, user lock/unlock, cross-owner template delete, and campaign pause/delete.</dd>
+          <dd>
+            Role changes, user lock/unlock, cross-owner template delete, and campaign pause/delete.
+          </dd>
         </div>
       </dl>
     </article>

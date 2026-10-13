@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <section class="content__header header-row">
     <div>
       <p class="eyebrow">Custom profile data</p>
@@ -8,9 +8,7 @@
         {{ notice.message }}
       </p>
     </div>
-    <button type="button" class="btn btn--primary" @click="openCreateModal">
-      + Add Field
-    </button>
+    <button type="button" class="btn btn--primary" @click="openCreateModal">+ Add Field</button>
   </section>
 
   <section class="field-stats">
@@ -51,10 +49,10 @@
     </div>
     <div v-else class="empty-card">
       <h2>No dynamic fields found.</h2>
-      <p>Add fields like region, membership level, birthday, or payment status for personalization.</p>
-      <button type="button" class="btn btn--primary" @click="openCreateModal">
-        Add Field
-      </button>
+      <p>
+        Add fields like region, membership level, birthday, or payment status for personalization.
+      </p>
+      <button type="button" class="btn btn--primary" @click="openCreateModal">Add Field</button>
     </div>
   </section>
 
@@ -64,8 +62,12 @@
         <header class="modal-head">
           <div>
             <p class="eyebrow">{{ editingField ? "Edit field" : "New field" }}</p>
-            <h2 class="modal-title">{{ editingField ? "Update custom field" : "Create custom field" }}</h2>
-            <p class="modal-subtitle">Field name is used as the backend key and should be camelCase or snake_case.</p>
+            <h2 class="modal-title">
+              {{ editingField ? "Update custom field" : "Create custom field" }}
+            </h2>
+            <p class="modal-subtitle">
+              Field name is used as the backend key and should be camelCase or snake_case.
+            </p>
           </div>
           <button type="button" class="modal-close" @click="closeModal">x</button>
         </header>
@@ -73,7 +75,12 @@
         <div class="form-grid">
           <label class="field">
             <span>Field name *</span>
-            <input v-model.trim="form.fieldName" type="text" required placeholder="membershipLevel" />
+            <input
+              v-model.trim="form.fieldName"
+              type="text"
+              required
+              placeholder="membershipLevel"
+            />
           </label>
           <label class="field">
             <span>Label</span>
@@ -109,13 +116,19 @@
         <header class="modal-head">
           <div>
             <p class="eyebrow">Delete field</p>
-            <h2 class="modal-title">Delete {{ deleteTarget.field_label || deleteTarget.field_name }}?</h2>
-            <p class="modal-subtitle">Saved values for this custom field will no longer be usable.</p>
+            <h2 class="modal-title">
+              Delete {{ deleteTarget.field_label || deleteTarget.field_name }}?
+            </h2>
+            <p class="modal-subtitle">
+              Saved values for this custom field will no longer be usable.
+            </p>
           </div>
           <button type="button" class="modal-close" @click="deleteTarget = null">x</button>
         </header>
         <footer class="modal-actions">
-          <button type="button" class="btn btn--secondary" @click="deleteTarget = null">Cancel</button>
+          <button type="button" class="btn btn--secondary" @click="deleteTarget = null">
+            Cancel
+          </button>
           <button type="button" class="btn btn--danger" :disabled="saving" @click="deleteField">
             Delete field
           </button>
@@ -168,8 +181,7 @@ async function loadFields() {
     const response = await contactsApi.listFields(auth.state.token);
     fields.value = response.data as FieldRow[];
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to load fields";
+    const message = error instanceof ApiClientError ? error.message : "Failed to load fields";
     notice.show(message, "error");
   }
 }
@@ -219,8 +231,7 @@ async function submitField() {
     closeModal();
     await loadFields();
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to save field";
+    const message = error instanceof ApiClientError ? error.message : "Failed to save field";
     notice.show(message, "error");
   } finally {
     saving.value = false;
@@ -236,8 +247,7 @@ async function deleteField() {
     deleteTarget.value = null;
     await loadFields();
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to delete field";
+    const message = error instanceof ApiClientError ? error.message : "Failed to delete field";
     notice.show(message, "error");
   } finally {
     saving.value = false;
@@ -295,9 +305,15 @@ onMounted(() => {
   font-size: 34px;
 }
 
-.stat-card--blue { border-top: 3px solid var(--color-info-soft); }
-.stat-card--green { border-top: 3px solid var(--color-success); }
-.stat-card--purple { border-top: 3px solid var(--color-primary-soft); }
+.stat-card--blue {
+  border-top: 3px solid var(--color-info-soft);
+}
+.stat-card--green {
+  border-top: 3px solid var(--color-success);
+}
+.stat-card--purple {
+  border-top: 3px solid var(--color-primary-soft);
+}
 
 .field-board {
   display: grid;

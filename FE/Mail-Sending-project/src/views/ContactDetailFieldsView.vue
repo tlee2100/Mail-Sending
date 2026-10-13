@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <section class="content__header">
     <h1 class="page-title">Contact Field Values</h1>
     <p class="page-subtitle">Contact ID: {{ route.params.id }}</p>
@@ -42,7 +42,12 @@
           :required="field.isRequired"
           :placeholder="field.fieldType"
         />
-        <select v-else :id="`field-${field.fieldId}`" v-model="field.valueText" :required="field.isRequired">
+        <select
+          v-else
+          :id="`field-${field.fieldId}`"
+          v-model="field.valueText"
+          :required="field.isRequired"
+        >
           <option value="">Not set</option>
           <option value="true">True</option>
           <option value="false">False</option>
@@ -53,7 +58,12 @@
         <button type="button" class="btn btn--secondary" :disabled="loading" @click="loadFields">
           {{ loading ? "Loading..." : "Load" }}
         </button>
-        <button type="button" class="btn btn--primary" :disabled="loading || !fields.length" @click="saveFields">
+        <button
+          type="button"
+          class="btn btn--primary"
+          :disabled="loading || !fields.length"
+          @click="saveFields"
+        >
           Save
         </button>
       </div>
@@ -96,17 +106,13 @@ async function loadFields() {
   if (!auth.state.token) return;
   loading.value = true;
   try {
-    const response = await contactsApi.listContactFields(
-      auth.state.token,
-      String(route.params.id),
-    );
+    const response = await contactsApi.listContactFields(auth.state.token, String(route.params.id));
     fields.value = (response.data as Array<any>).map((item) => ({
       ...item,
       valueText: item.value === null || item.value === undefined ? "" : String(item.value),
     }));
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to load field values";
+    const message = error instanceof ApiClientError ? error.message : "Failed to load field values";
     notice.show(message, "error");
   } finally {
     loading.value = false;
@@ -127,8 +133,7 @@ async function saveFields() {
     notice.show("Field values saved.", "success");
     await loadFields();
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to save field values";
+    const message = error instanceof ApiClientError ? error.message : "Failed to save field values";
     notice.show(message, "error");
   }
 }

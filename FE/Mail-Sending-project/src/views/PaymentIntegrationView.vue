@@ -1,9 +1,9 @@
-<template>
+﻿<template>
   <section class="content__header">
     <h1 class="page-title">Tich Hop Thanh Toan</h1>
     <p class="page-subtitle">
-      Them cac phuong thuc thanh toan vao email cua ban theo phong cach landing page
-      ro rang, de quet va de thao tac.
+      Them cac phuong thuc thanh toan vao email cua ban theo phong cach landing page ro rang, de
+      quet va de thao tac.
     </p>
     <p v-if="notice.message" class="notice" :class="`notice--${notice.tone}`">
       {{ notice.message }}
@@ -14,10 +14,12 @@
     <div class="card card--hero">
       <div class="hero-copy">
         <span class="hero-kicker">Payment Playground</span>
-        <h2 class="hero-title">Them thanh toan vao email ma van giu luong UI gon, sang va de chuyen doi.</h2>
+        <h2 class="hero-title">
+          Them thanh toan vao email ma van giu luong UI gon, sang va de chuyen doi.
+        </h2>
         <p class="hero-text">
-          Bo cuc nay mo phong giao dien tham chieu: mot khoi gioi thieu lon o tren,
-          4 phuong thuc thanh toan ro rang o giua, va huong dan tich hop chi tiet o cuoi.
+          Bo cuc nay mo phong giao dien tham chieu: mot khoi gioi thieu lon o tren, 4 phuong thuc
+          thanh toan ro rang o giua, va huong dan tich hop chi tiet o cuoi.
         </p>
       </div>
 
@@ -38,7 +40,9 @@
       <ul class="guide-list">
         <li><strong>QR Code:</strong> Tao QR code dong theo thong tin don hang va merge tag.</li>
         <li><strong>Stripe:</strong> Ho tro the quoc te va vi dien tu cho checkout nhanh.</li>
-        <li><strong>Digital Wallets:</strong> Dat CTA 1 cham vao email promotion hoac abandoned cart.</li>
+        <li>
+          <strong>Digital Wallets:</strong> Dat CTA 1 cham vao email promotion hoac abandoned cart.
+        </li>
         <li><strong>Tra gop:</strong> Hien thi BNPL cho nhung campaign co ticket cao.</li>
       </ul>
     </div>
@@ -69,9 +73,7 @@
       <button type="button" class="demo-btn demo-btn--blue" @click="runPaymentDemo('QR Code')">
         Tao QR Code Demo
       </button>
-      <div class="support-note support-note--green">
-        Tich hop voi VNPay, MoMo, ZaloPay
-      </div>
+      <div class="support-note support-note--green">Tich hop voi VNPay, MoMo, ZaloPay</div>
     </article>
 
     <article class="card payment-card">
@@ -112,19 +114,29 @@
         Tich hop cac vi dien tu pho bien de thanh toan nhanh chong ngay trong luong email.
       </p>
       <div class="wallet-stack">
-        <button type="button" class="wallet-btn wallet-btn--apple" @click="runPaymentDemo('Apple Pay')">
+        <button
+          type="button"
+          class="wallet-btn wallet-btn--apple"
+          @click="runPaymentDemo('Apple Pay')"
+        >
           Apple Pay
         </button>
-        <button type="button" class="wallet-btn wallet-btn--google" @click="runPaymentDemo('Google Pay')">
+        <button
+          type="button"
+          class="wallet-btn wallet-btn--google"
+          @click="runPaymentDemo('Google Pay')"
+        >
           Google Pay
         </button>
-        <button type="button" class="wallet-btn wallet-btn--samsung" @click="runPaymentDemo('Samsung Pay')">
+        <button
+          type="button"
+          class="wallet-btn wallet-btn--samsung"
+          @click="runPaymentDemo('Samsung Pay')"
+        >
           Samsung Pay
         </button>
       </div>
-      <div class="support-note support-note--blue">
-        Thanh toan 1 cham, nhanh chong va bao mat
-      </div>
+      <div class="support-note support-note--blue">Thanh toan 1 cham, nhanh chong va bao mat</div>
     </article>
 
     <article class="card payment-card">
@@ -135,9 +147,7 @@
           <p class="payment-sub">Buy now, pay later</p>
         </div>
       </div>
-      <p class="payment-desc">
-        Cho phep khach hang mua truoc, tra sau voi nhieu ky han linh hoat.
-      </p>
+      <p class="payment-desc">Cho phep khach hang mua truoc, tra sau voi nhieu ky han linh hoat.</p>
       <div class="installment-list">
         <button type="button" class="installment-card" @click="runPaymentDemo('Tra gop 0%')">
           <span class="installment-name">Tra gop 0%</span>
@@ -188,8 +198,8 @@
       </div>
 
       <div class="integration-note">
-        <strong>Luu y:</strong> De dung thanh toan thuc te, ban can dang ky tai khoan
-        voi nha cung cap va cau hinh API keys trong phan cai dat backend.
+        <strong>Luu y:</strong> De dung thanh toan thuc te, ban can dang ky tai khoan voi nha cung
+        cap va cau hinh API keys trong phan cai dat backend.
       </div>
     </div>
   </section>
@@ -198,7 +208,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useNotice } from "../composables/useNotice";
-import { mockWorkspace } from "../stores/mockWorkspace";
 
 const notice = useNotice();
 const amount = ref(100000);
@@ -207,11 +216,7 @@ const mergeTagExample = "{{orderId}}";
 const formattedAmount = computed(() => Number(amount.value || 0).toLocaleString("vi-VN"));
 
 function runPaymentDemo(method: string) {
-  mockWorkspace.trackPayment(method, amount.value);
-  notice.show(
-    `${method} demo prepared for ${formattedAmount.value} VND.`,
-    "success",
-  );
+  notice.show(`${method} demo prepared for ${formattedAmount.value} VND.`, "success");
 }
 </script>
 
@@ -228,7 +233,11 @@ function runPaymentDemo(method: string) {
   gap: 20px;
   padding: 28px;
   background:
-    radial-gradient(circle at top right, var(--color-primary-bg-subtle), var(--color-transparent) 34%),
+    radial-gradient(
+      circle at top right,
+      var(--color-primary-bg-subtle),
+      var(--color-transparent) 34%
+    ),
     linear-gradient(180deg, var(--color-white) 0%, var(--color-bg-surface-subtle) 100%);
 }
 
@@ -264,7 +273,11 @@ function runPaymentDemo(method: string) {
   justify-content: space-between;
   border-radius: 20px;
   padding: 20px;
-  background: linear-gradient(135deg, var(--color-primary-bg-soft) 0%, var(--color-bg-surface-tinted) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-bg-soft) 0%,
+    var(--color-bg-surface-tinted) 100%
+  );
   border: 1px solid var(--color-primary-border-soft);
 }
 
@@ -309,7 +322,11 @@ function runPaymentDemo(method: string) {
 .card--guide {
   padding: 24px 28px;
   border: 1px solid var(--color-border-info);
-  background: linear-gradient(180deg, var(--color-info-bg-muted) 0%, var(--color-primary-bg-soft) 100%);
+  background: linear-gradient(
+    180deg,
+    var(--color-info-bg-muted) 0%,
+    var(--color-primary-bg-soft) 100%
+  );
 }
 
 .guide-title {
@@ -557,7 +574,11 @@ function runPaymentDemo(method: string) {
 .card--integration-steps {
   padding: 26px 28px;
   border: 1px solid var(--color-border-primary-muted);
-  background: linear-gradient(180deg, var(--color-primary-panel-start) 0%, var(--color-primary-panel-end) 100%);
+  background: linear-gradient(
+    180deg,
+    var(--color-primary-panel-start) 0%,
+    var(--color-primary-panel-end) 100%
+  );
 }
 
 .steps-header {

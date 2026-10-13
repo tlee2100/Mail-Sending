@@ -8,11 +8,7 @@ const TOKEN_KEYS = ["auth.token.v1", "token", "access_token"] as const;
 
 export type AiImageSize = "1024x1024" | "1024x1536" | "1536x1024" | "auto";
 
-export type AiVideoSize =
-  | "720x1280"
-  | "1280x720"
-  | "1024x1792"
-  | "1792x1024";
+export type AiVideoSize = "720x1280" | "1280x720" | "1024x1792" | "1792x1024";
 
 export type AiImagePayload = {
   prompt: string;
@@ -77,20 +73,13 @@ function resolveToken(token?: string | null) {
   if (token) return token;
 
   try {
-    return (
-      readStorageToken(window.localStorage) ||
-      readStorageToken(window.sessionStorage)
-    );
+    return readStorageToken(window.localStorage) || readStorageToken(window.sessionStorage);
   } catch {
     return null;
   }
 }
 
-async function apiFetch<T>(
-  path: string,
-  options: RequestInit = {},
-  token?: string | null,
-) {
+async function apiFetch<T>(path: string, options: RequestInit = {}, token?: string | null) {
   const authToken = resolveToken(token);
   if (!authToken) {
     throw new ApiClientError("Unauthorized. Please login again.", 401);
@@ -108,9 +97,7 @@ async function apiFetch<T>(
     headers,
   });
 
-  const json = (await response.json().catch(() => null)) as
-    | ApiEnvelope<T>
-    | null;
+  const json = (await response.json().catch(() => null)) as ApiEnvelope<T> | null;
 
   if (!response.ok || !json?.success) {
     throw new ApiClientError(

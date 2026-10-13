@@ -1,0 +1,1 @@
+npx --prefix FE/Mail-Sending-project lint-staged

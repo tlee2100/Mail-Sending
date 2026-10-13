@@ -1,10 +1,8 @@
-<template>
+﻿<template>
   <section class="access-panel">
     <div class="access-code">403</div>
     <h1 class="page-title">Access denied</h1>
-    <p class="page-subtitle">
-      Your current role does not have permission to open this screen.
-    </p>
+    <p class="page-subtitle">Your current role does not have permission to open this screen.</p>
     <div class="access-actions">
       <RouterLink to="/" class="btn btn--primary">Back to Dashboard</RouterLink>
       <RouterLink to="/profile" class="btn btn--secondary">View Profile</RouterLink>

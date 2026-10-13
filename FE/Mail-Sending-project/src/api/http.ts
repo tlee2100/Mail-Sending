@@ -1,9 +1,6 @@
-export type ApiEnvelope<T> = {
-  success: boolean;
-  message: string;
-  data: T;
-  details?: unknown;
-};
+import type { ApiEnvelope } from "../types/api";
+
+export type { ApiEnvelope };
 
 export class ApiClientError extends Error {
   status: number;
@@ -17,21 +14,42 @@ export class ApiClientError extends Error {
   }
 }
 
-export const API_BASE_URL = String(
-  import.meta.env.VITE_API_BASE_URL || "/api/v1",
-).replace(
+export const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || "/api/v1").replace(
   /\/$/,
   "",
 );
 
-type RequestOptions = {
+const LS_TOKEN = "auth.token.v1";
+
+let tokenProvider: () => string | null = () => {
+  try {
+    return localStorage.getItem(LS_TOKEN);
+  } catch {
+    return null;
+  }
+};
+
+let unauthorizedHandler: (() => void) | null = null;
+
+export function setTokenProvider(provider: () => string | null) {
+  tokenProvider = provider;
+}
+
+export function setUnauthorizedHandler(handler: () => void) {
+  unauthorizedHandler = handler;
+}
+
+export type RequestOptions = {
   method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
   token?: string | null;
   body?: BodyInit | object;
   headers?: Record<string, string>;
 };
 
-function buildUrl(path: string, query?: Record<string, string | number | boolean | undefined>) {
+export function buildUrl(
+  path: string,
+  query?: Record<string, string | number | boolean | undefined>,
+) {
   const url = new URL(`${API_BASE_URL}${path}`, window.location.origin);
   if (query) {
     for (const [key, value] of Object.entries(query)) {
@@ -52,8 +70,9 @@ function buildHeaders(
     ...extra,
   };
 
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
+  const resolvedToken = token !== undefined ? token : tokenProvider();
+  if (resolvedToken) {
+    headers.Authorization = `Bearer ${resolvedToken}`;
   }
 
   if (body && !(body instanceof FormData) && !headers["Content-Type"]) {
@@ -64,11 +83,13 @@ function buildHeaders(
 }
 
 async function parseError(response: Response) {
+  if (response.status === 401 && unauthorizedHandler) {
+    unauthorizedHandler();
+  }
+
   const contentType = response.headers.get("content-type") || "";
   if (contentType.includes("application/json")) {
-    const payload = (await response.json().catch(() => null)) as
-      | ApiEnvelope<unknown>
-      | null;
+    const payload = (await response.json().catch(() => null)) as ApiEnvelope<unknown> | null;
     if (payload) {
       throw new ApiClientError(
         payload.message || response.statusText || "Request failed",
@@ -79,10 +100,7 @@ async function parseError(response: Response) {
   }
 
   const text = await response.text().catch(() => "");
-  throw new ApiClientError(
-    text || response.statusText || "Request failed",
-    response.status,
-  );
+  throw new ApiClientError(text || response.statusText || "Request failed", response.status);
 }
 
 export async function apiRequest<T>(
@@ -91,9 +109,7 @@ export async function apiRequest<T>(
   query?: Record<string, string | number | boolean | undefined>,
 ): Promise<ApiEnvelope<T>> {
   const body =
-    options.body &&
-    !(options.body instanceof FormData) &&
-    typeof options.body === "object"
+    options.body && !(options.body instanceof FormData) && typeof options.body === "object"
       ? JSON.stringify(options.body)
       : options.body;
 

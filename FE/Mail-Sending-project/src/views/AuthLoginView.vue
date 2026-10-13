@@ -10,69 +10,7 @@
         <span class="shell-mail shell-mail--three"></span>
       </div>
 
-      <section class="auth__visual">
-        <div class="auth__brand">
-          <div class="auth__logo auth__logo--visual">CM</div>
-          <span>ChadMailer</span>
-        </div>
-
-        <h2>Send smarter campaigns with a polished command center.</h2>
-
-        <p>
-          Manage SMTP accounts, templates, contacts and campaigns with a fast,
-          colorful dashboard built for email teams.
-        </p>
-
-        <div class="auth__chips">
-          <span>Live delivery</span>
-          <span>Template flow</span>
-          <span>Contact lists</span>
-        </div>
-
-        <div class="auth-preview" aria-hidden="true">
-          <div class="auth-preview__header">
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-
-          <div class="auth-preview__card auth-preview__card--wide">
-            <div class="preview-mail__top">
-              <span>Campaign launch</span>
-              <strong>Ready</strong>
-            </div>
-            <div class="preview-mail__subject"></div>
-            <div class="preview-mail__line preview-mail__line--long"></div>
-            <div class="preview-mail__line"></div>
-          </div>
-
-          <div class="auth-preview__row">
-            <div class="auth-preview__card">
-              <div class="preview-stat__value">12K</div>
-              <div class="preview-stat__label">Recipients</div>
-              <div class="preview-stat__mini">
-                <span></span>
-                <span></span>
-                <span></span>
-              </div>
-            </div>
-
-            <div class="auth-preview__card auth-preview__card--hot">
-              <div class="preview-stat__value">98%</div>
-              <div class="preview-stat__label">Delivery</div>
-              <div class="preview-stat__mini preview-stat__mini--hot">
-                <span></span>
-                <span></span>
-                <span></span>
-              </div>
-            </div>
-          </div>
-
-          <div class="auth-preview__progress">
-            <span></span>
-          </div>
-        </div>
-      </section>
+      <AuthHero />
 
       <div class="auth__card">
         <div class="auth-card__scene" aria-hidden="true">
@@ -117,11 +55,7 @@
           <h1 class="auth__title">{{ modeTitle }}</h1>
           <p class="auth__subtitle">{{ modeSubtitle }}</p>
 
-          <form
-            v-if="mode === 'login'"
-            class="auth__form"
-            @submit.prevent="handleLogin"
-          >
+          <form v-if="mode === 'login'" class="auth__form" @submit.prevent="handleLogin">
             <div class="input-wrap">
               <label for="email">Email</label>
               <input
@@ -155,11 +89,7 @@
               {{ successMessage }}
             </p>
 
-            <button
-              class="btn btn--primary auth__submit"
-              type="submit"
-              :disabled="isSubmitting"
-            >
+            <button class="btn btn--primary auth__submit" type="submit" :disabled="isSubmitting">
               {{ isSubmitting ? "Signing in..." : "Sign In" }}
             </button>
           </form>
@@ -185,28 +115,16 @@
               {{ successMessage }}
             </p>
 
-            <button
-              class="btn btn--primary auth__submit"
-              type="submit"
-              :disabled="isSubmitting"
-            >
+            <button class="btn btn--primary auth__submit" type="submit" :disabled="isSubmitting">
               {{ isSubmitting ? "Sending OTP..." : "Send Reset OTP" }}
             </button>
 
-            <button
-              type="button"
-              class="btn btn--secondary auth__secondary"
-              @click="backToLogin"
-            >
+            <button type="button" class="btn btn--secondary auth__secondary" @click="backToLogin">
               Back to Login
             </button>
           </form>
 
-          <form
-            v-else
-            class="auth__form"
-            @submit.prevent="handleVerifyResetOtp"
-          >
+          <form v-else class="auth__form" @submit.prevent="handleVerifyResetOtp">
             <div class="input-wrap">
               <label for="otp">OTP</label>
               <input
@@ -247,11 +165,7 @@
               {{ successMessage }}
             </p>
 
-            <button
-              class="btn btn--primary auth__submit"
-              type="submit"
-              :disabled="isSubmitting"
-            >
+            <button class="btn btn--primary auth__submit" type="submit" :disabled="isSubmitting">
               {{ isSubmitting ? "Resetting..." : "Reset Password" }}
             </button>
 
@@ -277,6 +191,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
+import AuthHero from "../components/auth/AuthHero.vue";
 import { auth } from "../stores/auth";
 
 const router = useRouter();
@@ -339,7 +254,7 @@ async function handleLogin() {
     await auth.login({ email: email.value, password: password.value });
     const redirect = (route.query.redirect as string) || "/";
     router.push(redirect);
-  } catch (_error) {
+  } catch {
     // error is exposed through errorMessage
   } finally {
     isSubmitting.value = false;
@@ -360,7 +275,7 @@ async function handleRequestResetOtp() {
     successMessage.value = result.debugOtp
       ? `OTP sent. Demo OTP: ${result.debugOtp}`
       : "If this email exists, a reset OTP has been sent.";
-  } catch (_error) {
+  } catch {
     // error is exposed through errorMessage
   } finally {
     isSubmitting.value = false;
@@ -395,7 +310,7 @@ async function handleVerifyResetOtp() {
     confirmPassword.value = "";
     mode.value = "login";
     successMessage.value = "Password reset successful. Login with your new password.";
-  } catch (_error) {
+  } catch {
     // error is exposed through errorMessage
   } finally {
     isSubmitting.value = false;
@@ -478,7 +393,13 @@ async function handleVerifyResetOtp() {
   position: absolute;
   height: 3px;
   border-radius: 999px;
-  background: linear-gradient(90deg, transparent, rgba(125, 211, 252, 0.58), rgba(236, 72, 153, 0.44), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(125, 211, 252, 0.58),
+    rgba(236, 72, 153, 0.44),
+    transparent
+  );
   background-size: 240% 100%;
   filter: drop-shadow(0 0 12px rgba(14, 165, 233, 0.28));
   animation: routeSweep 3.8s linear infinite;
@@ -561,7 +482,6 @@ async function handleVerifyResetOtp() {
   animation: shellMailThree 9s ease-in-out infinite;
 }
 
-.auth__visual,
 .auth__card {
   position: relative;
   z-index: 2;
@@ -571,241 +491,7 @@ async function handleVerifyResetOtp() {
   color: var(--color-text-on-dark);
   border: 0;
   overflow: visible;
-}
-
-.auth__visual {
-  position: relative;
-  display: flex;
-  min-height: 0;
-  flex-direction: column;
-  justify-content: center;
-  padding: 26px;
-  background: transparent;
-  backdrop-filter: none;
-}
-
-.auth__card {
   order: -1;
-}
-
-.auth__visual::before {
-  content: "";
-  position: absolute;
-  inset: auto -80px -110px auto;
-  width: 320px;
-  height: 320px;
-  border-radius: 999px;
-  background: radial-gradient(circle, rgba(34, 211, 238, 0.32), transparent 66%);
-  animation: authGlow 8s ease-in-out infinite;
-}
-
-.auth__brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  color: var(--color-text-on-solid);
-  font-size: 14px;
-  font-weight: 900;
-}
-
-.auth__visual h2 {
-  position: relative;
-  z-index: 1;
-  max-width: 520px;
-  margin: 58px 0 12px;
-  font-size: clamp(30px, 4vw, 42px);
-  line-height: 1.08;
-  font-weight: 900;
-  letter-spacing: 0;
-}
-
-.auth__visual p {
-  position: relative;
-  z-index: 1;
-  max-width: 500px;
-  margin: 0;
-  color: rgba(226, 232, 240, 0.78);
-  font-size: 15px;
-}
-
-.auth__chips {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 22px;
-}
-
-.auth__chips span {
-  padding: 8px 12px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.88);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.auth-preview {
-  position: relative;
-  z-index: 1;
-  margin-top: 34px;
-  padding: 18px;
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.13);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  box-shadow: 0 24px 70px rgba(2, 6, 23, 0.28);
-  backdrop-filter: blur(14px);
-}
-
-.auth-preview__header {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 18px;
-}
-
-.auth-preview__header span {
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  background: var(--color-info-light);
-}
-
-.auth-preview__header span:nth-child(2) {
-  background: var(--color-brand-pink);
-}
-
-.auth-preview__header span:nth-child(3) {
-  background: var(--color-success);
-}
-
-.auth-preview__row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.auth-preview__card {
-  min-height: 64px;
-  position: relative;
-  padding: 14px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.42), rgba(99, 102, 241, 0.2));
-  overflow: hidden;
-}
-
-.auth-preview__card--wide {
-  min-height: 82px;
-  margin-bottom: 12px;
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.42), rgba(236, 72, 153, 0.26));
-}
-
-.auth-preview__card--hot {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.42), rgba(34, 197, 94, 0.22));
-}
-
-.preview-mail__top,
-.scene-dashboard__meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.preview-mail__top span,
-.preview-stat__label,
-.scene-dashboard__meta span {
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.preview-mail__top strong,
-.scene-dashboard__meta strong {
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
-  color: rgba(255, 255, 255, 0.92);
-  font-size: 10px;
-  font-weight: 900;
-}
-
-.preview-mail__subject {
-  width: min(220px, 72%);
-  height: 12px;
-  margin-top: 14px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.54);
-}
-
-.preview-mail__line {
-  width: 48%;
-  height: 7px;
-  margin-top: 9px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.26);
-}
-
-.preview-mail__line--long {
-  width: 82%;
-}
-
-.preview-stat__value {
-  color: rgba(255, 255, 255, 0.94);
-  font-size: 24px;
-  font-weight: 900;
-  line-height: 1;
-}
-
-.preview-stat__mini {
-  display: flex;
-  align-items: end;
-  gap: 5px;
-  height: 22px;
-  margin-top: 9px;
-}
-
-.preview-stat__mini span {
-  width: 18px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.36);
-}
-
-.preview-stat__mini span:nth-child(1) {
-  height: 11px;
-}
-
-.preview-stat__mini span:nth-child(2) {
-  height: 18px;
-}
-
-.preview-stat__mini span:nth-child(3) {
-  height: 14px;
-}
-
-.preview-stat__mini--hot span {
-  background: rgba(255, 255, 255, 0.42);
-}
-
-.auth-preview__progress {
-  height: 8px;
-  margin-top: 16px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
-  overflow: hidden;
-}
-
-.auth-preview__progress span {
-  display: block;
-  width: 72%;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--gradient-brand);
-  animation: authProgress 2.8s ease-in-out infinite;
-}
-
-.auth__card {
-  position: relative;
   align-self: stretch;
   display: flex;
   min-height: 0;
@@ -898,7 +584,13 @@ async function handleVerifyResetOtp() {
 .scene__route {
   height: 3px;
   border-radius: 999px;
-  background: linear-gradient(90deg, transparent, rgba(79, 70, 229, 0.34), rgba(14, 165, 233, 0.38), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(79, 70, 229, 0.34),
+    rgba(14, 165, 233, 0.38),
+    transparent
+  );
   background-size: 220% 100%;
   transform-origin: left center;
   animation: routeSweep 3.2s linear infinite;
@@ -992,7 +684,12 @@ async function handleVerifyResetOtp() {
 .scene-dashboard__bar {
   height: 9px;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--color-primary), var(--color-info-accent), var(--color-success));
+  background: linear-gradient(
+    90deg,
+    var(--color-primary),
+    var(--color-info-accent),
+    var(--color-success)
+  );
   background-size: 220% 100%;
   animation: routeSweep 2.8s linear infinite;
 }

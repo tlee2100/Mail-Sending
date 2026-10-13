@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <section class="content__header header-with-action">
     <div>
       <p class="eyebrow">Template Library</p>
@@ -100,8 +100,12 @@
         <header class="modal-head">
           <div>
             <p class="eyebrow">{{ editingTemplate ? "Edit template" : "New template" }}</p>
-            <h2 class="modal-title">{{ editingTemplate ? "Update template details" : "Create template for Designer" }}</h2>
-            <p class="modal-subtitle">Set the template details, then continue designing it in Template Designer.</p>
+            <h2 class="modal-title">
+              {{ editingTemplate ? "Update template details" : "Create template for Designer" }}
+            </h2>
+            <p class="modal-subtitle">
+              Set the template details, then continue designing it in Template Designer.
+            </p>
           </div>
           <button type="button" class="modal-close" @click="closeModal">x</button>
         </header>
@@ -109,7 +113,12 @@
         <div class="form-grid">
           <label class="field field--wide">
             <span>Template name *</span>
-            <input v-model.trim="form.templateName" type="text" required placeholder="Launch Announcement" />
+            <input
+              v-model.trim="form.templateName"
+              type="text"
+              required
+              placeholder="Launch Announcement"
+            />
           </label>
           <label class="field">
             <span>Subject</span>
@@ -140,12 +149,16 @@
           <div>
             <p class="eyebrow">Delete template</p>
             <h2 class="modal-title">Delete {{ deleteTarget.template_name }}?</h2>
-            <p class="modal-subtitle">Campaigns using this template may lose their source template reference.</p>
+            <p class="modal-subtitle">
+              Campaigns using this template may lose their source template reference.
+            </p>
           </div>
           <button type="button" class="modal-close" @click="deleteTarget = null">x</button>
         </header>
         <footer class="modal-actions">
-          <button type="button" class="btn btn--secondary" @click="deleteTarget = null">Cancel</button>
+          <button type="button" class="btn btn--secondary" @click="deleteTarget = null">
+            Cancel
+          </button>
           <button type="button" class="btn btn--danger" :disabled="saving" @click="deleteTemplate">
             Delete template
           </button>
@@ -206,8 +219,12 @@ const filteredTemplates = computed(() => {
     return (
       !query ||
       item.template_name.toLowerCase().includes(query) ||
-      String(item.subject || "").toLowerCase().includes(query) ||
-      String(item.preview_text || "").toLowerCase().includes(query)
+      String(item.subject || "")
+        .toLowerCase()
+        .includes(query) ||
+      String(item.preview_text || "")
+        .toLowerCase()
+        .includes(query)
     );
   });
 });
@@ -260,8 +277,7 @@ async function loadTemplates() {
     const response = await templatesApi.listTemplates(auth.state.token, { pageSize: 100 });
     templates.value = response.data.items as TemplateRow[];
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to load templates";
+    const message = error instanceof ApiClientError ? error.message : "Failed to load templates";
     notice.show(message, "error");
   }
 }
@@ -293,8 +309,7 @@ async function openEditModal(item: TemplateRow) {
     form.isActive = detail.is_active !== false;
     isModalOpen.value = true;
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to load template";
+    const message = error instanceof ApiClientError ? error.message : "Failed to load template";
     notice.show(message, "error");
   }
 }
@@ -372,8 +387,7 @@ async function submitTemplate() {
       }
     }
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to save template";
+    const message = error instanceof ApiClientError ? error.message : "Failed to save template";
     notice.show(message, "error");
   } finally {
     saving.value = false;
@@ -401,8 +415,7 @@ async function deleteTemplate() {
     deleteTarget.value = null;
     await loadTemplates();
   } catch (error) {
-    const message =
-      error instanceof ApiClientError ? error.message : "Failed to delete template";
+    const message = error instanceof ApiClientError ? error.message : "Failed to delete template";
     notice.show(message, "error");
   } finally {
     saving.value = false;
@@ -448,36 +461,81 @@ onMounted(() => {
   border: none;
 }
 
-.card--blue { background: linear-gradient(135deg, var(--color-info), var(--color-info-light)); }
-.card--green { background: linear-gradient(135deg, var(--color-success-teal), var(--color-success-cyan)); color: var(--color-cyan-text-on-solid); }
-.card--cyan { background: linear-gradient(135deg, var(--color-cyan), var(--color-cyan-soft)); color: var(--color-cyan-text-on-solid); }
+.card--blue {
+  background: linear-gradient(135deg, var(--color-info), var(--color-info-light));
+}
+.card--green {
+  background: linear-gradient(135deg, var(--color-success-teal), var(--color-success-cyan));
+  color: var(--color-cyan-text-on-solid);
+}
+.card--cyan {
+  background: linear-gradient(135deg, var(--color-cyan), var(--color-cyan-soft));
+  color: var(--color-cyan-text-on-solid);
+}
 
-.card--stat-tpl .card__icon { font-size: 18px; font-weight: 700; }
-.card--stat-tpl .card__value { font-size: 28px; font-weight: 800; }
-.card--stat-tpl .card__label { font-size: 13px; opacity: 0.95; color: inherit; }
+.card--stat-tpl .card__icon {
+  font-size: 18px;
+  font-weight: 700;
+}
+.card--stat-tpl .card__value {
+  font-size: 28px;
+  font-weight: 800;
+}
+.card--stat-tpl .card__label {
+  font-size: 13px;
+  opacity: 0.95;
+  color: inherit;
+}
 
-.filter-bar { display: flex; gap: 12px; margin-bottom: 16px; }
-.search-wrap { flex: 1; position: relative; }
+.filter-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.search-wrap {
+  flex: 1;
+  position: relative;
+}
 .search-icon {
-  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
-  font-size: 12px; font-weight: 700; opacity: 0.6;
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.6;
 }
 .search-input {
-  width: 100%; padding: 10px 12px 10px 48px; border-radius: 10px;
-  border: 1px solid var(--color-border-subtle); font-size: 14px; box-sizing: border-box;
-  background: var(--color-control-bg); color: var(--color-text-main);
+  width: 100%;
+  padding: 10px 12px 10px 48px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border-subtle);
+  font-size: 14px;
+  box-sizing: border-box;
+  background: var(--color-control-bg);
+  color: var(--color-text-main);
 }
 
-.grid--samples { grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); }
+.grid--samples {
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+}
 .sample-card {
   border: 1px solid var(--color-border-subtle);
   color: var(--color-text-main);
   box-shadow: var(--shadow-elevated);
 }
 .sample-card__top {
-  display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
 }
-.sample-card__title { margin: 0; font-size: 16px; font-weight: 800; }
+.sample-card__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+}
 .sample-card__badge {
   border-radius: 999px;
   background: var(--color-success-bg);
@@ -490,25 +548,41 @@ onMounted(() => {
   background: var(--color-border-subtle);
   color: var(--color-text-subtle);
 }
-.sample-card__subject { margin: 0 0 8px; font-weight: 700; }
+.sample-card__subject {
+  margin: 0 0 8px;
+  font-weight: 700;
+}
 .sample-card__owner {
   margin: 0 0 8px;
   color: var(--color-text-muted);
   font-size: 12px;
   font-weight: 700;
 }
-.sample-card__desc { margin: 0 0 16px; font-size: 13px; color: var(--color-text-muted); }
+.sample-card__desc {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
 .sample-card__actions {
   display: grid;
   grid-template-columns: 1fr 0.7fr 0.7fr;
   gap: 8px;
 }
-.btn--small { justify-content: center; padding: 8px 10px; font-size: 12px; text-decoration: none; }
+.btn--small {
+  justify-content: center;
+  padding: 8px 10px;
+  font-size: 12px;
+  text-decoration: none;
+}
 .btn--small:disabled {
   cursor: not-allowed;
   opacity: 0.55;
 }
-.quick-links { display: flex; gap: 10px; flex-wrap: wrap; }
+.quick-links {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
 
 .empty-card {
   padding: 36px;

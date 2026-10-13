@@ -92,11 +92,7 @@ export const contactsApi = {
     });
   },
 
-  updateTag(
-    token: string,
-    id: string | number,
-    body: { tagName?: string; color?: string },
-  ) {
+  updateTag(token: string, id: string | number, body: { tagName?: string; color?: string }) {
     return apiRequest<Record<string, unknown>>(`/contacts/tags/${id}`, {
       method: "PATCH",
       token,

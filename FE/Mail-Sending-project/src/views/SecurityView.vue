@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <section class="content__header header-with-badge">
     <div>
       <h1 class="page-title">Security Settings</h1>
@@ -12,9 +12,7 @@
 
   <div class="card card--password">
     <h2 class="card__heading">Change Password</h2>
-    <p class="card__sub">
-      Enter your current password and choose a new secure password.
-    </p>
+    <p class="card__sub">Enter your current password and choose a new secure password.</p>
     <div class="password-fields">
       <div class="input-wrap">
         <label>Current Password</label>
@@ -71,8 +69,7 @@
           autocomplete="one-time-code"
         />
         <p class="otp-hint">
-          We sent an OTP to {{ otpEmail }}. The code expires in
-          {{ otpExpiresInMinutes }} minutes.
+          We sent an OTP to {{ otpEmail }}. The code expires in {{ otpExpiresInMinutes }} minutes.
         </p>
         <p v-if="debugOtp" class="otp-hint">
           Local demo OTP: <strong>{{ debugOtp }}</strong>
@@ -81,7 +78,12 @@
     </div>
     <div class="password-actions">
       <RouterLink to="/profile" class="link-back">Back to Profile</RouterLink>
-      <button type="button" class="btn btn--warning" :disabled="isSubmitting" @click="updatePassword">
+      <button
+        type="button"
+        class="btn btn--warning"
+        :disabled="isSubmitting"
+        @click="updatePassword"
+      >
         {{ isSubmitting ? "Processing..." : otpSent ? "Verify OTP & Update" : "Send OTP" }}
       </button>
     </div>
@@ -93,30 +95,22 @@
       <div class="card card--tip card--tip-green">
         <span class="tip-icon">Tip</span>
         <h3 class="tip-title">Use Strong Passwords</h3>
-        <p class="tip-desc">
-          Combine letters, numbers, and symbols for better security.
-        </p>
+        <p class="tip-desc">Combine letters, numbers, and symbols for better security.</p>
       </div>
       <div class="card card--tip card--tip-green">
         <span class="tip-icon">Tip</span>
         <h3 class="tip-title">Regular Updates</h3>
-        <p class="tip-desc">
-          Change your password regularly to maintain security.
-        </p>
+        <p class="tip-desc">Change your password regularly to maintain security.</p>
       </div>
       <div class="card card--tip card--tip-yellow">
         <span class="tip-icon">Warn</span>
         <h3 class="tip-title">Avoid Common Words</h3>
-        <p class="tip-desc">
-          Don't use easily guessable information like names or dates.
-        </p>
+        <p class="tip-desc">Don't use easily guessable information like names or dates.</p>
       </div>
       <div class="card card--tip card--tip-purple">
         <span class="tip-icon">Tip</span>
         <h3 class="tip-title">Unique Passwords</h3>
-        <p class="tip-desc">
-          Use different passwords for different accounts.
-        </p>
+        <p class="tip-desc">Use different passwords for different accounts.</p>
       </div>
     </div>
   </section>
@@ -174,8 +168,7 @@ async function updatePassword() {
       debugOtp.value = "";
       notice.show("Password updated.", "success");
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unable to update password";
+      const message = error instanceof Error ? error.message : "Unable to update password";
       notice.show(message, "error");
     } finally {
       isSubmitting.value = false;
@@ -195,8 +188,7 @@ async function updatePassword() {
     debugOtp.value = response.debugOtp || "";
     notice.show("OTP sent to your email.", "success");
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Unable to send password OTP";
+    const message = error instanceof Error ? error.message : "Unable to send password OTP";
     notice.show(message, "error");
   } finally {
     isSubmitting.value = false;
